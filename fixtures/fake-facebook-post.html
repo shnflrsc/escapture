@@ -84,6 +84,13 @@
         var post = document.querySelector('[data-testid="post-1"]');
         var list = post.querySelector(".comments");
         var params = new URLSearchParams(location.search);
+        if (params.get("wrap")) {
+          // Real sites (and their libraries) wrap built-in DOM functions like this. ?wrap=1
+          var builtIn = Node.prototype.appendChild;
+          Node.prototype.appendChild = function wrappedAppendChild(node) {
+            return builtIn.call(this, node);
+          };
+        }
         function addComment(name, text, hidden) {
           var row = document.createElement("div");
           row.className = "comment";

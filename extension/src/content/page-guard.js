@@ -297,7 +297,8 @@
   // Each is { reason, node, added }: the place that changed and any nodes that
   // were put there. The changed text itself is not kept.
   const incidents = [];
-  let storm = false, analysisFailures = 0, hooksReplaced = 0;
+  let storm = false, analysisFailures = 0;
+  const replacedHooks = [];
   function record(reason, node, added) {
     if (incidents.length >= 200) { storm = true; return; }
     arrPush(incidents, { reason, node, added });
@@ -368,9 +369,14 @@
         const key = (h.proto === NODE ? 'Node' : (safe(() => h.proto.constructor.name) || '?')) + '.' + h.name;
         if (!sHas(warned, key)) {
           sAdd(warned, key);
-          hooksReplaced++;
-          // re-install our hook so protection continues; the replacement itself stays on record
-          try { dP(h.proto, h.name, h.prop === 'set' ? { get: d && d.get, set: h.fn, configurable: true, enumerable: true } : { value: h.fn, writable: true, configurable: true, enumerable: false }); } catch (_) {}
+          if (replacedHooks.length < 12) arrPush(replacedHooks, key);
+          // SafeTrail: the replacement is left in place and is NOT treated as tampering by itself.
+          // Real sites and other extensions wrap these functions routinely, and putting our hook back
+          // (as the original detector did) would silently break their wrapper. Nothing is lost:
+          //  - a wrapper that still calls through reaches our hook, with the wrapper on the call stack,
+          //    so a wrapper that is not the page's own script makes the write fail as before;
+          //  - a replacement that skips our hook leaves the write with no hooked call at all, which
+          //    the observer records as an edit made without any script (default-deny).
         }
       }
     }
@@ -444,9 +450,10 @@
     const designNow = str.lower(S(safe(() => getDesignMode(D)) || '')) === 'on';
     // Built from primitives only: a page-defined toJSON must not be able to shape the answer.
     let hits = ''; for (let i = 0; i < reasons.length; i++) hits += (i ? ',' : '') + JSONs(S(reasons[i]));
+    let rep = ''; for (let i = 0; i < replacedHooks.length; i++) rep += (i ? ',' : '') + JSONs(S(replacedHooks[i]));
     let gl = ''; for (let i = 0; i < globals.length; i++) gl += (i ? ',' : '') + JSONs(globals[i]);
     const reply = '{"id":' + JSONs(c.id) + ',"armed":' + (armed ? 'true' : 'false') + ',"callSites":' + (CSP ? 'true' : 'false') +
-      ',"intact":' + (intact && hooksReplaced === 0 ? 'true' : 'false') + ',"analysisFailed":' + (analysisFailures > 0 ? 'true' : 'false') +
+      ',"intact":' + (intact && replacedHooks.length === 0 ? 'true' : 'false') + ',"replaced":[' + rep + '],"analysisFailed":' + (analysisFailures > 0 ? 'true' : 'false') +
       ',"storm":' + (storm ? 'true' : 'false') + ',"targets":' + targets.length + ',"designModeEverOn":' + (designModeEverOn || designNow ? 'true' : 'false') +
       ',"userscriptGlobals":[' + gl + '],"hits":[' + hits + '],"elsewhere":' + elsewhere + '}';
     try { portPost(port, reply); } catch (_) {}

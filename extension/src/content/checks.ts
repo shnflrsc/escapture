@@ -6,8 +6,10 @@ export type GuardState = {
   armed: boolean;
   /** Whether the browser's call-site API was available to tell page scripts from others. */
   callSites: boolean;
-  /** False if any of the guard's hooks on DOM functions was replaced after load. */
+  /** False if any of the guard's hooks on DOM functions was replaced after load. Not a failure by itself. */
   intact: boolean;
+  /** Which ones, for example "Node.appendChild". */
+  replaced: string[];
   /** True if the guard's analysis of a change was disturbed (for example poisoned built-ins). */
   analysisFailed: boolean;
   /** True if there were too many unattributed changes to keep track of. */
@@ -50,7 +52,6 @@ function provenance(guard: GuardState | null, expectedTargets: number): TamperCh
   if (!guard.callSites) return fail("This browser can't tell the page's own scripts from others, so changes can't be checked.");
   if (!guard.armed) return fail("The page is still loading. Wait a moment and capture again.");
   if (guard.targets < expectedTargets) return fail("The tamper guard could not find the selected area. Reload the page and capture again.");
-  if (!guard.intact) return fail("The page's built-in functions for changing content were replaced after it loaded.");
   if (guard.analysisFailed) return fail("A change to the page could not be checked because the page's built-in functions had been altered.");
   if (guard.storm) return fail("There were too many unexplained changes on this page to check them.");
   if (guard.hits.length) {
@@ -126,6 +127,12 @@ export function runChecks(target: Element, guard: GuardState | null, expectedTar
 
   // 5. Changes that did not come from the page's own scripts.
   checks.push(provenance(guard, expectedTargets));
+  if (guard && guard.replaced?.length) {
+    // Sites and other extensions wrap these routinely. Changes are still checked either way: a
+    // wrapper that is not the page's own fails the check above, and one that skips the guard
+    // leaves changes unexplained, which also fails it.
+    warnings.push(`Some of the browser's functions for changing content had been replaced on this page (${guard.replaced.join(", ")}). Changes were still checked.`);
+  }
   if (guard && guard.elsewhere > 0) {
     warnings.push(
       `${guard.elsewhere} change${guard.elsewhere === 1 ? "" : "s"} elsewhere on this page did not come from the page's own scripts. The captured area was not affected.`,
