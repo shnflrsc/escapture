@@ -144,6 +144,20 @@ async function fetchImage(url: string, maxWidth?: number, quality = 0.8): Promis
   }
 }
 
+/** Text of a style sheet the page itself was not allowed to read (cross-origin, no CORS headers). */
+async function fetchSheet(url: string): Promise<Reply<{ text: string }>> {
+  try {
+    if (!/^https?:/.test(url)) return { ok: false, error: "unsupported URL" };
+    const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const text = await res.text();
+    if (text.length > 8 * 1024 * 1024) return { ok: false, error: "too large" };
+    return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "fetch failed" };
+  }
+}
+
 async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promise<Reply<{ result: LastCapture }>> {
   const at = new Date().toISOString();
   const fail = async (message: string, refused = false) => {
@@ -207,6 +221,8 @@ async function handle(msg: Message): Promise<unknown> {
       return { ok: true };
     case "image:fetch":
       return fetchImage(msg.url, msg.maxWidth, msg.quality);
+    case "sheet:fetch":
+      return fetchSheet(msg.url);
     case "capture:upload":
       return upload(msg);
   }

@@ -1,0 +1,3 @@
+/* Loaded by fake-facebook-post.html from a different origin, to exercise the
+   path where the page itself may not read a style sheet. */
+.post .text { letter-spacing: 0.5px; }

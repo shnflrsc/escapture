@@ -2,7 +2,7 @@
 // "Capture this page": element picker, tamper checks, snapshot building.
 import { captureHost, gzip, MAX_BYTES, MAX_UPLOAD_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
 import { queryGuard, runChecksAll, type GuardState } from "./checks";
-import { buildSnapshot, serialize, sizeBreakdown } from "./snapshot";
+import { buildSnapshot, loadStyles, serialize, sizeBreakdown } from "./snapshot";
 
 declare global {
   interface Window {
@@ -409,6 +409,16 @@ class Session {
 
     this.panel("Capturing", h("p", {}, "Saving a copy to your vault. This takes a moment."));
 
+    // Style sheets the page would not let us read are fetched by the background worker.
+    await loadStyles(snap, (url) =>
+      send<{ text: string }>({ type: "sheet:fetch", url }).then(
+        (r) => (r.ok ? r.text : null),
+        () => null,
+      ),
+    );
+    const warnings = [...(report.warnings ?? []), ...snap.warnings];
+    const tamperReport = { ...report, warnings: warnings.length ? warnings : undefined };
+
     // Embed images through the background worker, a few at a time, each at
     // the size it is shown on the page. If the result is over the upload
     // limit, embed them again smaller before giving up.
@@ -463,7 +473,7 @@ class Session {
     }
     if (!fits(measured)) {
       const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
-      const parts = sizeBreakdown(html, snap.css);
+      const parts = sizeBreakdown(html);
       const message =
         `This capture is too large to upload (${mb(measured.packed)} MB compressed, and the limit is ${mb(MAX_UPLOAD_BYTES)} MB). ` +
         `Images take ${mb(parts.images)} MB, text and layout ${mb(parts.markup + parts.styles)} MB before compression. ` +
@@ -480,7 +490,7 @@ class Session {
       kind,
       sourceUrl: location.href,
       clientCapturedAt,
-      tamperReport: report,
+      tamperReport,
     }).catch((): Reply<{ result: LastCapture }> => ({ ok: false, error: "The extension stopped responding. Reload the page and try again." }));
 
     const result: LastCapture = reply.ok ? reply.result : { ok: false, refused: false, message: reply.error, at: clientCapturedAt };

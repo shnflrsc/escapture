@@ -19,9 +19,23 @@
       .comments { border-top: 1px solid #ced0d4; margin-top: 12px; padding-top: 8px; display: grid; gap: 8px; }
       .comment { background: #f0f2f5; border-radius: 16px; padding: 8px 12px; font-size: 14px; }
       .comment b { display: block; font-size: 13px; }
+      /* The cases a capture has to get right, as on the real site: */
+      :root { --accent: #1877f2; --muted: #65676b; }
+      /* depends on an ancestor outside the captured post, and on a variable */
+      .theme-light .post .name { color: var(--accent); }
+      /* depends on an attribute the capture strips */
+      .actions [role="button"] { padding: 4px 8px; border-radius: 6px; }
+      /* drawn by CSS, not present in the markup */
+      .actions [role="button"]::before { content: "> "; color: var(--muted); }
+      /* a state that cannot exist in a frozen copy */
+      .post [role="button"]:hover { background: #ff0000; }
+      @media (min-width: 1px) { .comment { border-left: 3px solid var(--accent); } }
+      @media (max-width: 1px) { .comment { display: none; } }
     </style>
+    <!-- Served from another origin without CORS headers, like a CDN style sheet the page cannot read. -->
+    <link rel="stylesheet" href="http://127.0.0.1:4100/cross-origin.css" />
   </head>
-  <body>
+  <body class="theme-light">
     <div class="bar">fakebook <span style="font-size: 12px; color: #65676b">SafeTrail test fixture, not a real site</span></div>
     <div class="feed">
       <div class="post" data-testid="post-1">

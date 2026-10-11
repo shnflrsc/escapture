@@ -14,7 +14,8 @@ createServer(async (req, res) => {
     // Never serve anything outside fixtures/.
     if (!file.startsWith(root + path.sep)) throw new Error("outside root");
     const body = await readFile(file);
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    const type = file.endsWith(".css") ? "text/css" : "text/html";
+    res.writeHead(200, { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "no-store" });
     res.end(body);
   } catch {
     res.writeHead(404, { "Content-Type": "text/plain" });

@@ -26,6 +26,7 @@ export type Message =
   | { type: "capture:start" }
   | { type: "capture:result"; result: LastCapture }
   | { type: "image:fetch"; url: string; maxWidth?: number; quality?: number }
+  | { type: "sheet:fetch"; url: string }
   | {
       type: "capture:upload";
       html: string;

@@ -37,7 +37,7 @@ manifest.key = key;
 manifest.host_permissions.push(`${appOrigin}/*`);
 if (isLocal) {
   // Local fixture pages (pnpm fixtures:serve), for testing without real Facebook.
-  manifest.host_permissions.push("http://localhost:4100/*");
+  manifest.host_permissions.push("http://localhost:4100/*", "http://127.0.0.1:4100/*");
   manifest.content_scripts[0].matches.push("http://localhost:4100/*");
 }
 writeFileSync(path.join(dist, "manifest.json"), JSON.stringify(manifest, null, 2));

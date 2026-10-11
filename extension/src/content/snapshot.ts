@@ -1,5 +1,7 @@
-// SingleFile-style snapshot, simplified: clone the selection, copy computed
-// styles, embed images as data URIs, and strip everything active.
+// SingleFile-style snapshot, simplified. The selection is cloned with its own
+// class names, and only the page's stylesheet rules that apply to it are kept
+// ("tree-shaking"). Images are embedded as data URIs and everything active is
+// stripped. Nothing in the result loads from the network or runs.
 import type { Kind } from "../shared/types";
 import { isComposer } from "./checks";
 
@@ -8,89 +10,87 @@ const REMOVE = new Set([
   "NOSCRIPT", "TEMPLATE", "AUDIO", "SOURCE", "TRACK", "PORTAL",
 ]);
 
-// Inherited properties are skipped when they equal the parent's value.
-const INHERITED = new Set([
-  "color", "cursor", "direction", "font-family", "font-size", "font-style", "font-variant-caps",
-  "font-weight", "font-stretch", "font-kerning", "letter-spacing", "line-height", "list-style-type",
-  "list-style-position", "text-align", "text-indent", "text-transform", "text-rendering", "visibility",
-  "white-space-collapse", "text-wrap-mode", "word-break", "overflow-wrap", "word-spacing", "tab-size",
-  "-webkit-font-smoothing", "text-size-adjust", "quotes", "orphans", "widows", "caret-color",
-  "text-shadow", "pointer-events", "border-collapse", "border-spacing", "hyphens", "writing-mode",
-]);
-
-const SKIP = /(^|-)(inline-size|block-size)$|^(perspective-origin|transform-origin|inset-inline|inset-block|margin-inline|margin-block|padding-inline|padding-block|border-inline|border-block|animation|transition|cursor|pointer-events|user-select|will-change|caret-color|-webkit-tap-highlight-color|-webkit-locale|d$|cx$|cy$|r$|rx$|ry$|x$|y$)/;
-const REPLACED = new Set(["IMG", "SVG", "CANVAS", "VIDEO", "PICTURE", "INPUT", "TEXTAREA", "SELECT", "BUTTON"]);
+// Inherited from outside the selection, so they are copied onto the wrapper.
+const INHERITED_CONTEXT = [
+  "color", "direction", "font-family", "font-size", "font-style", "font-weight", "font-stretch",
+  "font-variant-caps", "letter-spacing", "line-height", "list-style-type", "text-align", "text-indent",
+  "text-transform", "text-rendering", "white-space-collapse", "text-wrap-mode", "word-break",
+  "overflow-wrap", "word-spacing", "-webkit-font-smoothing", "writing-mode",
+];
 
 // When several separate items are selected, the containers between them are
 // kept only as plain structure. Their own sizing and positioning (often used
 // by virtualised lists) would leave large gaps once the other items are gone.
-const CONTAINER_PROPS = new Set([
-  "display", "flex-direction", "flex-wrap", "align-items", "justify-content", "row-gap", "column-gap",
-  "box-sizing", "background-color",
-]);
+const CONTAINER_PROPS = ["display", "flex-direction", "flex-wrap", "align-items", "justify-content", "row-gap", "column-gap"];
+
+// Rules for states that can't exist in a frozen copy are left out.
+const DYNAMIC = /:(hover|active|focus|focus-visible|focus-within|visited|target)\b/;
+const PSEUDO_ELEMENT = /(::?(before|after|first-line|first-letter)|::(placeholder|marker))$/;
+const OTHER_PSEUDO_ELEMENT = /::[a-zA-Z-]+(\([^)]*\))?$/;
+// Selectors where a missing class does not rule out a match.
+const NEGATING = /:(not|is|where|has)\(/;
+const CLASS_TOKEN = /\.(-?[_a-zA-Z][\w-]*)/g;
+const URL_IN_CSS = /url\((["']?)(.*?)\1\)/g;
+const VAR_REF = /var\(\s*(--[\w-]+)/g;
+// 1x1 transparent GIF, used where an image could not be fetched.
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
 /**
  * `displayWidth` is how wide the image is shown, in CSS pixels, so it can be
- * embedded at that size. It is unset for CSS backgrounds, which may be sprite
+ * embedded at that size. It is unset for CSS images, which may be sprite
  * sheets and must keep their real dimensions. `apply` may be called again
  * with a smaller version of the same image.
  */
 export type PendingImage = { url: string; displayWidth?: number; apply: (dataUrl: string | null) => void };
 
-export type Snapshot = { root: Element; css: string; images: PendingImage[]; width: number; background: string };
+/** One selector of one stylesheet rule that applies to something in the selection. */
+type Candidate = {
+  order: number; // position in the cascade
+  base: string; // selector without its pseudo-element
+  pseudo: string; // "::before", or ""
+  decl: string; // the rule's declarations
+  matched: Element[]; // cloned elements it applied to on the live page
+};
 
-type Defaults = Map<string, Map<string, string>>;
+export type Snapshot = {
+  root: Element;
+  images: PendingImage[];
+  width: number;
+  background: string;
+  /** Style sheets the page would not let us read directly. See loadStyles. */
+  unreadSheets: { href: string; index: number }[];
+  warnings: string[];
+  // Internal state between buildSnapshot, loadStyles and serialize.
+  candidates: Candidate[];
+  cloneOf: Map<Element, Element>;
+  live: { top: Element; classes: Set<string> };
+  context: Map<string, string>; // inline declarations for the wrapper
+  cssImages: Map<string, string | null>;
+  css: string;
+};
 
-function defaultStyles(frame: HTMLIFrameElement, cache: Defaults, tag: string): Map<string, string> {
-  let d = cache.get(tag);
-  if (d) return d;
-  d = new Map();
-  const doc = frame.contentDocument;
-  if (doc?.body) {
-    const el = doc.createElement(tag);
-    doc.body.appendChild(el);
-    const cs = frame.contentWindow!.getComputedStyle(el);
-    for (let i = 0; i < cs.length; i++) d.set(cs[i], cs.getPropertyValue(cs[i]));
-    el.remove();
-  }
-  cache.set(tag, d);
-  return d;
+/** Short CSS class names: a, b, ... Z, aa, ab, ... Most-used classes get the shortest. */
+function shortName(i: number): string {
+  const first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const rest = first + "0123456789";
+  let name = first[i % first.length];
+  for (i = Math.floor(i / first.length); i > 0; i = Math.floor((i - 1) / rest.length)) name += rest[(i - 1) % rest.length];
+  return name;
 }
 
-/** The declarations an element needs: only what differs from a bare element of the same tag. */
-function declarations(
-  original: Element,
-  cs: CSSStyleDeclaration,
-  parentCs: CSSStyleDeclaration | null,
-  defaults: Map<string, string>,
-  opts: { skipBackgroundImage: boolean; containerOnly: boolean },
-): string[] {
-  const tag = original.tagName.toUpperCase();
-  const hasChildren = original.childNodes.length > 0;
-  const out: string[] = [];
-  for (let i = 0; i < cs.length; i++) {
-    const prop = cs[i];
-    if (SKIP.test(prop) || (opts.skipBackgroundImage && prop === "background-image")) continue;
-    if (opts.containerOnly && !CONTAINER_PROPS.has(prop) && !INHERITED.has(prop)) continue;
-    const value = cs.getPropertyValue(prop);
-    if (!value || value === defaults.get(prop)) {
-      // Still needed if the parent sets an inherited property to something else.
-      if (!(INHERITED.has(prop) && parentCs && parentCs.getPropertyValue(prop) !== value)) continue;
-    } else if (INHERITED.has(prop) && parentCs && parentCs.getPropertyValue(prop) === value) {
-      continue;
-    }
-    // Resolved pixel heights would stop text from reflowing; keep them only
-    // for replaced or empty boxes (avatars, spacers, images).
-    if (prop === "height" && hasChildren && !REPLACED.has(tag)) continue;
-    if (prop === "width" && cs.display === "inline") continue;
-    // Nothing may load remotely: drop any url() that is not an embedded image.
-    if (value.includes("url(") && !/^url\(["']?data:image\//.test(value)) continue;
-    out.push(`${prop}:${value}`);
-  }
-  return out;
+/** A box that takes no space and shows nothing: tracking pixels, anti-scraping filler, collapsed menus. */
+function takesNoSpace(o: Element, cs: CSSStyleDeclaration): boolean {
+  if (!(o instanceof HTMLElement) || o.tagName === "BR" || o.tagName === "WBR" || cs.display === "contents") return false;
+  const zero = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return r.width === 0 && r.height === 0;
+  };
+  if (!zero(o)) return false;
+  // Text can spill out of a zero-size box unless the box clips it.
+  if (o.textContent?.trim() && cs.overflowX === "visible") return false;
+  const inner = o.querySelectorAll("*");
+  return inner.length <= 300 && [...inner].every(zero);
 }
-
-const URL_IN_CSS = /url\((["']?)(.*?)\1\)/g;
 
 function placeholder(doc: Document, width: number, height: number): HTMLElement {
   const span = doc.createElement("span");
@@ -104,17 +104,18 @@ function placeholder(doc: Document, width: number, height: number): HTMLElement 
   return span;
 }
 
+/** Strips everything except what the copy needs. `class` is kept: the kept style rules refer to it. */
 function sanitizeAttributes(el: Element) {
   // SVG ids are kept: gradients, clip paths and <use> refer to them.
   const svg = el.namespaceURI === "http://www.w3.org/2000/svg";
   for (const attr of [...el.attributes]) {
     const name = attr.name.toLowerCase();
-    if (svg && name === "id") continue;
+    if (name === "class" || (svg && name === "id")) continue;
     if (
       name.startsWith("on") ||
       name.startsWith("data-") ||
       name.startsWith("aria-") ||
-      name === "class" || name === "id" || name === "srcset" || name === "sizes" || name === "nonce" ||
+      name === "id" || name === "srcset" || name === "sizes" || name === "nonce" ||
       name === "integrity" || name === "contenteditable" || name === "action" || name === "formaction" ||
       name === "ping" || name === "target" || name === "srcdoc" || name === "loading" || name === "tabindex" ||
       name === "autofocus" || name === "style" || name === "role"
@@ -146,98 +147,113 @@ function sanitizeAttributes(el: Element) {
   }
 }
 
-/** Short CSS class names: a, b, ... Z, aa, ab, ... Most-used styles get the shortest. */
-function shortName(i: number): string {
-  const first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const rest = first + "0123456789";
-  let name = first[i % first.length];
-  for (i = Math.floor(i / first.length); i > 0; i = Math.floor((i - 1) / rest.length)) name += rest[(i - 1) % rest.length];
-  return name;
-}
-
-/** A box that takes no space and shows nothing: tracking pixels, anti-scraping filler, collapsed menus. */
-function takesNoSpace(o: Element, cs: CSSStyleDeclaration): boolean {
-  if (!(o instanceof HTMLElement) || o.tagName === "BR" || o.tagName === "WBR" || cs.display === "contents") return false;
-  const zero = (el: Element) => {
-    const r = el.getBoundingClientRect();
-    return r.width === 0 && r.height === 0;
-  };
-  if (!zero(o)) return false;
-  // Text can spill out of a zero-size box unless the box clips it.
-  if (o.textContent?.trim() && cs.overflowX === "visible") return false;
-  const inner = o.querySelectorAll("*");
-  return inner.length <= 300 && [...inner].every(zero);
-}
-
-/**
- * Removes wrappers that carry nothing: no styles of their own, no attributes,
- * and exactly one element inside. Facebook nests many of these.
- */
-function flatten(root: Element, styled: Map<Element, string[]>) {
-  const all = [...root.querySelectorAll("div, span")].reverse(); // innermost first
-  for (const el of all) {
-    if (el === root || !el.parentNode || el.attributes.length > 0 || (styled.get(el)?.length ?? 0) > 0) continue;
-    const kids = [...el.childNodes].filter((n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()));
-    if (kids.length === 0) el.remove();
-    else if (kids.length === 1 && kids[0].nodeType === Node.ELEMENT_NODE) el.replaceWith(kids[0]);
-  }
-}
-
-/**
- * Turns each element's declarations into class names and returns the CSS.
- *
- * Every distinct declaration ("color:red") is one class, shared by every
- * element that uses it, so size barely grows with the number of elements.
- * Elements that share their whole set of declarations with others (list rows,
- * repeated buttons, every message bubble) get a single combined class instead
- * when that is shorter.
- */
-function assignClasses(root: Element, styled: Map<Element, string[]>): string {
-  const live = [...styled].filter(([el, decls]) => decls.length > 0 && (el === root || root.contains(el)));
-  const count = (list: [Element, string[]][]) => {
-    const freq = new Map<string, number>();
-    for (const [, decls] of list) for (const d of decls) freq.set(d, (freq.get(d) ?? 0) + 1);
-    return [...freq].sort((a, b) => b[1] - a[1]);
-  };
-
-  // Group elements with identical declaration sets.
-  const groups = new Map<string, Element[]>();
-  for (const [el, decls] of live) {
-    const key = decls.join(";");
-    groups.set(key, [...(groups.get(key) ?? []), el]);
-  }
-  const provisional = new Map(count(live).map(([d], i) => [d, shortName(i)]));
-  const combos: [string, Element[]][] = [];
-  for (const [key, els] of groups) {
-    const decls = styled.get(els[0])!;
-    const atomic = decls.reduce((n, d) => n + provisional.get(d)!.length + 1, 0) * els.length;
-    const combined = key.length + 6 + els.length * 3;
-    if (els.length > 1 && combined < atomic) combos.push([key, els]);
-  }
-  combos.sort((a, b) => b[1].length - a[1].length);
-
-  const rules: string[] = [];
-  const done = new Set<Element>();
-  combos.forEach(([key, els], i) => {
-    const name = `_${shortName(i)}`;
-    rules.push(`.${name}{${key}}`);
-    for (const el of els) {
-      el.setAttribute("class", name);
-      done.add(el);
-    }
-  });
-  const rest = live.filter(([el]) => !done.has(el));
-  const names = new Map(count(rest).map(([d], i) => [d, shortName(i)]));
-  for (const [d, name] of names) rules.push(`.${name}{${d}}`);
-  for (const [el, decls] of rest) el.setAttribute("class", decls.map((d) => names.get(d)).join(" "));
-  return rules.join("");
-}
-
 /** Lowest element that contains every target. */
 function commonAncestor(targets: Element[]): Element {
   let root: Element = targets[0];
   for (const t of targets) while (!root.contains(t)) root = root.parentElement ?? document.documentElement;
   return root;
+}
+
+/** Splits "a, b:is(c, d), e" at top-level commas only. */
+function splitSelectors(text: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quote = "";
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === "\\") i++;
+      else if (ch === quote) quote = "";
+    } else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth--;
+    else if (ch === "," && depth === 0) {
+      out.push(text.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  out.push(text.slice(start).trim());
+  return out.filter(Boolean);
+}
+
+const absoluteUrls = (css: string, base: string) =>
+  css.replace(URL_IN_CSS, (whole, _q, url: string) => {
+    if (url.startsWith("data:") || url.startsWith("#")) return whole;
+    try {
+      return `url("${new URL(url, base).href}")`;
+    } catch {
+      return whole;
+    }
+  });
+
+/**
+ * Walks a style sheet and records every rule that applies to something in the
+ * selection, tested against the live page so ancestors outside the selection
+ * (themes, layout modes) count.
+ */
+function collectRules(snap: Snapshot, rules: CSSRuleList, sheetIndex: number, base: string) {
+  const { top, classes } = snap.live;
+  let n = 0;
+  const walk = (list: CSSRuleList) => {
+    for (const rule of list) {
+      if (rule instanceof CSSStyleRule) {
+        const decl = rule.style.cssText;
+        if (!decl) continue;
+        let resolved: string | null = null;
+        const order = sheetIndex * 1e6 + n++;
+        for (const selector of splitSelectors(rule.selectorText)) {
+          if (DYNAMIC.test(selector)) continue;
+          const pseudo = selector.match(PSEUDO_ELEMENT)?.[0] ?? "";
+          if (!pseudo && OTHER_PSEUDO_ELEMENT.test(selector)) continue; // scrollbars, selection colours
+          const baseSel = (pseudo ? selector.slice(0, -pseudo.length) : selector).trim() || "*";
+          // Cheap rejection: a class the page does not use anywhere near the selection.
+          if (!NEGATING.test(baseSel)) {
+            let absent = false;
+            for (const m of baseSel.matchAll(CLASS_TOKEN)) if (!classes.has(m[1])) absent = true;
+            if (absent) continue;
+          }
+          let found: Element[];
+          try {
+            found = [...top.querySelectorAll(baseSel)];
+            if (top.matches(baseSel)) found.unshift(top);
+          } catch {
+            continue;
+          }
+          const matched = found.map((o) => snap.cloneOf.get(o)).filter((c): c is Element => Boolean(c));
+          if (!matched.length) continue;
+          resolved ??= absoluteUrls(decl, base);
+          snap.candidates.push({ order, base: baseSel, pseudo, decl: resolved, matched });
+        }
+      } else if (rule instanceof CSSMediaRule) {
+        // Frozen at the size the page had when it was captured.
+        if (window.matchMedia(rule.media.mediaText).matches) walk(rule.cssRules);
+      } else if (rule instanceof CSSSupportsRule) {
+        if (CSS.supports(rule.conditionText)) walk(rule.cssRules);
+      } else if (rule instanceof CSSImportRule) {
+        try {
+          if (rule.styleSheet) walk(rule.styleSheet.cssRules);
+        } catch {}
+      } else if (rule.constructor.name === "CSSLayerBlockRule") {
+        walk((rule as CSSGroupingRule).cssRules);
+      }
+      // @font-face and @keyframes are left out: no fonts are embedded and
+      // nothing animates in a frozen copy.
+    }
+  };
+  walk(rules);
+}
+
+/** Values of the CSS variables the kept rules use, as they resolve on the selection. */
+function resolveVariables(snap: Snapshot, texts: Iterable<string>) {
+  const cs = getComputedStyle(snap.live.top);
+  for (const text of texts) {
+    for (const m of text.matchAll(VAR_REF)) {
+      if (snap.context.has(m[1])) continue;
+      const value = cs.getPropertyValue(m[1]).trim();
+      if (value && !/url\(/.test(value)) snap.context.set(m[1], value);
+    }
+  }
 }
 
 /**
@@ -249,164 +265,331 @@ function commonAncestor(targets: Element[]): Element {
  * was not selected removed, so the items keep their order and layout.
  */
 export function buildSnapshot(targets: Element[]): Snapshot {
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.setAttribute("style", "position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;visibility:hidden");
-  document.documentElement.appendChild(frame);
-  const defaultsCache: Defaults = new Map();
-  const images: PendingImage[] = [];
+  const top = targets.length === 1 ? targets[0] : commonAncestor(targets);
+  const selected = new Set(targets);
+  // Containers between the common ancestor and the selected items.
+  const scaffolding = new Set<Element>();
+  if (targets.length > 1) {
+    for (const t of targets) for (let el = t.parentElement; el && top.contains(el); el = el.parentElement) scaffolding.add(el);
+    scaffolding.add(top);
+  }
 
-  try {
-    const top = targets.length === 1 ? targets[0] : commonAncestor(targets);
-    const selected = new Set(targets);
-    // Containers between the common ancestor and the selected items.
-    const scaffolding = new Set<Element>();
-    if (targets.length > 1) {
-      for (const t of targets) for (let el = t.parentElement; el && top.contains(el); el = el.parentElement) scaffolding.add(el);
-      scaffolding.add(top);
+  const clone = top.cloneNode(true) as Element;
+  const originals = [top, ...top.querySelectorAll("*")];
+  const clones = [clone, ...clone.querySelectorAll("*")];
+  const remove: Element[] = [];
+  const snap: Snapshot = {
+    root: clone,
+    images: [],
+    width: Math.max(...targets.map((t) => t.getBoundingClientRect().width)),
+    background: "#ffffff",
+    unreadSheets: [],
+    warnings: [],
+    candidates: [],
+    cloneOf: new Map(),
+    live: { top, classes: new Set() },
+    context: new Map(),
+    cssImages: new Map(),
+    css: "",
+  };
+  const inlineTexts: string[] = [];
+
+  let skipped: Element | null = null;
+  let inside: Element | null = null; // the selected item currently being walked
+
+  for (let i = 0; i < originals.length; i++) {
+    const o = originals[i];
+    const c = clones[i];
+    if (skipped?.contains(o)) continue;
+    if (inside && !inside.contains(o)) inside = null;
+    if (!inside && selected.has(o)) inside = o;
+    const isScaffold = !inside && scaffolding.has(o);
+
+    const tag = o.tagName.toUpperCase();
+    const unselected = targets.length > 1 && !inside && !isScaffold;
+    const cs = unselected || REMOVE.has(tag) ? null : getComputedStyle(o);
+    // Elements that are not rendered are not part of what was on screen.
+    if (!cs || (cs.display === "none" && o !== top)) {
+      remove.push(c);
+      skipped = o;
+      continue;
+    }
+    if (o !== top && !isScaffold && !selected.has(o) && takesNoSpace(o, cs)) {
+      remove.push(c);
+      skipped = o;
+      continue;
     }
 
-    const clone = top.cloneNode(true) as Element;
-    const originals = [top, ...top.querySelectorAll("*")];
-    const clones = [clone, ...clone.querySelectorAll("*")];
-    const styles = new Map<Element, CSSStyleDeclaration>();
-    const remove: Element[] = [];
+    const authored = o.getAttribute("style") ?? "";
+    sanitizeAttributes(c);
 
-    // Declarations per cloned element; turned into classes once the tree is final.
-    const styled = new Map<Element, string[]>();
-
-    let skipped: Element | null = null;
-    let inside: Element | null = null; // the selected item currently being walked
-
-    for (let i = 0; i < originals.length; i++) {
-      const o = originals[i];
-      const c = clones[i];
-      if (skipped?.contains(o)) continue;
-      if (inside && !inside.contains(o)) inside = null;
-      if (!inside && selected.has(o)) inside = o;
-      const isScaffold = !inside && scaffolding.has(o);
-
-      const tag = o.tagName.toUpperCase();
-      const unselected = targets.length > 1 && !inside && !isScaffold;
-      const cs = unselected || REMOVE.has(tag) ? null : getComputedStyle(o);
-      // Elements that are not rendered are not part of what was on screen.
-      if (!cs || (cs.display === "none" && o !== top)) {
-        remove.push(c);
-        skipped = o;
-        continue;
-      }
-      if (o !== top && !isScaffold && !selected.has(o) && takesNoSpace(o, cs)) {
-        remove.push(c);
-        skipped = o;
-        continue;
-      }
-      styles.set(o, cs);
-      const parentCs = o === top ? null : (o.parentElement && styles.get(o.parentElement)) ?? null;
-
-      const bg = cs.backgroundImage;
-      const bgUrls =
-        !isScaffold && bg && bg !== "none" && bg.includes("url(")
-          ? [...new Set([...bg.matchAll(URL_IN_CSS)].map((m) => m[2]).filter((u) => !u.startsWith("data:")))]
-          : [];
-      const decls = declarations(
-        o,
-        cs,
-        parentCs,
-        defaultStyles(frame, defaultsCache, o.namespaceURI === "http://www.w3.org/2000/svg" ? "div" : o.tagName),
-        { skipBackgroundImage: bgUrls.length > 0 || isScaffold, containerOnly: isScaffold },
-      );
-      sanitizeAttributes(c);
-
-      const rect = o.getBoundingClientRect();
-      if (o instanceof HTMLImageElement) {
-        const url = o.currentSrc || o.src;
-        c.removeAttribute("src");
-        if (url.startsWith("data:image/")) c.setAttribute("src", url);
-        else if (url) {
-          let node: Element = c;
-          images.push({
-            url,
-            displayWidth: rect.width,
-            apply: (dataUrl) => {
-              if (dataUrl) c.setAttribute("src", dataUrl);
-              else if (node === c) {
-                node = placeholder(document, rect.width, rect.height);
-                c.replaceWith(node);
-              }
-            },
-          });
-        }
-      } else if (o instanceof HTMLCanvasElement) {
-        let data: string | null = null;
-        try {
-          data = o.toDataURL("image/webp", 0.8);
-        } catch {}
-        const img = document.createElement("img");
-        if (data) img.setAttribute("src", data);
-        styled.set(img, decls);
-        c.replaceWith(data ? img : placeholder(document, rect.width, rect.height));
-        skipped = o;
-        continue;
-      } else if (o instanceof HTMLVideoElement) {
-        c.replaceWith(placeholder(document, rect.width, rect.height));
-        skipped = o;
-        continue;
-      }
-
-      // CSS background images stay inline on the element, embedded one by one.
-      if (bgUrls.length) {
-        const el = c;
-        const embedded = new Map<string, string | null>();
-        const render = () => {
-          let value = bg;
-          for (const url of bgUrls) {
-            const dataUrl = embedded.get(url);
-            if (!dataUrl) {
-              value = "none";
-              break;
-            }
-            value = value.split(url).join(dataUrl);
-          }
-          el.setAttribute("style", `background-image:${value}`);
-        };
-        render();
-        for (const url of bgUrls) {
-          images.push({
-            url,
-            apply: (dataUrl) => {
-              embedded.set(url, dataUrl);
-              render();
-            },
-          });
-        }
-      }
-
-      if (isComposer(o)) {
-        // Whatever is typed in the composer is not part of the conversation.
-        c.textContent = "";
-        skipped = o;
-      }
+    if (isScaffold) {
+      // Plain structure only: no page classes, just how its children are laid out.
       c.removeAttribute("class");
-      styled.set(c, decls);
+      const layout = CONTAINER_PROPS.map((p) => [p, cs.getPropertyValue(p)])
+        .filter(([p, v]) => v && v !== "normal" && !(p === "display" && v === "block") && !(p === "flex-direction" && v === "row") && v !== "nowrap")
+        .map(([p, v]) => `${p}:${v}`);
+      if (layout.length) c.setAttribute("style", layout.join(";"));
+      continue;
     }
-    for (const el of remove) el.remove();
-    flatten(clone, styled);
-    const css = assignClasses(clone, styled);
+    snap.cloneOf.set(o, c);
 
-    // The first non-transparent background behind the selection, so light
-    // text captured from a dark page stays readable.
-    let background = "#ffffff";
-    for (let el: Element | null = targets[0]; el; el = el.parentElement) {
-      const color = getComputedStyle(el).backgroundColor;
-      if (color && color !== "transparent" && !/rgba\(.*,\s*0\)$/.test(color)) {
-        background = color;
-        break;
+    const rect = o.getBoundingClientRect();
+    if (o instanceof HTMLImageElement) {
+      const url = o.currentSrc || o.src;
+      c.removeAttribute("src");
+      if (url.startsWith("data:image/")) c.setAttribute("src", url);
+      else if (url) {
+        let node: Element = c;
+        snap.images.push({
+          url,
+          displayWidth: rect.width,
+          apply: (dataUrl) => {
+            if (dataUrl) c.setAttribute("src", dataUrl);
+            else if (node === c) {
+              node = placeholder(document, rect.width, rect.height);
+              c.replaceWith(node);
+            }
+          },
+        });
+      }
+    } else if (o instanceof HTMLCanvasElement) {
+      let data: string | null = null;
+      try {
+        data = o.toDataURL("image/webp", 0.8);
+      } catch {}
+      const img = document.createElement("img");
+      if (data) img.setAttribute("src", data);
+      img.setAttribute("class", o.getAttribute("class") ?? "");
+      img.setAttribute("style", `width:${Math.round(rect.width)}px;height:${Math.round(rect.height)}px`);
+      const replacement = data ? img : placeholder(document, rect.width, rect.height);
+      c.replaceWith(replacement);
+      if (data) snap.cloneOf.set(o, img);
+      else snap.cloneOf.delete(o);
+      skipped = o;
+      continue;
+    } else if (o instanceof HTMLVideoElement) {
+      c.replaceWith(placeholder(document, rect.width, rect.height));
+      snap.cloneOf.delete(o);
+      skipped = o;
+      continue;
+    }
+
+    // Inline styles are kept. Anything they would load is embedded, and values
+    // an animation was holding are pinned, since nothing animates in the copy.
+    const extra: string[] = [];
+    for (const animation of (o as HTMLElement).getAnimations?.() ?? []) {
+      const frames = (animation.effect as KeyframeEffect | null)?.getKeyframes?.() ?? [];
+      for (const frame of frames) {
+        for (const key of Object.keys(frame)) {
+          if (key === "offset" || key === "easing" || key === "composite" || key === "computedOffset") continue;
+          const prop = key === "cssFloat" ? "float" : key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+          const value = cs.getPropertyValue(prop);
+          if (value) extra.push(`${prop}:${value}`);
+        }
       }
     }
-    const width = Math.max(...targets.map((t) => t.getBoundingClientRect().width));
-    return { root: clone, css, images, width, background };
-  } finally {
-    frame.remove();
+    if (o === top && (cs.position === "fixed" || cs.position === "absolute" || cs.position === "sticky")) {
+      // The selection sat on top of the page (a dialog); in the copy it is the page.
+      extra.push("position:relative", "inset:auto", "margin:0", "transform:none");
+    }
+    if (authored || extra.length) {
+      const urls = [...new Set([...authored.matchAll(URL_IN_CSS)].map((m) => m[2]).filter((u) => !u.startsWith("data:") && !u.startsWith("#")))];
+      const embedded = new Map<string, string | null>();
+      const render = () => {
+        let value = authored;
+        for (const url of urls) value = value.split(url).join(embedded.get(url) ?? BLANK);
+        const text = [value.trim().replace(/;$/, ""), ...extra].filter(Boolean).join(";");
+        if (text) c.setAttribute("style", text);
+      };
+      render();
+      for (const url of urls) {
+        snap.images.push({
+          url,
+          apply: (dataUrl) => {
+            embedded.set(url, dataUrl);
+            render();
+          },
+        });
+      }
+      inlineTexts.push(authored);
+    }
+
+    if (isComposer(o)) {
+      // Whatever is typed in the composer is not part of the conversation.
+      c.textContent = "";
+      skipped = o;
+    }
+  }
+  for (const el of remove) el.remove();
+
+  // Class names in and around the selection, for cheap rule rejection.
+  for (const o of originals) for (const name of o.classList) snap.live.classes.add(name);
+  for (let el = top.parentElement; el; el = el.parentElement) for (const name of el.classList) snap.live.classes.add(name);
+
+  // What the selection inherits from the page around it.
+  const outer = getComputedStyle(top.parentElement ?? top);
+  for (const prop of INHERITED_CONTEXT) {
+    const value = outer.getPropertyValue(prop);
+    if (value) snap.context.set(prop, value);
+  }
+  // The first non-transparent background behind the selection, so light text
+  // captured from a dark page stays readable.
+  for (let el: Element | null = targets[0]; el; el = el.parentElement) {
+    const color = getComputedStyle(el).backgroundColor;
+    if (color && color !== "transparent" && !/rgba\(.*,\s*0\)$/.test(color)) {
+      snap.background = color;
+      break;
+    }
+  }
+
+  // The page's own style rules that apply to the selection.
+  const sheets = [...document.styleSheets, ...document.adoptedStyleSheets];
+  sheets.forEach((sheet, index) => {
+    if (sheet.disabled) return;
+    if (sheet.media.mediaText && !window.matchMedia(sheet.media.mediaText).matches) return;
+    try {
+      collectRules(snap, sheet.cssRules, index, sheet.href ?? document.baseURI);
+    } catch {
+      // A cross-origin sheet served without CORS headers can't be read here.
+      if (sheet.href) snap.unreadSheets.push({ href: sheet.href, index });
+    }
+  });
+  resolveVariables(snap, [...snap.candidates.map((c) => c.decl), ...inlineTexts]);
+  return snap;
+}
+
+/**
+ * Finishes the styles. Style sheets the page would not let us read are
+ * fetched through the extension and matched against the page as it is now
+ * (this affects appearance only: the content was frozen by buildSnapshot).
+ * Then the kept rules are reduced to what the copy needs.
+ */
+export async function loadStyles(snap: Snapshot, fetchText: (url: string) => Promise<string | null>) {
+  let failed = 0;
+  for (const { href, index } of snap.unreadSheets) {
+    const text = await fetchText(href);
+    if (text === null) {
+      failed++;
+      continue;
+    }
+    try {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(text);
+      const before = snap.candidates.length;
+      collectRules(snap, sheet.cssRules, index, href);
+      resolveVariables(snap, snap.candidates.slice(before).map((c) => c.decl));
+    } catch {
+      failed++;
+    }
+  }
+  if (failed) snap.warnings.push(`${failed} style sheet${failed === 1 ? "" : "s"} could not be read, so this capture may look different from the page.`);
+  finalizeStyles(snap);
+}
+
+/** Removes wrappers that carry nothing: no class, no attributes, no rule, and exactly one element inside. */
+function flatten(root: Element, styledByRule: Set<Element>) {
+  const all = [...root.querySelectorAll("div, span")].reverse(); // innermost first
+  for (const el of all) {
+    if (el === root || !el.parentNode || el.attributes.length > 0 || styledByRule.has(el)) continue;
+    const kids = [...el.childNodes].filter((n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()));
+    if (kids.length === 0) el.remove();
+    else if (kids.length === 1 && kids[0].nodeType === Node.ELEMENT_NODE) el.replaceWith(kids[0]);
+  }
+}
+
+/**
+ * Decides how each kept rule is written in the copy, and shortens class names.
+ *
+ * A rule keeps its own selector when that selector picks exactly the same
+ * elements inside the copy as it did on the page. Otherwise (it depended on
+ * something outside the selection, or on an attribute that was stripped) the
+ * elements it applied to get a generated class and the rule uses that.
+ */
+function finalizeStyles(snap: Snapshot) {
+  const root = snap.root;
+  const attached = (el: Element) => el === root || root.contains(el);
+  const candidates = snap.candidates.sort((a, b) => a.order - b.order);
+
+  flatten(root, new Set(candidates.flatMap((c) => c.matched)));
+
+  type Kept = { order: number; decl: string; pseudo: string; base?: string; generated?: Element[]; pinned?: boolean };
+  const kept: Kept[] = [];
+  const referenced = new Set<string>(); // page classes the kept selectors use
+  const pinnedNames = new Set<string>(); // ...which must keep their names
+  for (const c of candidates) {
+    const live = c.matched.filter(attached);
+    if (!live.length) continue;
+    let standalone: Element[] = [];
+    try {
+      standalone = [...root.querySelectorAll(c.base)];
+      if (root.matches(c.base)) standalone.push(root);
+    } catch {}
+    const liveSet = new Set(live);
+    if (standalone.length === liveSet.size && standalone.every((el) => liveSet.has(el))) {
+      // Renaming is only attempted on selectors simple enough to rewrite safely.
+      const pinned = /["'\\]|\[[^\]]*\./.test(c.base);
+      for (const m of c.base.matchAll(CLASS_TOKEN)) (pinned ? pinnedNames : referenced).add(m[1]);
+      kept.push({ order: c.order, decl: c.decl, pseudo: c.pseudo, base: c.base, pinned });
+    } else {
+      kept.push({ order: c.order, decl: c.decl, pseudo: c.pseudo, generated: [...liveSet] });
+    }
+  }
+  for (const name of pinnedNames) referenced.delete(name);
+
+  // Shortest names for the most used classes.
+  const elements = [root, ...root.querySelectorAll("*")];
+  const uses = new Map<string, number>();
+  for (const el of elements) for (const name of el.classList) if (referenced.has(name)) uses.set(name, (uses.get(name) ?? 0) + 1);
+  let next = 0;
+  const fresh = () => {
+    let name = shortName(next++);
+    while (pinnedNames.has(name)) name = shortName(next++);
+    return name;
+  };
+  const rename = new Map([...uses].sort((a, b) => b[1] - a[1]).map(([name]) => [name, fresh()]));
+
+  const added = new Map<Element, string[]>();
+  const rules: string[] = ["*,*::before,*::after{animation:none!important;transition:none!important}"];
+  let previous: { order: number; decl: string; selectors: string[] } | null = null;
+  const flush = () => {
+    if (previous) rules.push(`${previous.selectors.join(",")}{${previous.decl}}`);
+  };
+  for (const k of kept) {
+    let selector: string;
+    if (k.base !== undefined) {
+      selector = (k.pinned ? k.base : k.base.replace(CLASS_TOKEN, (whole, name: string) => `.${rename.get(name) ?? name}`)) + k.pseudo;
+    } else {
+      const name = fresh();
+      for (const el of k.generated!) added.set(el, [...(added.get(el) ?? []), name]);
+      selector = `.${name}${k.pseudo}`;
+    }
+    // Selectors of the same rule are written together.
+    if (previous && previous.order === k.order && previous.decl === k.decl) previous.selectors.push(selector);
+    else {
+      flush();
+      previous = { order: k.order, decl: k.decl, selectors: [selector] };
+    }
+  }
+  flush();
+
+  // Elements keep only the classes a kept rule uses.
+  for (const el of elements) {
+    const names = [
+      ...[...el.classList].flatMap((name) => (pinnedNames.has(name) ? [name] : rename.has(name) ? [rename.get(name)!] : [])),
+      ...(added.get(el) ?? []),
+    ];
+    if (names.length) el.setAttribute("class", names.join(" "));
+    else el.removeAttribute("class");
+  }
+
+  snap.css = rules.join("");
+  // Images the kept rules use (icon sprites, backgrounds) are embedded too.
+  for (const m of snap.css.matchAll(URL_IN_CSS)) {
+    const url = m[2];
+    if (url.startsWith("data:") || url.startsWith("#") || snap.cssImages.has(url)) continue;
+    snap.cssImages.set(url, null);
+    snap.images.push({ url, apply: (dataUrl) => snap.cssImages.set(url, dataUrl) });
   }
 }
 
@@ -437,7 +620,7 @@ function shareRepeatedImages(root: Element): string {
     }
   };
   share("i-", "src", 'img[src^="data:image/"]', (src) => `content:url("${src}")`);
-  share("b-", "style", '[style^="background-image:"]', (style) => style);
+  share("b-", "style", '[style*="url("]', (style) => style);
   return rules.join("");
 }
 
@@ -451,7 +634,12 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     if (el !== root && REMOVE.has(el.tagName.toUpperCase())) el.remove();
     else for (const a of [...el.attributes]) if (a.name.toLowerCase().startsWith("on") || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
   }
-  const css = (snap.css + shareRepeatedImages(root)).replace(/<\//g, "<\\/");
+  // Every url() left in the rules becomes embedded data; nothing loads remotely.
+  const rules = snap.css.replace(URL_IN_CSS, (whole, _q, url: string) =>
+    url.startsWith("data:") || url.startsWith("#") ? whole : `url("${snap.cssImages.get(url) ?? BLANK}")`,
+  );
+  const css = (rules + shareRepeatedImages(root)).replace(/<\//g, "<\\/");
+  const context = [...snap.context].map(([prop, value]) => `${prop}:${value}`).join(";");
   return (
     `<!doctype html><html lang="${esc(document.documentElement.lang || "en")}"><head><meta charset="utf-8">` +
     `<meta name="safetrail:source-url" content="${esc(meta.sourceUrl)}">` +
@@ -459,13 +647,17 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">` +
     `<title>SafeTrail capture</title><style>${css}</style></head>` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">` +
-    `<div style="width:${Math.round(snap.width)}px;max-width:100%">${root.outerHTML}</div></body></html>\n`
+    `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(context)}">${root.outerHTML}</div></body></html>\n`
   );
 }
 
 /** Rough split of where the bytes of a capture go, for the too-large message. */
-export function sizeBreakdown(html: string, css: string) {
+export function sizeBreakdown(html: string) {
   let images = 0;
   for (const m of html.matchAll(/data:image\/[^"')\s]+/g)) images += m[0].length;
-  return { images, styles: css.length, markup: Math.max(0, html.length - images - css.length) };
+  const style = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+  let styleImages = 0;
+  for (const m of style.matchAll(/data:image\/[^"')\s]+/g)) styleImages += m[0].length;
+  const styles = style.length - styleImages;
+  return { images, styles, markup: Math.max(0, html.length - images - styles) };
 }
