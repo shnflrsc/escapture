@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev data (embedded postgres, local evidence storage)
+/.data/
+!.env.example
+
+# extension build output
+/extension/dist/

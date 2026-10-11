@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="safetrail:fixture-kind" content="facebook_post" />
+    <title>Fake Facebook post (SafeTrail fixture)</title>
+    <style>
+      body { margin: 0; background: #f0f2f5; font-family: Helvetica, Arial, sans-serif; color: #050505; }
+      .bar { background: #fff; border-bottom: 1px solid #dadde1; padding: 12px 24px; font-weight: 700; color: #1877f2; font-size: 22px; }
+      .feed { max-width: 620px; margin: 24px auto; display: grid; gap: 16px; }
+      .post { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.2); padding: 16px; }
+      .head { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+      .avatar { width: 40px; height: 40px; border-radius: 50%; }
+      .name { font-weight: 600; font-size: 15px; }
+      .meta { color: #65676b; font-size: 13px; }
+      .text { font-size: 15px; line-height: 1.4; }
+      .photo { width: 100%; border-radius: 6px; margin-top: 12px; display: block; }
+      .comments { border-top: 1px solid #ced0d4; margin-top: 12px; padding-top: 8px; display: grid; gap: 8px; }
+      .comment { background: #f0f2f5; border-radius: 16px; padding: 8px 12px; font-size: 14px; }
+      .comment b { display: block; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="bar">fakebook <span style="font-size: 12px; color: #65676b">SafeTrail test fixture, not a real site</span></div>
+    <div class="feed">
+      <div class="post" role="article" data-testid="post-1">
+        <div class="head">
+          <img class="avatar" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%2385B8CE'/%3E%3C/svg%3E" />
+          <div>
+            <div class="name">Sample Classmate</div>
+            <div class="meta">12 October 2026 at 14:03 · Public</div>
+          </div>
+        </div>
+        <div class="text">
+          lol look who failed the quiz again. everyone in BSIT 3A knows who i mean. maybe just drop out already
+        </div>
+        <img class="photo" alt="A cropped class photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='588' height='220'%3E%3Crect width='588' height='220' fill='%23CDE2EC'/%3E%3Ccircle cx='294' cy='110' r='60' fill='%2366A3BF'/%3E%3C/svg%3E" />
+        <div class="comments">
+          <div class="comment"><b>Another Student</b>HAHAHA i know exactly who</div>
+          <div class="comment"><b>Third Student</b>tag them next time</div>
+        </div>
+        <!-- These must never run inside the SafeTrail viewer. -->
+        <script>window.__fixtureScriptRan = true;</script>
+        <img alt="" src="data:image/gif;base64,invalid" onerror="window.__fixtureOnerrorRan = true" style="display:none" />
+      </div>
+      <div class="post" role="article" data-testid="post-2">
+        <div class="head">
+          <img class="avatar" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23AACADB'/%3E%3C/svg%3E" />
+          <div>
+            <div class="name">Campus Org Page</div>
+            <div class="meta">11 October 2026 at 09:15 · Public</div>
+          </div>
+        </div>
+        <div class="text">Reminder: enrollment for the midyear term opens Monday.</div>
+      </div>
+    </div>
+  </body>
+</html>
