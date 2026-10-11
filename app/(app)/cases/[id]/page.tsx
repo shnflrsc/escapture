@@ -18,6 +18,9 @@ import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
 import { getCase } from "@/server/services/cases";
 import { listEvidence } from "@/server/services/evidence";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
   const user = await pageUser(["student"]);

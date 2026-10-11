@@ -47,8 +47,9 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
     }
   }
 
+  // method="post" so a submit before hydration can never put the password in the URL.
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate={false}>
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       {error && <Banner tone="attention">{error}</Banner>}
       {mode === "sign-up" && <Input label="Your name" name="name" autoComplete="name" required maxLength={80} />}
       <Input

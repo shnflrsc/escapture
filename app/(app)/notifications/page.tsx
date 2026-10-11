@@ -8,6 +8,9 @@ import { pageUser } from "@/server/page-auth";
 import { listNotifications } from "@/server/services/notifications";
 import Link from "next/link";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function NotificationsPage() {
   const user = await pageUser();
   const { items, unreadCount } = await listNotifications(user);

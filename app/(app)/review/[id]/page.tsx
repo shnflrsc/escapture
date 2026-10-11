@@ -11,6 +11,9 @@ import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
 import { listEvidence } from "@/server/services/evidence";
 import { getReviewCase } from "@/server/services/review";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function ReviewCasePage({ params }: PageProps<"/review/[id]">) {
   const { id } = await params;
   const user = await pageUser(["reviewer"]);

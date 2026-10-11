@@ -3,12 +3,24 @@
 // hosted database. Production uses Supabase Postgres via DATABASE_URL.
 import EmbeddedPostgres from "embedded-postgres";
 import { existsSync } from "node:fs";
+import { connect } from "node:net";
 import path from "node:path";
 
 const dataDir = path.resolve(".data/pg");
 const port = Number(process.env.LOCAL_DB_PORT ?? 54329);
 
+const portOpen = () =>
+  new Promise<boolean>((resolve) => {
+    const s = connect(port, "127.0.0.1");
+    s.once("connect", () => (s.destroy(), resolve(true)));
+    s.once("error", () => resolve(false));
+  });
+
 async function main() {
+  if (await portOpen()) {
+    console.log(`Local Postgres is already running on port ${port}.`);
+    return;
+  }
   const pg = new EmbeddedPostgres({
     databaseDir: dataDir,
     user: "postgres",

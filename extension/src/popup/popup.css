@@ -1,0 +1,36 @@
+@font-face { font-family: "Lora"; font-weight: 600; font-display: swap; src: url("fonts/lora-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+
+:root {
+  --brand-100: #E6F1F6; --brand-200: #CDE2EC; --brand-700: #3A6D88; --brand-800: #2D556B;
+  --canvas: #F7FAFB; --card: #FFFFFF; --subtle: #EFF4F7; --border: #DCE6EB; --border-strong: #7690A0;
+  --ink: #1E2A32; --muted: #55646E; --disabled-bg: #E6EDF1; --disabled-fg: #7D8B94;
+  --escalated-bg: #FDF3E1; --escalated-fg: #8A5A12; --tamper-bg: #E2F3F0; --tamper-fg: #1D6359;
+}
+* { box-sizing: border-box; }
+body { margin: 0; width: 360px; padding: 16px; background: var(--canvas); color: var(--ink); font: 400 15px/24px Nunito, system-ui, sans-serif; }
+header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.brand { font: 600 20px/28px Lora, Georgia, serif; }
+main { display: flex; flex-direction: column; gap: 12px; }
+h1 { margin: 0; font: 600 20px/28px Lora, Georgia, serif; }
+p { margin: 0; }
+.muted, .helper { color: var(--muted); font-size: 13px; line-height: 18px; }
+form { display: flex; flex-direction: column; gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 600; }
+input { height: 44px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 0 12px; font: 400 16px/24px Nunito, system-ui, sans-serif; color: var(--ink); background: var(--card); }
+button, a.btn { height: 44px; border-radius: 10px; border: 1px solid transparent; padding: 0 20px; font: 600 15px/20px Nunito, system-ui, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+button:disabled { background: var(--disabled-bg); color: var(--disabled-fg); cursor: not-allowed; }
+.primary { background: var(--brand-700); color: #fff; } .primary:hover:not(:disabled) { background: var(--brand-800); }
+.soft { background: var(--brand-100); color: var(--brand-800); } .soft:hover { background: var(--brand-200); }
+.ghost { background: transparent; color: var(--brand-700); height: 36px; padding: 0 8px; } .ghost:hover { background: var(--brand-100); }
+:focus-visible { outline: 2px solid var(--brand-700); outline-offset: 2px; }
+.note { border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 22px; }
+.note.attention { background: var(--escalated-bg); color: var(--escalated-fg); }
+.note.info { background: var(--brand-100); color: var(--brand-800); }
+.badge { display: inline-flex; align-self: flex-start; border-radius: 999px; padding: 2px 10px; font-size: 13px; line-height: 20px; font-weight: 600; background: var(--tamper-bg); color: var(--tamper-fg); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.account { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+.account span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a { color: var(--brand-700); font-weight: 600; }

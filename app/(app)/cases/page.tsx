@@ -8,6 +8,9 @@ import { formatDate } from "@/lib/format";
 import { pageUser } from "@/server/page-auth";
 import { listCases } from "@/server/services/cases";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function CasesPage() {
   const user = await pageUser(["student"]);
   const items = await listCases(user);

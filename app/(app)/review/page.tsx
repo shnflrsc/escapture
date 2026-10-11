@@ -29,6 +29,7 @@ function Column({ title, hint, items, now }: { title: string; hint: string; item
             <h3 className="min-w-0 text-[17px] leading-6 break-words group-hover:underline">{c.title}</h3>
             <StatusBadge status={c.status} />
           </div>
+          {c.description && <p className="text-sm leading-[22px]">{c.description}</p>}
           <p className="text-sm leading-[22px] text-muted">
             Reported by {c.reporterName} · <span className="tnum">{c.evidenceCount}</span> evidence{" "}
             {c.evidenceCount === 1 ? "item" : "items"} · <span className="tnum">{c.collaboratorCount}</span>{" "}
@@ -44,6 +45,9 @@ function Column({ title, hint, items, now }: { title: string; hint: string; item
     </section>
   );
 }
+
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
 
 export default async function ReviewBoardPage() {
   const user = await pageUser(["reviewer"]);

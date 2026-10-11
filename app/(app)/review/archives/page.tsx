@@ -9,6 +9,9 @@ import { pageUser } from "@/server/page-auth";
 import { listArchives } from "@/server/services/review";
 import { excerpt } from "@/server/services/notifications";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function ArchivesPage({ searchParams }: PageProps<"/review/archives">) {
   const user = await pageUser(["reviewer"]);
   const raw = (await searchParams).q;

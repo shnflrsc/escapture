@@ -42,6 +42,7 @@ export async function listBoard(actor: Actor, status?: "escalated" | "under_revi
     .select({
       id: cases.id,
       title: cases.title,
+      description: cases.description,
       status: cases.status,
       escalatedAt: cases.escalatedAt,
       reporterName: user.name,
@@ -53,6 +54,7 @@ export async function listBoard(actor: Actor, status?: "escalated" | "under_revi
   const c = await counts(rows.map((r) => r.id));
   return rows.map((r) => ({
     ...r,
+    description: excerpt(r.description, 160),
     evidenceCount: c.evidence.get(r.id) ?? 0,
     collaboratorCount: c.collaborators.get(r.id) ?? 0,
   }));

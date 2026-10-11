@@ -7,6 +7,9 @@ import { cn } from "@/lib/cn";
 import { pageUser } from "@/server/page-auth";
 import { listEvidence } from "@/server/services/evidence";
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
   const user = await pageUser(["student"]);
   const tab = (await searchParams).tab === "shared" ? "shared" : "mine";

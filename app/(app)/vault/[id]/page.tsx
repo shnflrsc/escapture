@@ -17,6 +17,9 @@ const CHECK_LABELS: Record<string, string> = {
   "injected-elements": "No injected scripts or styles in the captured area",
 };
 
+// Per-user page: allowed to wait for the server on navigation.
+export const instant = false;
+
 export default async function EvidencePage({ params }: PageProps<"/vault/[id]">) {
   const { id } = await params;
   const user = await pageUser(["student", "reviewer"]);

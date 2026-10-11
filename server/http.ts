@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { ZodError } from "zod";
 import { AppError } from "./errors";
 
@@ -44,6 +45,9 @@ export function handle<P = object>(
     try {
       return await fn(req, await ctx.params);
     } catch (err) {
+      // Let Next.js handle its own control-flow errors (for example the
+      // prerender bailout thrown by headers() during `next build`).
+      unstable_rethrow(err);
       return errorResponse(err);
     }
   };

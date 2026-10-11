@@ -106,6 +106,8 @@ async function main() {
     roleGrab.status,
     grabBoard.status,
   ]);
+  const promote = await call(maya.token, "POST", "/api/auth/update-user", { role: "reviewer" });
+  check("role cannot be changed through the profile-update endpoint", (await call(maya.token, "GET", "/api/review/cases")).status === 403, promote.status);
   check("unauthenticated API calls get 401", (await call(null, "GET", "/api/evidence")).status === 401);
   const M = maya.token!, J = jules.token!, A = alex.token!;
 

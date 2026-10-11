@@ -29,7 +29,7 @@ export function RedeemForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       {error && <Banner tone="attention">{error}</Banner>}
       <Input label="Link password" name="password" type="password" required autoComplete="off" />
       <Button type="submit" loading={loading}>

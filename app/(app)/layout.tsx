@@ -4,6 +4,11 @@ import { PageSkeleton } from "@/components/ui/feedback";
 import { pageUser } from "@/server/page-auth";
 import { unreadCount } from "@/server/services/notifications";
 
+// Every page here is per-user and reads the session, so navigations are allowed
+// to wait for the server instead of being prerendered (see the Next.js
+// "instant" route segment config).
+export const instant = false;
+
 // The session is request data, so the shell streams in behind Suspense.
 async function Shell({ children }: { children: React.ReactNode }) {
   const user = await pageUser();
