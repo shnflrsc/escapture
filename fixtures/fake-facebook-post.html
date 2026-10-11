@@ -11,7 +11,8 @@
       .post { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.2); padding: 16px; }
       .head { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
       .avatar { width: 40px; height: 40px; border-radius: 50%; }
-      .name { font-weight: 600; font-size: 15px; }
+      .name { font-weight: 600; font-size: 15px; margin: 0; font-family: inherit; }
+      .actions { display: flex; gap: 24px; border-top: 1px solid #ced0d4; margin-top: 12px; padding-top: 8px; color: #65676b; font-size: 14px; font-weight: 600; }
       .meta { color: #65676b; font-size: 13px; }
       .text { font-size: 15px; line-height: 1.4; }
       .photo { width: 100%; border-radius: 6px; margin-top: 12px; display: block; }
@@ -23,11 +24,11 @@
   <body>
     <div class="bar">fakebook <span style="font-size: 12px; color: #65676b">SafeTrail test fixture, not a real site</span></div>
     <div class="feed">
-      <div class="post" role="article" data-testid="post-1">
+      <div class="post" data-testid="post-1">
         <div class="head">
           <img class="avatar" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%2385B8CE'/%3E%3C/svg%3E" />
           <div>
-            <div class="name">Sample Classmate</div>
+            <div data-ad-rendering-role="profile_name"><h4 class="name">Sample Classmate</h4></div>
             <div class="meta">12 October 2026 at 14:03 · Public</div>
           </div>
         </div>
@@ -35,20 +36,22 @@
           lol look who failed the quiz again. everyone in BSIT 3A knows who i mean. maybe just drop out already
         </div>
         <img class="photo" alt="A cropped class photo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='588' height='220'%3E%3Crect width='588' height='220' fill='%23CDE2EC'/%3E%3Ccircle cx='294' cy='110' r='60' fill='%2366A3BF'/%3E%3C/svg%3E" />
+        <div class="actions"><span role="button"><i data-ad-rendering-role="like_button"></i>Like</span><span role="button"><i data-ad-rendering-role="comment_button"></i>Comment</span><span role="button"><i data-ad-rendering-role="share_button"></i>Share</span></div>
         <div class="comments">
           <div class="comment" role="article"><b>Another Student</b>HAHAHA i know exactly who</div>
           <div class="comment" role="article"><b>Third Student</b>tag them next time</div>
         </div>
       </div>
-      <div class="post" role="article" data-testid="post-2">
+      <div class="post" data-testid="post-2">
         <div class="head">
           <img class="avatar" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23AACADB'/%3E%3C/svg%3E" />
           <div>
-            <div class="name">Campus Org Page</div>
+            <div data-ad-rendering-role="profile_name"><h4 class="name">Campus Org Page</h4></div>
             <div class="meta">11 October 2026 at 09:15 · Public</div>
           </div>
         </div>
         <div class="text">Reminder: enrollment for the midyear term opens Monday.</div>
+        <div class="actions"><span role="button"><i data-ad-rendering-role="like_button"></i>Like</span><span role="button"><i data-ad-rendering-role="comment_button"></i>Comment</span><span role="button"><i data-ad-rendering-role="share_button"></i>Share</span></div>
       </div>
     </div>
     <!-- These must never run inside the SafeTrail viewer. -->

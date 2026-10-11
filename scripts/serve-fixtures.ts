@@ -8,9 +8,12 @@ const root = path.resolve("fixtures");
 const port = Number(process.env.FIXTURES_PORT ?? 4100);
 
 createServer(async (req, res) => {
-  const name = path.basename(new URL(req.url ?? "/", "http://x").pathname) || "index.html";
+  const name = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname).replace(/^\/+/, "") || "index.html";
+  const file = path.resolve(root, name);
   try {
-    const body = await readFile(path.join(root, name));
+    // Never serve anything outside fixtures/.
+    if (!file.startsWith(root + path.sep)) throw new Error("outside root");
+    const body = await readFile(file);
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
     res.end(body);
   } catch {

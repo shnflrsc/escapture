@@ -12,6 +12,12 @@ declare global {
 
 const HOST_TAG = "safetrail-capture";
 
+// Markers Facebook keeps on its own pages. See Session.snap for how they are used.
+const POST_ACTIONS =
+  '[data-ad-rendering-role="like_button"], [data-ad-rendering-role="comment_button"], [data-ad-rendering-role="share_button"]';
+const POST_HEADER = '[data-ad-rendering-role="profile_name"], h2, h3, h4';
+const MESSAGE_ROW = '[data-pagelet="MWMessageRow"], [role="row"]';
+
 // Images are embedded at the size they are shown. These caps are tried in
 // order when a capture is still over the upload limit.
 const DEFAULT_LEVEL = { maxWidth: 1280, quality: 0.8 };
@@ -143,26 +149,67 @@ class Session {
   // ---- Choosing what a click means ----
 
   /**
-   * Grows a clicked element to the thing the student means. This relies on
-   * ARIA roles and list structure, not Facebook's class names, which change.
+   * Grows a clicked element to the thing the student means. It relies on
+   * markers Facebook keeps for its own purposes (rendering roles, pagelet
+   * names, ARIA roles), not on its generated class names, which change often.
    * The Wider and Narrower buttons correct it when the guess is off.
+   *
+   * Observed on real pages (October 2026):
+   * - A post is NOT role="article"; only its comments are. A post is the
+   *   smallest element holding both its author heading and its action bar
+   *   (Like / Comment / Share). That holds in the feed, in the pop-up view and
+   *   on a post's own page, and it includes the comments when they are open.
+   * - On a photo's own page the post text sits in a side panel
+   *   (role="complementary") beside the photo (role="main").
+   * - A message is data-pagelet="MWMessageRow": picture, name and bubble.
    */
   private snap(el: Element, exact: boolean): Element {
     if (exact) return el;
     if (this.kind === "facebook_post") {
-      // Comments are articles nested inside the post's article: take the outermost.
-      let post: Element | null = null;
-      for (let a = el.closest('[role="article"]'); a; a = a.parentElement?.closest('[role="article"]') ?? null) post = a;
-      return post ?? el;
+      for (let a: Element | null = el; a && a !== document.body; a = a.parentElement) {
+        if (!a.querySelector(POST_ACTIONS) || !a.querySelector(POST_HEADER)) continue;
+        // Take the photo together with its side panel.
+        const panel = a.closest('[role="complementary"]');
+        const frame = panel?.parentElement;
+        if (frame && frame !== document.body && frame.querySelector(':scope > [role="main"]')) return frame;
+        return a;
+      }
+      // No markers (the layout changed, or this is not a post): fall back to
+      // a feed unit, then to the outermost article.
+      const unit = el.closest("[aria-posinset]");
+      if (unit) return unit;
+      let article: Element | null = null;
+      for (let x = el.closest('[role="article"]'); x; x = x.parentElement?.closest('[role="article"]') ?? null) article = x;
+      return article ?? el;
     }
     // One message is a whole row: picture, name and bubble together.
-    const row = el.closest('[role="row"]');
+    const row = el.closest(MESSAGE_ROW) ?? el.closest('[role="article"]');
     if (row) return row;
     // Otherwise, the nearest ancestor that is one of many siblings in a list.
     for (let a: Element | null = el; a?.parentElement && a.parentElement !== document.body; a = a.parentElement) {
       if (a.parentElement.children.length >= 5 && a.getBoundingClientRect().width >= 200) return a;
     }
     return el;
+  }
+
+  /**
+   * Everything between two selected messages. Rows are often wrapped one by
+   * one, so this walks the children of their common container.
+   */
+  private between(from: Element, to: Element): Element[] {
+    let top: Element | null = from;
+    while (top && !top.contains(to)) top = top.parentElement;
+    if (!top || top === from) return [];
+    const branch = (el: Element) => [...top.children].find((c) => c.contains(el));
+    const kids = [...top.children];
+    const [i, j] = [kids.indexOf(branch(from)!), kids.indexOf(branch(to)!)].sort((x, y) => x - y);
+    return kids.slice(i + 1, j).flatMap((kid) => {
+      if (kid.matches(MESSAGE_ROW)) return [kid];
+      const rows = [...kid.querySelectorAll(MESSAGE_ROW)];
+      if (rows.length) return rows;
+      // Not a message row (a date divider, or an unloaded placeholder).
+      return kid.getBoundingClientRect().height > 0 && kid.textContent?.trim() ? [kid] : [];
+    });
   }
 
   private pickAt(e: MouseEvent): { leaf: Element; el: Element } | null {
@@ -180,18 +227,14 @@ class Session {
       this.items = [pick];
     } else {
       const last = this.items[this.items.length - 1];
-      const parent = pick.el.parentElement;
-      if (range && last && parent && last.el.parentElement === parent) {
+      this.items = this.items.filter((i) => !pick.el.contains(i.el));
+      if (range && last && last.el.isConnected) {
         // Shift-click: everything between the last selected message and this one.
-        const siblings = [...parent.children];
-        const [from, to] = [siblings.indexOf(last.el), siblings.indexOf(pick.el)].sort((a, b) => a - b);
-        for (const el of siblings.slice(from, to + 1)) {
-          if (!this.items.some((i) => i.el === el)) this.items.push({ leaf: el, el });
+        for (const el of this.between(last.el, pick.el)) {
+          if (!this.items.some((i) => i.el === el || i.el.contains(el))) this.items.push({ leaf: el, el });
         }
-      } else {
-        this.items = this.items.filter((i) => !pick.el.contains(i.el));
-        this.items.push(pick);
       }
+      this.items.push(pick);
     }
     this.renderBar();
   }
