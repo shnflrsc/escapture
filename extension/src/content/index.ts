@@ -1,6 +1,6 @@
 // Isolated-world content script, injected on demand when the student chooses
 // "Capture this page": element picker, tamper checks, snapshot building.
-import { captureHost, MAX_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
+import { captureHost, gzip, MAX_BYTES, MAX_UPLOAD_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
 import { queryGuard, runChecksAll, type GuardState } from "./checks";
 import { buildSnapshot, serialize, sizeBreakdown } from "./snapshot";
 
@@ -413,7 +413,6 @@ class Session {
     // the size it is shown on the page. If the result is over the upload
     // limit, embed them again smaller before giving up.
     const meta = { sourceUrl: location.href, clientCapturedAt, kind };
-    const size = (text: string) => new TextEncoder().encode(text).byteLength;
     const cache = new Map<string, Promise<string | null>>();
     const fetchOne = (url: string, maxWidth: number | undefined, quality: number) => {
       let abs = url;
@@ -449,18 +448,25 @@ class Session {
       return serialize(snap, meta);
     };
 
+    // Two limits: the stored file, and the compressed upload.
+    const measure = async (text: string) => {
+      const raw = new TextEncoder().encode(text);
+      return { raw: raw.byteLength, packed: (await gzip(raw)).byteLength };
+    };
+    const fits = (m: { raw: number; packed: number }) => m.raw <= MAX_BYTES && m.packed <= MAX_UPLOAD_BYTES;
     let html = await embed(DEFAULT_LEVEL);
+    let measured = await measure(html);
     for (const level of SHRINK_LEVELS) {
-      if (size(html) <= MAX_BYTES || snap.images.length === 0) break;
+      if (fits(measured) || snap.images.length === 0) break;
       html = await embed(level);
+      measured = await measure(html);
     }
-    const bytes = size(html);
-    if (bytes > MAX_BYTES) {
+    if (!fits(measured)) {
       const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
       const parts = sizeBreakdown(html, snap.css);
       const message =
-        `This capture is too large (${mb(bytes)} MB, and the limit is ${mb(MAX_BYTES)} MB). ` +
-        `Images take ${mb(parts.images)} MB, text and layout ${mb(parts.markup + parts.styles)} MB. ` +
+        `This capture is too large to upload (${mb(measured.packed)} MB compressed, and the limit is ${mb(MAX_UPLOAD_BYTES)} MB). ` +
+        `Images take ${mb(parts.images)} MB, text and layout ${mb(parts.markup + parts.styles)} MB before compression. ` +
         (targets.length > 1 ? "Select fewer items and capture the rest separately." : "Select a smaller area.");
       const { panel, closeBtn } = this.panel("Not captured", h("p", { class: "note attention" }, message));
       panel.append(h("div", { class: "row" }, closeBtn));

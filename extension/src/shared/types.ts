@@ -37,7 +37,15 @@ export type Message =
 
 export type Reply<T = unknown> = ({ ok: true } & T) | { ok: false; error: string };
 
-export const MAX_BYTES = 4 * 1024 * 1024;
+/** Largest capture the server stores (the HTML itself). */
+export const MAX_BYTES = 12 * 1024 * 1024;
+/** Largest upload: the capture travels gzip-compressed and must fit in one request. */
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024 - 128 * 1024;
+
+export async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
 
 /** Pages the extension will capture from. Everything else is refused. */
 export function captureHost(url: string): "facebook" | "messenger" | "fixture" | null {

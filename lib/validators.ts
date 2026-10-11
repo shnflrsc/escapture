@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const MAX_EVIDENCE_BYTES = 4 * 1024 * 1024;
+/** Largest evidence file stored (the HTML itself). */
+export const MAX_EVIDENCE_BYTES = 12 * 1024 * 1024;
+/** Largest upload request body. Captures may arrive gzip-compressed to fit in it. */
+export const MAX_UPLOAD_REQUEST_BYTES = 4 * 1024 * 1024;
 
 const email = z.string().trim().toLowerCase().pipe(z.email("Please enter a valid email."));
 const acknowledge = z.literal(true, {

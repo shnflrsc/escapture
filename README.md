@@ -83,7 +83,7 @@ APP_URL=https://your-deployment.example pnpm ext:build   # for a deployed app
 
 To try it without Facebook, run `pnpm fixtures:serve` and capture from http://localhost:4100/fake-facebook-post.html or http://localhost:4100/fake-messenger.html (local builds only).
 
-What the capture does: runs the tamper checks and clones the selection in the same task, records computed styles as shared classes (one per distinct declaration, so size barely grows with the number of elements), leaves out anything not rendered, embeds images as data URIs at the size they are shown (animated images become their first frame, and everything is shrunk further if the capture is still over 4 MB), strips scripts, event handlers, forms and anything that could load remotely, wraps the result in a minimal HTML document, hashes the exact bytes and uploads them. The server recomputes the hash and rejects a mismatch.
+What the capture does: runs the tamper checks and clones the selection in the same task, records computed styles as shared classes (one per distinct declaration, or one per repeated element shape, so size barely grows with the number of elements), leaves out anything not rendered or taking no space, removes wrappers that carry nothing, embeds images as data URIs at the size they are shown (each repeated image is stored once; animated images become their first frame; everything is shrunk further if the capture still does not fit), strips scripts, event handlers, forms and anything that could load remotely, wraps the result in a minimal HTML document, hashes the exact bytes and uploads them. The server recomputes the hash and rejects a mismatch.
 
 Tamper checks (capture is refused if any fails): page editing mode (`designMode`) is on or was switched on earlier on this page; the selected area, an ancestor or a descendant is `contenteditable` (the message composer is exempt and its text is left out of the capture); userscript-manager markers are present; a `<script>` or `<style>` element sits inside the selected area.
 
@@ -130,7 +130,7 @@ Rules the code holds to:
 3. Deploy the Next.js app with the environment variables above, with `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` set to the deployed origin.
 4. Rebuild the extension with `APP_URL` set to the deployed origin and reload it.
 
-Uploads are capped at 4 MB, which fits Vercel's request-body limit.
+A stored capture can be up to 12 MB. It is uploaded gzip-compressed, and the compressed upload must stay under 4 MB, which fits Vercel's request-body limit. The hash is always of the unpacked HTML, which is what is stored. One thing to check when you deploy: serverless hosts also limit response size (about 4.5 MB on Vercel for non-streamed responses), so confirm that a capture larger than that still opens in the viewer there. If it does not, lower `MAX_EVIDENCE_BYTES` in `lib/validators.ts` and `MAX_BYTES` in `extension/src/shared/types.ts` back to 4 MB.
 
 ## Known limitations
 

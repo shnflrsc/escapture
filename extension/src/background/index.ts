@@ -2,7 +2,9 @@
 // app (it has host permission, so no CORS issue), image fetching, hashing, upload.
 import {
   captureHost,
+  gzip,
   MAX_BYTES,
+  MAX_UPLOAD_BYTES,
   type AuthState,
   type LastCapture,
   type Message,
@@ -153,14 +155,18 @@ async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promis
   const { token } = await store.get();
   if (!token) return fail("Sign in to SafeTrail in the extension, then capture again.");
 
-  // The exact bytes that are uploaded are the bytes that are hashed.
+  // The hash is of the exact bytes the server will store: the HTML itself.
   const bytes = new TextEncoder().encode(msg.html);
   if (bytes.byteLength > MAX_BYTES) return fail("This capture is too large. Select a smaller area.", true);
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   const sha256 = [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
+  // It travels gzip-compressed; the server unpacks it and checks the hash.
+  const packed = await gzip(bytes);
+  if (packed.byteLength > MAX_UPLOAD_BYTES) return fail("This capture is too large. Select a smaller area.", true);
 
   const form = new FormData();
-  form.set("file", new File([bytes as BlobPart], "capture.html", { type: "text/html" }));
+  form.set("file", new File([packed as BlobPart], "capture.html.gz", { type: "application/gzip" }));
+  form.set("encoding", "gzip");
   form.set("sha256", sha256);
   form.set("kind", msg.kind);
   form.set("sourceUrl", msg.sourceUrl);

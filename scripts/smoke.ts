@@ -4,6 +4,7 @@
 //   pnpm dev   (in one terminal)
 //   pnpm smoke
 import { readFile } from "node:fs/promises";
+import { gzipSync } from "node:zlib";
 import { sha256Hex } from "@/lib/hash";
 import { pg } from "@/server/db";
 import { ensureUser } from "./lib/users";
@@ -137,6 +138,26 @@ async function main() {
   check("reviewers cannot upload evidence", (await call(R, "POST", "/api/evidence", uploadForm(mayaBytes, sha256Hex(mayaBytes), "facebook_post"))).status === 403);
   const big = new Uint8Array(4 * 1024 * 1024 + 1024).fill(32);
   check("oversized capture -> 413", (await call(M, "POST", "/api/evidence", uploadForm(big, sha256Hex(big), "facebook_post"))).status === 413);
+
+  // Compressed uploads: the hash is still of the unpacked HTML, which is what gets stored.
+  const gzForm = (bytes: Uint8Array, sha256: string) => {
+    const form = uploadForm(bytes, sha256, "facebook_post");
+    form.set("file", new File([gzipSync(bytes) as BlobPart], "capture.html.gz", { type: "application/gzip" }));
+    form.set("encoding", "gzip");
+    return form;
+  };
+  const gzBytes = tag(post);
+  const gzUp = await call(M, "POST", "/api/evidence", gzForm(gzBytes, sha256Hex(gzBytes)));
+  check("gzip upload -> 201, hashed over the unpacked file", gzUp.status === 201 && gzUp.body.sha256 === sha256Hex(gzBytes) && gzUp.body.byteSize === gzBytes.byteLength, gzUp.body);
+  check("the unpacked file is what is stored", sha256Hex(await (await fetch(`${BASE}/api/evidence/${gzUp.body.id}/file`, { headers: { Authorization: `Bearer ${M}` } })).bytes()) === sha256Hex(gzBytes));
+  check("gzip upload with a wrong hash -> 422", (await call(M, "POST", "/api/evidence", gzForm(gzBytes, "0".repeat(64)))).status === 422);
+  const bomb = new Uint8Array(13 * 1024 * 1024).fill(32);
+  check("a small upload that unpacks past the limit -> 413", (await call(M, "POST", "/api/evidence", gzForm(bomb, sha256Hex(bomb)))).status === 413);
+  const notGz = uploadForm(gzBytes, sha256Hex(gzBytes), "facebook_post");
+  notGz.set("file", new File([gzBytes as BlobPart], "capture.html.gz", { type: "application/gzip" }));
+  notGz.set("encoding", "gzip");
+  check("a corrupt gzip upload -> 400", (await call(M, "POST", "/api/evidence", notGz)).status === 400);
+  await call(M, "DELETE", `/api/evidence/${gzUp.body.id}`);
 
   const file = await call(M, "GET", `/api/evidence/${mayaEv}/file`);
   const csp = file.headers.get("content-security-policy") ?? "";
