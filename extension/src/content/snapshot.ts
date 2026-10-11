@@ -21,6 +21,7 @@ const INHERITED = new Set([
 const SKIP = /(^|-)(inline-size|block-size)$|^(perspective-origin|transform-origin|inset-inline|inset-block|margin-inline|margin-block|padding-inline|padding-block|border-inline|border-block|animation|transition|cursor|pointer-events|user-select|will-change|caret-color|-webkit-tap-highlight-color|-webkit-locale|d$|cx$|cy$|r$|rx$|ry$|x$|y$)/;
 const REPLACED = new Set(["IMG", "SVG", "CANVAS", "VIDEO", "PICTURE", "INPUT", "TEXTAREA", "SELECT", "BUTTON"]);
 
+/** `apply` may be called again with a smaller version of the same image. */
 export type PendingImage = { url: string; apply: (dataUrl: string | null) => void };
 
 type Defaults = Map<string, Map<string, string>>;
@@ -46,13 +47,14 @@ function inlineStyle(
   cs: CSSStyleDeclaration,
   parentCs: CSSStyleDeclaration | null,
   defaults: Map<string, string>,
+  skipBackgroundImage: boolean,
 ): string {
   const tag = original.tagName.toUpperCase();
   const hasText = original.childNodes.length > 0;
   let out = "";
   for (let i = 0; i < cs.length; i++) {
     const prop = cs[i];
-    if (SKIP.test(prop)) continue;
+    if (SKIP.test(prop) || (skipBackgroundImage && prop === "background-image")) continue;
     const value = cs.getPropertyValue(prop);
     if (!value || value === defaults.get(prop)) {
       // Still needed if the parent sets an inherited property to something else.
@@ -124,7 +126,7 @@ function sanitizeAttributes(el: Element) {
  * Builds the frozen clone synchronously (call right after the tamper checks,
  * in the same task). Images still to embed are returned for async fetching.
  */
-export function buildSnapshot(target: Element): { root: Element; images: PendingImage[]; width: number; background: string } {
+export function buildSnapshot(target: Element): { root: Element; css: string; images: PendingImage[]; width: number; background: string } {
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.setAttribute("style", "position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;visibility:hidden");
@@ -138,19 +140,44 @@ export function buildSnapshot(target: Element): { root: Element; images: Pending
     const clones = [clone, ...clone.querySelectorAll("*")];
     const styles = new Map<Element, CSSStyleDeclaration>();
     const remove: Element[] = [];
+    // Identical style strings are shared through one generated class each.
+    // Facebook repeats the same styles on thousands of elements, so this is
+    // what keeps a real post under the upload limit.
+    const classes = new Map<string, string>();
+    const classFor = (style: string) => {
+      let name = classes.get(style);
+      if (!name) classes.set(style, (name = `s${classes.size.toString(36)}`));
+      return name;
+    };
+    let skipped: Element | null = null;
 
     for (let i = 0; i < originals.length; i++) {
       const o = originals[i];
       const c = clones[i];
+      if (skipped?.contains(o)) continue;
       const tag = o.tagName.toUpperCase();
-      if (REMOVE.has(tag)) {
+      const cs = REMOVE.has(tag) ? null : getComputedStyle(o);
+      // Elements that are not rendered are not part of what was on screen.
+      if (!cs || (cs.display === "none" && o !== target)) {
         remove.push(c);
+        skipped = o;
         continue;
       }
-      const cs = getComputedStyle(o);
       styles.set(o, cs);
       const parentCs = o === target ? null : (o.parentElement && styles.get(o.parentElement)) ?? null;
-      let style = inlineStyle(o, cs, parentCs, defaultStyles(frame, defaultsCache, o.namespaceURI === "http://www.w3.org/2000/svg" ? "div" : o.tagName));
+
+      const bg = cs.backgroundImage;
+      const bgUrls =
+        bg && bg !== "none" && bg.includes("url(")
+          ? [...new Set([...bg.matchAll(URL_IN_CSS)].map((m) => m[2]).filter((u) => !u.startsWith("data:")))]
+          : [];
+      let style = inlineStyle(
+        o,
+        cs,
+        parentCs,
+        defaultStyles(frame, defaultsCache, o.namespaceURI === "http://www.w3.org/2000/svg" ? "div" : o.tagName),
+        bgUrls.length > 0,
+      );
       sanitizeAttributes(c);
 
       const rect = o.getBoundingClientRect();
@@ -159,57 +186,72 @@ export function buildSnapshot(target: Element): { root: Element; images: Pending
         c.removeAttribute("src");
         if (url.startsWith("data:image/")) c.setAttribute("src", url);
         else if (url) {
+          let node: Element = c;
           images.push({
             url,
             apply: (dataUrl) => {
               if (dataUrl) c.setAttribute("src", dataUrl);
-              else c.replaceWith(placeholder(document, rect.width, rect.height));
+              else if (node === c) {
+                node = placeholder(document, rect.width, rect.height);
+                c.replaceWith(node);
+              }
             },
           });
         }
       } else if (o instanceof HTMLCanvasElement) {
         let data: string | null = null;
         try {
-          data = o.toDataURL("image/png");
+          data = o.toDataURL("image/jpeg", 0.8);
         } catch {}
         const img = document.createElement("img");
         if (data) img.setAttribute("src", data);
-        img.setAttribute("style", style);
+        img.setAttribute("class", classFor(style));
         c.replaceWith(data ? img : placeholder(document, rect.width, rect.height));
+        skipped = o;
         continue;
       } else if (o instanceof HTMLVideoElement) {
         c.replaceWith(placeholder(document, rect.width, rect.height));
+        skipped = o;
         continue;
       }
 
-      // CSS background images.
-      const bg = cs.backgroundImage;
-      if (bg && bg !== "none" && bg.includes("url(")) {
-        const urls = [...bg.matchAll(URL_IN_CSS)].map((m) => m[2]).filter((u) => !u.startsWith("data:"));
-        if (urls.length) {
-          const el = c;
-          for (const url of urls) {
-            images.push({
-              url,
-              apply: (dataUrl) => {
-                const current = el.getAttribute("style") ?? "";
-                el.setAttribute(
-                  "style",
-                  dataUrl ? current.split(url).join(dataUrl) : current.replace(/background-image:[^;]*;/, "background-image:none;"),
-                );
-              },
-            });
+      // CSS background images stay inline on the element, embedded one by one.
+      if (bgUrls.length) {
+        const el = c;
+        const embedded = new Map<string, string | null>();
+        const render = () => {
+          let value = bg;
+          for (const url of bgUrls) {
+            const dataUrl = embedded.get(url);
+            if (!dataUrl) {
+              value = "none";
+              break;
+            }
+            value = value.split(url).join(dataUrl);
           }
+          el.setAttribute("style", `background-image:${value}`);
+        };
+        render();
+        for (const url of bgUrls) {
+          images.push({
+            url,
+            apply: (dataUrl) => {
+              embedded.set(url, dataUrl);
+              render();
+            },
+          });
         }
       }
 
       if (isComposer(o)) {
         // Whatever is typed in the composer is not part of the conversation.
         c.textContent = "";
+        skipped = o;
       }
       // Strip any url() that is not an embedded image so nothing loads remotely.
-      style = style.replace(/([a-z-]+):[^;]*url\((?!["']?data:image\/)[^;]*;/g, (m, prop) => (prop === "background-image" ? m : ""));
-      if (style) c.setAttribute("style", style);
+      style = style.replace(/[a-z-]+:[^;]*url\((?!["']?data:image\/)[^;]*;/g, "");
+      if (style) c.setAttribute("class", classFor(style));
+      else c.removeAttribute("class");
     }
     for (const el of remove) el.remove();
 
@@ -223,7 +265,8 @@ export function buildSnapshot(target: Element): { root: Element; images: Pending
         break;
       }
     }
-    return { root: clone, images, width: target.getBoundingClientRect().width, background };
+    const css = [...classes].map(([style, name]) => `.${name}{${style}}`).join("\n");
+    return { root: clone, css, images, width: target.getBoundingClientRect().width, background };
   } finally {
     frame.remove();
   }
@@ -233,7 +276,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").repl
 
 /** Wraps the clone in a minimal standalone document. */
 export function serialize(
-  snap: { root: Element; width: number; background: string },
+  snap: { root: Element; css: string; width: number; background: string },
   meta: { sourceUrl: string; clientCapturedAt: string; kind: Kind },
 ): string {
   // Final pass: nothing active may survive, whatever happened while embedding.
@@ -247,7 +290,7 @@ export function serialize(
     `<meta name="safetrail:source-url" content="${esc(meta.sourceUrl)}">\n` +
     `<meta name="safetrail:client-captured-at" content="${esc(meta.clientCapturedAt)}">\n` +
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">\n` +
-    `<title>SafeTrail capture</title>\n</head>\n` +
+    `<title>SafeTrail capture</title>\n<style>\n${snap.css.replace(/<\//g, "<\\/")}\n</style>\n</head>\n` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">\n` +
     `<div style="width:${Math.round(snap.width)}px;max-width:100%">${body}</div>\n</body>\n</html>\n`
   );

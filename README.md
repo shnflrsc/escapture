@@ -36,7 +36,7 @@ DIRECT_URL=postgres://postgres:postgres@localhost:54329/safetrail
 BETTER_AUTH_SECRET=<32+ random bytes, e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`>
 ```
 
-Leave `SUPABASE_URL` empty and evidence files are stored on local disk under `.data/storage`. `pnpm db:local` runs a real Postgres from the `embedded-postgres` package, with its data in `.data/pg`.
+Keep the `pnpm db:local` terminal open while you work, and stop it with Ctrl+C or `pnpm db:stop`. Leave `SUPABASE_URL` empty and evidence files are stored on local disk under `.data/storage`. `pnpm db:local` runs a real Postgres from the `embedded-postgres` package, with its data in `.data/pg`.
 
 `pnpm db:seed` prints the demo accounts and their shared password: an admin, two reviewers, and the students Maya (reporter), Jules (collaborator) and Alex (the other person).
 
@@ -61,7 +61,7 @@ Leave `SUPABASE_URL` empty and evidence files are stored on local disk under `.d
 | `pnpm dev` / `build` / `start` | Next.js |
 | `pnpm typecheck` / `lint` / `test` | TypeScript, ESLint, Vitest unit tests |
 | `pnpm smoke` | End-to-end API walkthrough against a running dev server (see Testing) |
-| `pnpm db:local` | Local Postgres for development |
+| `pnpm db:local` / `db:stop` | Start or stop the local Postgres for development. It is an ordinary background process (`postgres.exe`), not a container. If one was left behind by a closed terminal and no longer answers, `db:local` replaces it. |
 | `pnpm db:push` / `db:generate` / `db:migrate` / `db:studio` | Drizzle schema tools. Use `db:migrate` for production. |
 | `pnpm db:seed` | Idempotent demo data |
 | `pnpm admin:create-user --email <e> --name "<n>" --password <p> --role reviewer\|admin` | Reviewer and admin accounts. There is no public sign-up for these roles. |

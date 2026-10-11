@@ -25,7 +25,7 @@ export type Message =
   | { type: "auth:signOut" }
   | { type: "capture:start" }
   | { type: "capture:result"; result: LastCapture }
-  | { type: "image:fetch"; url: string }
+  | { type: "image:fetch"; url: string; maxWidth?: number; quality?: number }
   | {
       type: "capture:upload";
       html: string;

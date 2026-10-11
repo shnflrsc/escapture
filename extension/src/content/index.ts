@@ -12,6 +12,13 @@ declare global {
 
 const HOST_TAG = "safetrail-capture";
 
+// Tried in order when a capture is over the upload limit.
+const IMAGE_LEVELS = [
+  { maxWidth: 960, quality: 0.7 },
+  { maxWidth: 720, quality: 0.6 },
+  { maxWidth: 480, quality: 0.5 },
+];
+
 const CSS = `
 :host { all: initial; }
 * { box-sizing: border-box; font-family: Nunito, system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -226,34 +233,46 @@ class Session {
 
     this.panel("Capturing", h("p", {}, "Saving a copy to your vault. This takes a moment."));
 
-    // Embed images through the background worker, a few at a time.
-    const cache = new Map<string, Promise<string | null>>();
-    const fetchOne = (url: string) => {
-      let abs = url;
-      try {
-        abs = new URL(url, location.href).href;
-      } catch {}
-      if (!cache.has(abs)) {
-        cache.set(
-          abs,
-          send<{ dataUrl: string }>({ type: "image:fetch", url: abs }).then(
-            (r) => (r.ok ? r.dataUrl : null),
-            () => null,
-          ),
-        );
-      }
-      return cache.get(abs)!;
+    // Embed images through the background worker, a few at a time. If the
+    // result is over the upload limit, embed them again smaller before giving up.
+    const meta = { sourceUrl: location.href, clientCapturedAt, kind: this.kind };
+    const size = (text: string) => new TextEncoder().encode(text).byteLength;
+    const embed = async (level?: { maxWidth: number; quality: number }) => {
+      const cache = new Map<string, Promise<string | null>>();
+      const fetchOne = (url: string) => {
+        let abs = url;
+        try {
+          abs = new URL(url, location.href).href;
+        } catch {}
+        if (!cache.has(abs)) {
+          cache.set(
+            abs,
+            send<{ dataUrl: string }>({ type: "image:fetch", url: abs, ...level }).then(
+              (r) => (r.ok ? r.dataUrl : null),
+              () => null,
+            ),
+          );
+        }
+        return cache.get(abs)!;
+      };
+      const queue = [...snap.images];
+      await Promise.all(
+        Array.from({ length: 6 }, async () => {
+          for (let job = queue.shift(); job; job = queue.shift()) job.apply(await fetchOne(job.url));
+        }),
+      );
+      return serialize(snap, meta);
     };
-    const queue = [...snap.images];
-    await Promise.all(
-      Array.from({ length: 6 }, async () => {
-        for (let job = queue.shift(); job; job = queue.shift()) job.apply(await fetchOne(job.url));
-      }),
-    );
 
-    const html = serialize(snap, { sourceUrl: location.href, clientCapturedAt, kind: this.kind });
-    if (new TextEncoder().encode(html).byteLength > MAX_BYTES) {
-      const message = "This capture is too large. Select a smaller area.";
+    let html = await embed();
+    for (const level of IMAGE_LEVELS) {
+      if (size(html) <= MAX_BYTES || snap.images.length === 0) break;
+      html = await embed(level);
+    }
+    const bytes = size(html);
+    if (bytes > MAX_BYTES) {
+      const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
+      const message = `This capture is too large (${mb(bytes)} MB, and the limit is ${mb(MAX_BYTES)} MB). Select a smaller area.`;
       const { panel, closeBtn } = this.panel("Not captured", h("p", { class: "note attention" }, message));
       panel.append(h("div", { class: "row" }, closeBtn));
       await this.report({ ok: false, refused: true, message, at: clientCapturedAt });

@@ -110,7 +110,10 @@ function toBase64(bytes: Uint8Array): string {
 const MAX_IMAGE_WIDTH = 1280;
 
 /** Fetches an image and returns a data URI, downscaled to keep captures small. */
-async function fetchImage(url: string): Promise<Reply<{ dataUrl: string }>> {
+async function fetchImage(url: string, maxWidth = MAX_IMAGE_WIDTH, quality = 0.8): Promise<Reply<{ dataUrl: string }>> {
+  // Below the default size the content script is shrinking an oversized capture,
+  // so re-encode anything that is not already small.
+  const shrinking = maxWidth < MAX_IMAGE_WIDTH;
   try {
     const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
@@ -118,14 +121,14 @@ async function fetchImage(url: string): Promise<Reply<{ dataUrl: string }>> {
     if (!blob.type.startsWith("image/")) return { ok: false, error: "not an image" };
     if (blob.type !== "image/svg+xml" && blob.type !== "image/gif") {
       const bitmap = await createImageBitmap(blob);
-      if (bitmap.width > MAX_IMAGE_WIDTH || blob.size > 400 * 1024) {
-        const scale = Math.min(1, MAX_IMAGE_WIDTH / bitmap.width);
+      if (bitmap.width > maxWidth || blob.size > (shrinking ? 40 : 400) * 1024) {
+        const scale = Math.min(1, maxWidth / bitmap.width);
         const canvas = new OffscreenCanvas(Math.round(bitmap.width * scale), Math.round(bitmap.height * scale));
         const ctx = canvas.getContext("2d")!;
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.8 });
+        blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
       }
       bitmap.close();
     }
@@ -194,7 +197,7 @@ async function handle(msg: Message): Promise<unknown> {
       await store.set({ lastCapture: msg.result });
       return { ok: true };
     case "image:fetch":
-      return fetchImage(msg.url);
+      return fetchImage(msg.url, msg.maxWidth, msg.quality);
     case "capture:upload":
       return upload(msg);
   }
