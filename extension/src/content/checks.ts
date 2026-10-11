@@ -107,3 +107,13 @@ export function runChecks(target: Element, guard: GuardState | null): TamperRepo
 
   return { checks, allPassed: checks.every((c) => c.passed), warnings: warnings.length ? warnings : undefined };
 }
+
+/** Runs the checks for every selected item. Capture is refused if any item fails any check. */
+export function runChecksAll(targets: Element[], guard: GuardState | null): TamperReport {
+  const reports = targets.map((t) => runChecks(t, guard));
+  const checks = reports[0].checks.map((first, i) => {
+    const failed = reports.map((r) => r.checks[i]).find((c) => !c.passed);
+    return failed ?? first;
+  });
+  return { checks, allPassed: checks.every((c) => c.passed), warnings: reports[0].warnings };
+}

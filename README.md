@@ -77,11 +77,13 @@ APP_URL=https://your-deployment.example pnpm ext:build   # for a deployed app
 
 1. Open `chrome://extensions`, turn on Developer mode, choose **Load unpacked** and select `extension/dist`.
 2. Make sure `EXTENSION_ORIGIN` in the app's environment matches the ID printed by the build, then restart the app.
-3. Open the extension, sign in with a SafeTrail student account, open a Facebook post or Messenger conversation, choose **Capture this page** and click what you want to keep. On Messenger you can also choose **Use whole conversation pane**.
+3. Open the extension, sign in with a SafeTrail student account, open a Facebook post or Messenger conversation and choose **Capture this page**.
+4. **Posts:** click anywhere in the post. The whole post is outlined, even if you clicked a comment. If the outline is too small or too large, use **Wider** / **Narrower**, then **Capture this post** (or press Enter).
+5. **Messages:** click each message you want. One click takes the whole message: picture, name and bubble. Shift-click selects everything in between, and clicking a selected message removes it. Then **Capture N messages**. **Use whole conversation pane** is still there for short conversations.
 
 To try it without Facebook, run `pnpm fixtures:serve` and capture from http://localhost:4100/fake-facebook-post.html or http://localhost:4100/fake-messenger.html (local builds only).
 
-What the capture does: runs the tamper checks and clones the selected area in the same task, copies computed styles inline, embeds images as data URIs (downscaled above 1280 px), strips scripts, event handlers, forms and anything that could load remotely, wraps the result in a minimal HTML document, hashes the exact bytes and uploads them. The server recomputes the hash and rejects a mismatch.
+What the capture does: runs the tamper checks and clones the selection in the same task, records computed styles as shared classes (one per distinct declaration, so size barely grows with the number of elements), leaves out anything not rendered, embeds images as data URIs at the size they are shown (animated images become their first frame, and everything is shrunk further if the capture is still over 4 MB), strips scripts, event handlers, forms and anything that could load remotely, wraps the result in a minimal HTML document, hashes the exact bytes and uploads them. The server recomputes the hash and rejects a mismatch.
 
 Tamper checks (capture is refused if any fails): page editing mode (`designMode`) is on or was switched on earlier on this page; the selected area, an ancestor or a descendant is `contenteditable` (the message composer is exempt and its text is left out of the capture); userscript-manager markers are present; a `<script>` or `<style>` element sits inside the selected area.
 

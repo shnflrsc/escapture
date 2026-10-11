@@ -1,8 +1,8 @@
 // Isolated-world content script, injected on demand when the student chooses
 // "Capture this page": element picker, tamper checks, snapshot building.
 import { captureHost, MAX_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
-import { queryGuard, runChecks, type GuardState } from "./checks";
-import { buildSnapshot, serialize } from "./snapshot";
+import { queryGuard, runChecksAll, type GuardState } from "./checks";
+import { buildSnapshot, serialize, sizeBreakdown } from "./snapshot";
 
 declare global {
   interface Window {
@@ -12,23 +12,27 @@ declare global {
 
 const HOST_TAG = "safetrail-capture";
 
-// Tried in order when a capture is over the upload limit.
-const IMAGE_LEVELS = [
-  { maxWidth: 960, quality: 0.7 },
-  { maxWidth: 720, quality: 0.6 },
-  { maxWidth: 480, quality: 0.5 },
+// Images are embedded at the size they are shown. These caps are tried in
+// order when a capture is still over the upload limit.
+const DEFAULT_LEVEL = { maxWidth: 1280, quality: 0.8 };
+const SHRINK_LEVELS = [
+  { maxWidth: 800, quality: 0.65 },
+  { maxWidth: 560, quality: 0.5 },
+  { maxWidth: 360, quality: 0.4 },
 ];
 
 const CSS = `
 :host { all: initial; }
 * { box-sizing: border-box; font-family: Nunito, system-ui, -apple-system, "Segoe UI", sans-serif; }
-.box { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid #3A6D88; background: rgba(102,163,191,0.18); border-radius: 6px; display: none; }
+.box, .sel { position: fixed; pointer-events: none; z-index: 2147483646; border-radius: 6px; display: none; }
+.box { border: 2px dashed #3A6D88; background: rgba(102,163,191,0.12); }
+.sel { border: 2px solid #3A6D88; background: rgba(102,163,191,0.22); }
 .bar, .panel { position: fixed; z-index: 2147483647; left: 50%; transform: translateX(-50%); background: #fff; color: #1E2A32; border: 1px solid #DCE6EB; border-radius: 12px; box-shadow: 0 8px 24px rgba(30,42,50,0.18); font-size: 14px; line-height: 20px; }
-.bar { top: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end; width: max-content; max-width: min(860px, calc(100vw - 32px)); }
-.bar p { margin: 0; flex: 1 1 280px; min-width: 240px; }
-.seg { flex-shrink: 0; }
+.bar { bottom: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end; width: max-content; max-width: min(980px, calc(100vw - 32px)); }
+.bar p { margin: 0; flex: 1 1 300px; min-width: 240px; }
 .bar small { display: block; color: #55646E; font-size: 13px; line-height: 18px; }
-.panel { top: 16px; padding: 16px; width: min(420px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; }
+.group { display: inline-flex; gap: 8px; flex-shrink: 0; }
+.panel { top: 16px; padding: 16px; width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; }
 .panel h2 { margin: 0; font: 600 18px/26px Lora, Georgia, serif; }
 .panel p { margin: 0; }
 .note { border-radius: 10px; padding: 10px 12px; }
@@ -37,11 +41,13 @@ const CSS = `
 ul { margin: 0; padding-left: 18px; }
 .row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 button, a.btn { height: 36px; padding: 0 14px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
+button:disabled { background: #E6EDF1; color: #7D8B94; border-color: transparent; cursor: not-allowed; }
 button:focus-visible, a.btn:focus-visible { outline: 2px solid #3A6D88; outline-offset: 2px; }
-.primary { background: #3A6D88; color: #fff; } .primary:hover { background: #2D556B; }
-.soft { background: #E6F1F6; color: #2D556B; } .soft:hover { background: #CDE2EC; }
+.primary { background: #3A6D88; color: #fff; } .primary:hover:not(:disabled) { background: #2D556B; }
+.soft { background: #E6F1F6; color: #2D556B; } .soft:hover:not(:disabled) { background: #CDE2EC; }
+.secondary { background: #fff; color: #1E2A32; border-color: #7690A0; } .secondary:hover:not(:disabled) { background: #F1F7FA; }
 .ghost { background: transparent; color: #3A6D88; } .ghost:hover { background: #E6F1F6; }
-.seg { display: inline-flex; border: 1px solid #7690A0; border-radius: 10px; overflow: hidden; }
+.seg { display: inline-flex; flex-shrink: 0; border: 1px solid #7690A0; border-radius: 10px; overflow: hidden; }
 .seg button { border-radius: 0; height: 34px; background: #fff; color: #1E2A32; }
 .seg button[aria-pressed="true"] { background: #E6F1F6; color: #2D556B; }
 @media (prefers-reduced-motion: no-preference) { .panel { animation: rise 200ms ease-out; } }
@@ -58,6 +64,13 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, 
   return el;
 }
 
+function button(label: string, cls: string, onClick: () => void, disabled = false) {
+  const b = h("button", { type: "button", class: cls }, label);
+  b.disabled = disabled;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
 const send = <T>(msg: unknown) => chrome.runtime.sendMessage(msg) as Promise<Reply<T>>;
 
 function detectKind(): Kind {
@@ -67,18 +80,27 @@ function detectKind(): Kind {
   return "facebook_post";
 }
 
+/** `leaf` is what was actually clicked; `el` is the area chosen around it. */
+type Item = { leaf: Element; el: Element };
+
+const inDocumentOrder = (a: Element, b: Element) =>
+  a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+
 class Session {
   private host = document.createElement(HOST_TAG);
   private shadow = this.host.attachShadow({ mode: "open" });
-  private box = h("div", { class: "box" });
+  private hoverBox = h("div", { class: "box" });
+  private selBoxes = h("div");
   private ui = h("div");
-  private current: Element | null = null;
+  private hover: Element | null = null;
+  private items: Item[] = [];
   private kind: Kind = detectKind();
   private guard: GuardState | null = null;
   private picking = false;
+  private frame = 0;
 
   constructor() {
-    this.shadow.append(h("style", {}, CSS), this.box, this.ui);
+    this.shadow.append(h("style", {}, CSS), this.selBoxes, this.hoverBox, this.ui);
   }
 
   start() {
@@ -92,18 +114,23 @@ class Session {
     document.addEventListener("mousedown", this.swallow, true);
     document.addEventListener("mouseup", this.swallow, true);
     document.addEventListener("keydown", this.onKey, true);
-    window.addEventListener("scroll", this.reposition, true);
+    const tick = () => {
+      this.reposition();
+      this.frame = requestAnimationFrame(tick);
+    };
+    this.frame = requestAnimationFrame(tick);
   }
 
   private stopPicking() {
     this.picking = false;
-    this.box.style.display = "none";
+    cancelAnimationFrame(this.frame);
+    this.hoverBox.style.display = "none";
+    this.selBoxes.replaceChildren();
     document.removeEventListener("mousemove", this.onMove, true);
     document.removeEventListener("click", this.onClick, true);
     document.removeEventListener("mousedown", this.swallow, true);
     document.removeEventListener("mouseup", this.swallow, true);
     document.removeEventListener("keydown", this.onKey, true);
-    window.removeEventListener("scroll", this.reposition, true);
   }
 
   private close = () => {
@@ -113,63 +140,161 @@ class Session {
 
   private isOurs = (e: Event) => e.composedPath().includes(this.host);
 
+  // ---- Choosing what a click means ----
+
+  /**
+   * Grows a clicked element to the thing the student means. This relies on
+   * ARIA roles and list structure, not Facebook's class names, which change.
+   * The Wider and Narrower buttons correct it when the guess is off.
+   */
+  private snap(el: Element, exact: boolean): Element {
+    if (exact) return el;
+    if (this.kind === "facebook_post") {
+      // Comments are articles nested inside the post's article: take the outermost.
+      let post: Element | null = null;
+      for (let a = el.closest('[role="article"]'); a; a = a.parentElement?.closest('[role="article"]') ?? null) post = a;
+      return post ?? el;
+    }
+    // One message is a whole row: picture, name and bubble together.
+    const row = el.closest('[role="row"]');
+    if (row) return row;
+    // Otherwise, the nearest ancestor that is one of many siblings in a list.
+    for (let a: Element | null = el; a?.parentElement && a.parentElement !== document.body; a = a.parentElement) {
+      if (a.parentElement.children.length >= 5 && a.getBoundingClientRect().width >= 200) return a;
+    }
+    return el;
+  }
+
+  private pickAt(e: MouseEvent): { leaf: Element; el: Element } | null {
+    const leaf = document.elementFromPoint(e.clientX, e.clientY);
+    if (!leaf || leaf === this.host || leaf === document.documentElement || leaf === document.body) return null;
+    return { leaf, el: this.snap(leaf, e.altKey) };
+  }
+
+  private select(pick: Item, range: boolean) {
+    const existing = this.items.findIndex((i) => i.el === pick.el || i.el.contains(pick.el));
+    if (existing >= 0) {
+      // Clicking something already selected takes it out again.
+      this.items.splice(existing, 1);
+    } else if (this.kind === "facebook_post") {
+      this.items = [pick];
+    } else {
+      const last = this.items[this.items.length - 1];
+      const parent = pick.el.parentElement;
+      if (range && last && parent && last.el.parentElement === parent) {
+        // Shift-click: everything between the last selected message and this one.
+        const siblings = [...parent.children];
+        const [from, to] = [siblings.indexOf(last.el), siblings.indexOf(pick.el)].sort((a, b) => a - b);
+        for (const el of siblings.slice(from, to + 1)) {
+          if (!this.items.some((i) => i.el === el)) this.items.push({ leaf: el, el });
+        }
+      } else {
+        this.items = this.items.filter((i) => !pick.el.contains(i.el));
+        this.items.push(pick);
+      }
+    }
+    this.renderBar();
+  }
+
+  /** Widens or narrows the most recent selection by one level. */
+  private resize(wider: boolean) {
+    const item = this.items[this.items.length - 1];
+    if (!item) return;
+    if (wider) {
+      const parent = item.el.parentElement;
+      if (!parent || parent === document.body || parent === document.documentElement) return;
+      item.el = parent;
+      this.items = this.items.filter((i) => i === item || !parent.contains(i.el));
+    } else {
+      if (item.el === item.leaf) return;
+      const child = [...item.el.children].find((c) => c.contains(item.leaf));
+      if (child) item.el = child;
+    }
+    this.renderBar();
+  }
+
+  // ---- Toolbar and outlines ----
+
   private renderBar() {
-    const post = h("button", { type: "button", "aria-pressed": String(this.kind === "facebook_post") }, "A post");
-    const chat = h("button", { type: "button", "aria-pressed": String(this.kind === "facebook_message") }, "Messages");
+    const messages = this.kind === "facebook_message";
+    const n = this.items.length;
     const setKind = (k: Kind) => () => {
       this.kind = k;
+      this.items = [];
       this.renderBar();
     };
-    post.addEventListener("click", setKind("facebook_post"));
-    chat.addEventListener("click", setKind("facebook_message"));
-    const cancel = h("button", { type: "button", class: "ghost" }, "Cancel");
-    cancel.addEventListener("click", this.close);
+    const post = button("A post", "", setKind("facebook_post"));
+    const chat = button("Messages", "", setKind("facebook_message"));
+    post.setAttribute("aria-pressed", String(!messages));
+    chat.setAttribute("aria-pressed", String(messages));
 
-    const messages = this.kind === "facebook_message";
     const text = h(
       "p",
       {},
-      messages ? "Click the conversation you want to keep." : "Click the post you want to keep.",
+      messages
+        ? "Click each message you want to keep. Shift-click selects everything in between."
+        : "Click the post you want to keep. If only part of it is outlined, choose Wider.",
       h(
         "small",
         {},
         messages
-          ? "Only messages currently loaded on screen are captured. Scroll up to load more before capturing. This is meant for conversations you took part in."
-          : "Hold Alt to pick a smaller part. Press Esc to cancel.",
+          ? "Only messages loaded on screen can be captured. Scroll up to load more first. This is meant for conversations you took part in."
+          : "Click a selection again to remove it. Hold Alt to pick the exact element. Press Esc to cancel.",
       ),
     );
-    const bar = h("div", { class: "bar", role: "dialog", "aria-label": "SafeTrail capture" }, text, h("div", { class: "seg", role: "group", "aria-label": "What are you capturing?" }, post, chat));
+
+    const last = this.items[n - 1];
+    const bar = h(
+      "div",
+      { class: "bar", role: "dialog", "aria-label": "SafeTrail capture" },
+      text,
+      h("div", { class: "seg", role: "group", "aria-label": "What are you capturing?" }, post, chat),
+      h(
+        "div",
+        { class: "group" },
+        button("Wider", "secondary", () => this.resize(true), !last),
+        button("Narrower", "secondary", () => this.resize(false), !last || last.el === last.leaf),
+      ),
+    );
     const pane = document.querySelector('[role="main"]');
-    if (messages && pane) {
-      const whole = h("button", { type: "button", class: "soft" }, "Use whole conversation pane");
-      whole.addEventListener("click", () => this.capture(pane));
-      bar.append(whole);
+    if (messages && pane && n === 0) {
+      bar.append(button("Use whole conversation pane", "soft", () => void this.capture([pane])));
     }
-    bar.append(cancel);
+    const label = n === 0 ? "Capture" : messages ? `Capture ${n} ${n === 1 ? "message" : "messages"}` : "Capture this post";
+    bar.append(
+      h(
+        "div",
+        { class: "group" },
+        button("Cancel", "ghost", this.close),
+        button(label, "primary", () => void this.capture(this.items.map((i) => i.el)), n === 0),
+      ),
+    );
     this.ui.replaceChildren(bar);
+
+    this.selBoxes.replaceChildren(...this.items.map(() => h("div", { class: "sel" })));
+    this.reposition();
   }
 
-  private pick(e: MouseEvent): Element | null {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el || el === this.host || el === document.documentElement || el === document.body) return null;
-    if (e.altKey) return el;
-    // Snap to the whole post so the picker doesn't depend on Facebook's class names.
-    return (this.kind === "facebook_post" && el.closest('[role="article"]')) || el;
+  private place(box: HTMLElement, el: Element | null) {
+    if (!el?.isConnected) {
+      box.style.display = "none";
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    Object.assign(box.style, { display: "block", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
   }
 
   private reposition = () => {
-    if (!this.current) return;
-    const r = this.current.getBoundingClientRect();
-    Object.assign(this.box.style, { display: "block", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    if (!this.picking) return;
+    [...this.selBoxes.children].forEach((box, i) => this.place(box as HTMLElement, this.items[i]?.el ?? null));
+    const hovered = this.hover && !this.items.some((i) => i.el === this.hover) ? this.hover : null;
+    this.place(this.hoverBox, hovered);
   };
 
+  // ---- Events ----
+
   private onMove = (e: MouseEvent) => {
-    if (this.isOurs(e)) {
-      this.box.style.display = "none";
-      return;
-    }
-    this.current = this.pick(e);
-    this.reposition();
+    this.hover = this.isOurs(e) ? null : (this.pickAt(e)?.el ?? null);
   };
 
   private swallow = (e: Event) => {
@@ -182,20 +307,22 @@ class Session {
     if (this.isOurs(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    const target = this.pick(e);
-    if (target) void this.capture(target);
+    const pick = this.pickAt(e);
+    if (pick) this.select(pick, e.shiftKey);
   };
 
   private onKey = (e: KeyboardEvent) => {
-    if (e.key !== "Escape") return;
+    if (e.key === "Escape") this.close();
+    else if (e.key === "Enter" && this.items.length && !this.isOurs(e)) void this.capture(this.items.map((i) => i.el));
+    else return;
     e.preventDefault();
     e.stopPropagation();
-    this.close();
   };
 
+  // ---- Capture ----
+
   private panel(title: string, ...children: (Node | string)[]) {
-    const closeBtn = h("button", { type: "button", class: "ghost" }, "Close");
-    closeBtn.addEventListener("click", this.close);
+    const closeBtn = button("Close", "ghost", this.close);
     const panel = h("div", { class: "panel", role: "status", "aria-live": "polite" }, h("h2", {}, title), ...children);
     this.ui.replaceChildren(panel);
     return { panel, closeBtn };
@@ -205,16 +332,22 @@ class Session {
     await send({ type: "capture:result", result }).catch(() => {});
   }
 
-  private async capture(target: Element) {
+  private async capture(chosen: Element[]) {
+    // Still-attached items only, outermost only, in page order.
+    const targets = chosen
+      .filter((el, i) => el.isConnected && chosen.indexOf(el) === i && !chosen.some((o) => o !== el && o.contains(el)))
+      .sort(inDocumentOrder);
+    if (targets.length === 0) return;
+    const kind = this.kind;
     this.stopPicking();
     // Take our own UI out of the page before reading it.
     this.host.remove();
     const guard = (await queryGuard()) ?? this.guard;
 
     // --- Same task from here to the end of buildSnapshot: check, then clone. ---
-    const report = runChecks(target, guard);
+    const report = runChecksAll(targets, guard);
     const clientCapturedAt = new Date().toISOString();
-    const snap = report.allPassed ? buildSnapshot(target) : null;
+    const snap = report.allPassed ? buildSnapshot(targets) : null;
     // --------------------------------------------------------------------------
     document.documentElement.appendChild(this.host);
 
@@ -233,46 +366,59 @@ class Session {
 
     this.panel("Capturing", h("p", {}, "Saving a copy to your vault. This takes a moment."));
 
-    // Embed images through the background worker, a few at a time. If the
-    // result is over the upload limit, embed them again smaller before giving up.
-    const meta = { sourceUrl: location.href, clientCapturedAt, kind: this.kind };
+    // Embed images through the background worker, a few at a time, each at
+    // the size it is shown on the page. If the result is over the upload
+    // limit, embed them again smaller before giving up.
+    const meta = { sourceUrl: location.href, clientCapturedAt, kind };
     const size = (text: string) => new TextEncoder().encode(text).byteLength;
-    const embed = async (level?: { maxWidth: number; quality: number }) => {
-      const cache = new Map<string, Promise<string | null>>();
-      const fetchOne = (url: string) => {
-        let abs = url;
-        try {
-          abs = new URL(url, location.href).href;
-        } catch {}
-        if (!cache.has(abs)) {
-          cache.set(
-            abs,
-            send<{ dataUrl: string }>({ type: "image:fetch", url: abs, ...level }).then(
-              (r) => (r.ok ? r.dataUrl : null),
-              () => null,
-            ),
-          );
-        }
-        return cache.get(abs)!;
-      };
+    const cache = new Map<string, Promise<string | null>>();
+    const fetchOne = (url: string, maxWidth: number | undefined, quality: number) => {
+      let abs = url;
+      try {
+        abs = new URL(url, location.href).href;
+      } catch {}
+      const key = `${abs}|${maxWidth ?? "raw"}|${quality}`;
+      if (!cache.has(key)) {
+        cache.set(
+          key,
+          send<{ dataUrl: string }>({ type: "image:fetch", url: abs, maxWidth, quality }).then(
+            (r) => (r.ok ? r.dataUrl : null),
+            () => null,
+          ),
+        );
+      }
+      return cache.get(key)!;
+    };
+    const embed = async (level: { maxWidth: number; quality: number }) => {
       const queue = [...snap.images];
       await Promise.all(
         Array.from({ length: 6 }, async () => {
-          for (let job = queue.shift(); job; job = queue.shift()) job.apply(await fetchOne(job.url));
+          for (let job = queue.shift(); job; job = queue.shift()) {
+            // Twice the shown width keeps images sharp on high-density screens.
+            const maxWidth =
+              job.displayWidth === undefined
+                ? undefined
+                : Math.min(level.maxWidth, Math.max(48, Math.ceil(job.displayWidth * 2)));
+            job.apply(await fetchOne(job.url, maxWidth, level.quality));
+          }
         }),
       );
       return serialize(snap, meta);
     };
 
-    let html = await embed();
-    for (const level of IMAGE_LEVELS) {
+    let html = await embed(DEFAULT_LEVEL);
+    for (const level of SHRINK_LEVELS) {
       if (size(html) <= MAX_BYTES || snap.images.length === 0) break;
       html = await embed(level);
     }
     const bytes = size(html);
     if (bytes > MAX_BYTES) {
       const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
-      const message = `This capture is too large (${mb(bytes)} MB, and the limit is ${mb(MAX_BYTES)} MB). Select a smaller area.`;
+      const parts = sizeBreakdown(html, snap.css);
+      const message =
+        `This capture is too large (${mb(bytes)} MB, and the limit is ${mb(MAX_BYTES)} MB). ` +
+        `Images take ${mb(parts.images)} MB, text and layout ${mb(parts.markup + parts.styles)} MB. ` +
+        (targets.length > 1 ? "Select fewer items and capture the rest separately." : "Select a smaller area.");
       const { panel, closeBtn } = this.panel("Not captured", h("p", { class: "note attention" }, message));
       panel.append(h("div", { class: "row" }, closeBtn));
       await this.report({ ok: false, refused: true, message, at: clientCapturedAt });
@@ -282,7 +428,7 @@ class Session {
     const reply = await send<{ result: LastCapture }>({
       type: "capture:upload",
       html,
-      kind: this.kind,
+      kind,
       sourceUrl: location.href,
       clientCapturedAt,
       tamperReport: report,
@@ -299,8 +445,7 @@ class Session {
       panel.append(h("div", { class: "row" }, closeBtn, open));
     } else {
       const { panel, closeBtn } = this.panel("Not saved", h("p", { class: "note attention" }, result.message));
-      const retry = h("button", { type: "button", class: "primary" }, "Try again");
-      retry.addEventListener("click", () => {
+      const retry = button("Try again", "primary", () => {
         this.close();
         new Session().start();
       });

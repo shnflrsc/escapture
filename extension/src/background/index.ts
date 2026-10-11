@@ -107,28 +107,31 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-const MAX_IMAGE_WIDTH = 1280;
-
-/** Fetches an image and returns a data URI, downscaled to keep captures small. */
-async function fetchImage(url: string, maxWidth = MAX_IMAGE_WIDTH, quality = 0.8): Promise<Reply<{ dataUrl: string }>> {
-  // Below the default size the content script is shrinking an oversized capture,
-  // so re-encode anything that is not already small.
-  const shrinking = maxWidth < MAX_IMAGE_WIDTH;
+/**
+ * Fetches an image and returns a data URI.
+ * With `maxWidth`, the image is embedded no wider than that (photos and
+ * avatars are embedded at the size they are shown, not the size Facebook
+ * serves) and animated images are reduced to their first frame. Without it
+ * the file is passed through untouched, which CSS sprite sheets need.
+ */
+async function fetchImage(url: string, maxWidth?: number, quality = 0.8): Promise<Reply<{ dataUrl: string }>> {
   try {
     const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     let blob = await res.blob();
     if (!blob.type.startsWith("image/")) return { ok: false, error: "not an image" };
-    if (blob.type !== "image/svg+xml" && blob.type !== "image/gif") {
+    if (maxWidth && blob.type !== "image/svg+xml") {
       const bitmap = await createImageBitmap(blob);
-      if (bitmap.width > maxWidth || blob.size > (shrinking ? 40 : 400) * 1024) {
+      const small = bitmap.width <= maxWidth && blob.size <= 30 * 1024 && blob.type !== "image/gif";
+      if (!small) {
         const scale = Math.min(1, maxWidth / bitmap.width);
-        const canvas = new OffscreenCanvas(Math.round(bitmap.width * scale), Math.round(bitmap.height * scale));
-        const ctx = canvas.getContext("2d")!;
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
+        const canvas = new OffscreenCanvas(
+          Math.max(1, Math.round(bitmap.width * scale)),
+          Math.max(1, Math.round(bitmap.height * scale)),
+        );
+        canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        // WebP keeps transparency (stickers, icons) and is smaller than JPEG.
+        blob = await canvas.convertToBlob({ type: "image/webp", quality });
       }
       bitmap.close();
     }

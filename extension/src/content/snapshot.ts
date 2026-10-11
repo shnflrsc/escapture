@@ -1,4 +1,4 @@
-// SingleFile-style snapshot, simplified: clone the target, inline computed
+// SingleFile-style snapshot, simplified: clone the selection, copy computed
 // styles, embed images as data URIs, and strip everything active.
 import type { Kind } from "../shared/types";
 import { isComposer } from "./checks";
@@ -21,8 +21,23 @@ const INHERITED = new Set([
 const SKIP = /(^|-)(inline-size|block-size)$|^(perspective-origin|transform-origin|inset-inline|inset-block|margin-inline|margin-block|padding-inline|padding-block|border-inline|border-block|animation|transition|cursor|pointer-events|user-select|will-change|caret-color|-webkit-tap-highlight-color|-webkit-locale|d$|cx$|cy$|r$|rx$|ry$|x$|y$)/;
 const REPLACED = new Set(["IMG", "SVG", "CANVAS", "VIDEO", "PICTURE", "INPUT", "TEXTAREA", "SELECT", "BUTTON"]);
 
-/** `apply` may be called again with a smaller version of the same image. */
-export type PendingImage = { url: string; apply: (dataUrl: string | null) => void };
+// When several separate items are selected, the containers between them are
+// kept only as plain structure. Their own sizing and positioning (often used
+// by virtualised lists) would leave large gaps once the other items are gone.
+const CONTAINER_PROPS = new Set([
+  "display", "flex-direction", "flex-wrap", "align-items", "justify-content", "row-gap", "column-gap",
+  "box-sizing", "background-color",
+]);
+
+/**
+ * `displayWidth` is how wide the image is shown, in CSS pixels, so it can be
+ * embedded at that size. It is unset for CSS backgrounds, which may be sprite
+ * sheets and must keep their real dimensions. `apply` may be called again
+ * with a smaller version of the same image.
+ */
+export type PendingImage = { url: string; displayWidth?: number; apply: (dataUrl: string | null) => void };
+
+export type Snapshot = { root: Element; css: string; images: PendingImage[]; width: number; background: string };
 
 type Defaults = Map<string, Map<string, string>>;
 
@@ -42,19 +57,21 @@ function defaultStyles(frame: HTMLIFrameElement, cache: Defaults, tag: string): 
   return d;
 }
 
-function inlineStyle(
+/** The declarations an element needs: only what differs from a bare element of the same tag. */
+function declarations(
   original: Element,
   cs: CSSStyleDeclaration,
   parentCs: CSSStyleDeclaration | null,
   defaults: Map<string, string>,
-  skipBackgroundImage: boolean,
-): string {
+  opts: { skipBackgroundImage: boolean; containerOnly: boolean },
+): string[] {
   const tag = original.tagName.toUpperCase();
-  const hasText = original.childNodes.length > 0;
-  let out = "";
+  const hasChildren = original.childNodes.length > 0;
+  const out: string[] = [];
   for (let i = 0; i < cs.length; i++) {
     const prop = cs[i];
-    if (SKIP.test(prop) || (skipBackgroundImage && prop === "background-image")) continue;
+    if (SKIP.test(prop) || (opts.skipBackgroundImage && prop === "background-image")) continue;
+    if (opts.containerOnly && !CONTAINER_PROPS.has(prop) && !INHERITED.has(prop)) continue;
     const value = cs.getPropertyValue(prop);
     if (!value || value === defaults.get(prop)) {
       // Still needed if the parent sets an inherited property to something else.
@@ -64,9 +81,11 @@ function inlineStyle(
     }
     // Resolved pixel heights would stop text from reflowing; keep them only
     // for replaced or empty boxes (avatars, spacers, images).
-    if (prop === "height" && hasText && !REPLACED.has(tag)) continue;
+    if (prop === "height" && hasChildren && !REPLACED.has(tag)) continue;
     if (prop === "width" && cs.display === "inline") continue;
-    out += `${prop}:${value};`;
+    // Nothing may load remotely: drop any url() that is not an embedded image.
+    if (value.includes("url(") && !/^url\(["']?data:image\//.test(value)) continue;
+    out.push(`${prop}:${value}`);
   }
   return out;
 }
@@ -90,14 +109,15 @@ function sanitizeAttributes(el: Element) {
   const svg = el.namespaceURI === "http://www.w3.org/2000/svg";
   for (const attr of [...el.attributes]) {
     const name = attr.name.toLowerCase();
-    if (svg && (name === "id" || name === "class")) continue;
+    if (svg && name === "id") continue;
     if (
       name.startsWith("on") ||
       name.startsWith("data-") ||
+      name.startsWith("aria-") ||
       name === "class" || name === "id" || name === "srcset" || name === "sizes" || name === "nonce" ||
       name === "integrity" || name === "contenteditable" || name === "action" || name === "formaction" ||
       name === "ping" || name === "target" || name === "srcdoc" || name === "loading" || name === "tabindex" ||
-      name === "autofocus" || name === "style"
+      name === "autofocus" || name === "style" || name === "role"
     ) {
       el.removeAttribute(attr.name);
     }
@@ -108,7 +128,11 @@ function sanitizeAttributes(el: Element) {
     let safe: string | null = null;
     try {
       const u = href ? new URL(href, location.href) : null;
-      if (u && (u.protocol === "https:" || u.protocol === "http:")) safe = u.href;
+      if (u && (u.protocol === "https:" || u.protocol === "http:")) {
+        // Facebook appends long tracking parameters to every link.
+        for (const key of [...u.searchParams.keys()]) if (key.startsWith("__") || key === "fbclid") u.searchParams.delete(key);
+        safe = u.href;
+      }
     } catch {}
     if (safe) {
       el.setAttribute("href", safe);
@@ -122,11 +146,22 @@ function sanitizeAttributes(el: Element) {
   }
 }
 
+/** Lowest element that contains every target. */
+function commonAncestor(targets: Element[]): Element {
+  let root: Element = targets[0];
+  for (const t of targets) while (!root.contains(t)) root = root.parentElement ?? document.documentElement;
+  return root;
+}
+
 /**
  * Builds the frozen clone synchronously (call right after the tamper checks,
  * in the same task). Images still to embed are returned for async fetching.
+ *
+ * With one target the clone is that element. With several (for example a few
+ * chosen messages), the clone is their common container with everything that
+ * was not selected removed, so the items keep their order and layout.
  */
-export function buildSnapshot(target: Element): { root: Element; css: string; images: PendingImage[]; width: number; background: string } {
+export function buildSnapshot(targets: Element[]): Snapshot {
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.setAttribute("style", "position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;visibility:hidden");
@@ -135,48 +170,67 @@ export function buildSnapshot(target: Element): { root: Element; css: string; im
   const images: PendingImage[] = [];
 
   try {
-    const clone = target.cloneNode(true) as Element;
-    const originals = [target, ...target.querySelectorAll("*")];
+    const top = targets.length === 1 ? targets[0] : commonAncestor(targets);
+    const selected = new Set(targets);
+    // Containers between the common ancestor and the selected items.
+    const scaffolding = new Set<Element>();
+    if (targets.length > 1) {
+      for (const t of targets) for (let el = t.parentElement; el && top.contains(el); el = el.parentElement) scaffolding.add(el);
+      scaffolding.add(top);
+    }
+
+    const clone = top.cloneNode(true) as Element;
+    const originals = [top, ...top.querySelectorAll("*")];
     const clones = [clone, ...clone.querySelectorAll("*")];
     const styles = new Map<Element, CSSStyleDeclaration>();
     const remove: Element[] = [];
-    // Identical style strings are shared through one generated class each.
-    // Facebook repeats the same styles on thousands of elements, so this is
-    // what keeps a real post under the upload limit.
+
+    // One generated class per distinct declaration ("color:red"), shared by
+    // every element that uses it. A page has thousands of elements but only a
+    // few hundred distinct declarations, so this keeps real posts and long
+    // conversations small no matter how many elements they have.
     const classes = new Map<string, string>();
-    const classFor = (style: string) => {
-      let name = classes.get(style);
-      if (!name) classes.set(style, (name = `s${classes.size.toString(36)}`));
+    const classFor = (decl: string) => {
+      let name = classes.get(decl);
+      if (!name) classes.set(decl, (name = `c${classes.size.toString(36)}`));
       return name;
     };
+    const classList = (decls: string[]) => decls.map(classFor).join(" ");
+
     let skipped: Element | null = null;
+    let inside: Element | null = null; // the selected item currently being walked
 
     for (let i = 0; i < originals.length; i++) {
       const o = originals[i];
       const c = clones[i];
       if (skipped?.contains(o)) continue;
+      if (inside && !inside.contains(o)) inside = null;
+      if (!inside && selected.has(o)) inside = o;
+      const isScaffold = !inside && scaffolding.has(o);
+
       const tag = o.tagName.toUpperCase();
-      const cs = REMOVE.has(tag) ? null : getComputedStyle(o);
+      const unselected = targets.length > 1 && !inside && !isScaffold;
+      const cs = unselected || REMOVE.has(tag) ? null : getComputedStyle(o);
       // Elements that are not rendered are not part of what was on screen.
-      if (!cs || (cs.display === "none" && o !== target)) {
+      if (!cs || (cs.display === "none" && o !== top)) {
         remove.push(c);
         skipped = o;
         continue;
       }
       styles.set(o, cs);
-      const parentCs = o === target ? null : (o.parentElement && styles.get(o.parentElement)) ?? null;
+      const parentCs = o === top ? null : (o.parentElement && styles.get(o.parentElement)) ?? null;
 
       const bg = cs.backgroundImage;
       const bgUrls =
-        bg && bg !== "none" && bg.includes("url(")
+        !isScaffold && bg && bg !== "none" && bg.includes("url(")
           ? [...new Set([...bg.matchAll(URL_IN_CSS)].map((m) => m[2]).filter((u) => !u.startsWith("data:")))]
           : [];
-      let style = inlineStyle(
+      const decls = declarations(
         o,
         cs,
         parentCs,
         defaultStyles(frame, defaultsCache, o.namespaceURI === "http://www.w3.org/2000/svg" ? "div" : o.tagName),
-        bgUrls.length > 0,
+        { skipBackgroundImage: bgUrls.length > 0 || isScaffold, containerOnly: isScaffold },
       );
       sanitizeAttributes(c);
 
@@ -189,6 +243,7 @@ export function buildSnapshot(target: Element): { root: Element; css: string; im
           let node: Element = c;
           images.push({
             url,
+            displayWidth: rect.width,
             apply: (dataUrl) => {
               if (dataUrl) c.setAttribute("src", dataUrl);
               else if (node === c) {
@@ -201,11 +256,11 @@ export function buildSnapshot(target: Element): { root: Element; css: string; im
       } else if (o instanceof HTMLCanvasElement) {
         let data: string | null = null;
         try {
-          data = o.toDataURL("image/jpeg", 0.8);
+          data = o.toDataURL("image/webp", 0.8);
         } catch {}
         const img = document.createElement("img");
         if (data) img.setAttribute("src", data);
-        img.setAttribute("class", classFor(style));
+        img.setAttribute("class", classList(decls));
         c.replaceWith(data ? img : placeholder(document, rect.width, rect.height));
         skipped = o;
         continue;
@@ -248,25 +303,24 @@ export function buildSnapshot(target: Element): { root: Element; css: string; im
         c.textContent = "";
         skipped = o;
       }
-      // Strip any url() that is not an embedded image so nothing loads remotely.
-      style = style.replace(/[a-z-]+:[^;]*url\((?!["']?data:image\/)[^;]*;/g, "");
-      if (style) c.setAttribute("class", classFor(style));
+      if (decls.length) c.setAttribute("class", classList(decls));
       else c.removeAttribute("class");
     }
     for (const el of remove) el.remove();
 
-    // The first non-transparent background behind the target, so light text
-    // captured from a dark page stays readable.
+    // The first non-transparent background behind the selection, so light
+    // text captured from a dark page stays readable.
     let background = "#ffffff";
-    for (let el: Element | null = target; el; el = el.parentElement) {
+    for (let el: Element | null = targets[0]; el; el = el.parentElement) {
       const color = getComputedStyle(el).backgroundColor;
       if (color && color !== "transparent" && !/rgba\(.*,\s*0\)$/.test(color)) {
         background = color;
         break;
       }
     }
-    const css = [...classes].map(([style, name]) => `.${name}{${style}}`).join("\n");
-    return { root: clone, css, images, width: target.getBoundingClientRect().width, background };
+    const css = [...classes].map(([decl, name]) => `.${name}{${decl}}`).join("\n");
+    const width = Math.max(...targets.map((t) => t.getBoundingClientRect().width));
+    return { root: clone, css, images, width, background };
   } finally {
     frame.remove();
   }
@@ -275,10 +329,7 @@ export function buildSnapshot(target: Element): { root: Element; css: string; im
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Wraps the clone in a minimal standalone document. */
-export function serialize(
-  snap: { root: Element; css: string; width: number; background: string },
-  meta: { sourceUrl: string; clientCapturedAt: string; kind: Kind },
-): string {
+export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCapturedAt: string; kind: Kind }): string {
   // Final pass: nothing active may survive, whatever happened while embedding.
   for (const el of [...snap.root.querySelectorAll("*")]) {
     if (REMOVE.has(el.tagName.toUpperCase())) el.remove();
@@ -294,4 +345,11 @@ export function serialize(
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">\n` +
     `<div style="width:${Math.round(snap.width)}px;max-width:100%">${body}</div>\n</body>\n</html>\n`
   );
+}
+
+/** Rough split of where the bytes of a capture go, for the too-large message. */
+export function sizeBreakdown(html: string, css: string) {
+  let images = 0;
+  for (const m of html.matchAll(/data:image\/[^"')\s]+/g)) images += m[0].length;
+  return { images, styles: css.length, markup: Math.max(0, html.length - images - css.length) };
 }

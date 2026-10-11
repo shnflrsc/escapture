@@ -73,7 +73,7 @@ async function renderReady(auth: Extract<AuthState, { signedIn: true }>, last: L
     h("h1", {}, "Capture evidence"),
     ...(error ? [h("p", { class: "note attention", role: "alert" }, error)] : []),
     supported
-      ? h("p", { class: "helper" }, "Choose Capture this page, then click the post or conversation you want to keep.")
+      ? h("p", { class: "helper" }, "Choose Capture this page, then click the post or the messages you want to keep.")
       : h("p", { class: "note info" }, "Open the Facebook post or Messenger conversation you want to keep, then open this again."),
     capture,
     h("p", { class: "helper" }, "Messenger captures include only the messages loaded on screen. Capturing messages is meant for conversations you took part in."),

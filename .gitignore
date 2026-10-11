@@ -46,3 +46,6 @@ next-env.d.ts
 
 # extension build output
 /extension/dist/
+
+# real page samples for tuning capture (contain personal data, never commit)
+/fixtures/real/
