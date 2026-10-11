@@ -63,7 +63,7 @@ export type Snapshot = {
   // Internal state between buildSnapshot, loadStyles and serialize.
   candidates: Candidate[];
   cloneOf: Map<Element, Element>;
-  live: { top: Element; classes: Set<string> };
+  live: { top: Element; extras: Element[]; classes: Set<string> };
   context: Map<string, string>; // inline declarations for the wrapper
   cssImages: Map<string, string | null>;
   css: string;
@@ -147,6 +147,88 @@ function sanitizeAttributes(el: Element) {
   }
 }
 
+/** An SVG <image>: embedded like any other picture, at the size it is shown. */
+function embedSvgImage(snap: Snapshot, o: SVGImageElement, c: Element) {
+  const url = o.href.baseVal;
+  c.removeAttribute("xlink:href");
+  c.removeAttribute("href");
+  if (url.startsWith("data:image/")) c.setAttribute("href", url);
+  else if (url) {
+    snap.images.push({
+      url,
+      displayWidth: o.getBoundingClientRect().width,
+      apply: (dataUrl) => {
+        if (dataUrl) c.setAttribute("href", dataUrl);
+        else c.removeAttribute("href");
+      },
+    });
+  }
+}
+
+/**
+ * The accessible label of an element, when the page keeps it somewhere
+ * outside the selection (Facebook does this for timestamps). It is kept as a
+ * tooltip, so the plain text survives however the page draws it.
+ */
+function outsideLabel(o: Element, top: Element): string | null {
+  const ids = o.getAttribute("aria-labelledby");
+  if (!ids) return null;
+  const text = ids
+    .split(/\s+/)
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => Boolean(el) && !top.contains(el))
+    .map((el) => el.textContent?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ");
+  return text && text.length <= 200 ? text : null;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+const ID_REF = /url\(["']?#([^"')]+)["']?\)/g;
+
+/**
+ * SVG can draw something defined elsewhere on the page: <use href="#id">, or
+ * mask="url(#id)". Facebook draws feed timestamps this way, with the text kept
+ * in a shared block outside the post. Anything the selection points to that
+ * is not inside it is copied into a hidden holder so the reference still works.
+ */
+function includeReferenced(snap: Snapshot) {
+  const { top } = snap.live;
+  const wanted = new Set<string>();
+  for (const el of [snap.root, ...snap.root.querySelectorAll("*")]) {
+    if (el.namespaceURI !== SVG_NS) continue;
+    for (const attr of el.attributes) {
+      if ((attr.name === "href" || attr.name === "xlink:href") && attr.value.startsWith("#")) wanted.add(attr.value.slice(1));
+      else for (const m of attr.value.matchAll(ID_REF)) wanted.add(m[1]);
+    }
+  }
+  let holder: Element | null = null;
+  for (const id of wanted) {
+    const original = document.getElementById(id);
+    if (!original || original.namespaceURI !== SVG_NS || top.contains(original) || original.contains(top)) continue;
+    if (original.querySelectorAll("*").length > 500) continue; // a whole sprite sheet, not a single item
+    const copy = original.cloneNode(true) as Element;
+    const originals = [original, ...original.querySelectorAll("*")];
+    const copies = [copy, ...copy.querySelectorAll("*")];
+    originals.forEach((o, i) => {
+      const c = copies[i];
+      if (REMOVE.has(o.tagName.toUpperCase())) return c.remove();
+      sanitizeAttributes(c);
+      if (o instanceof SVGImageElement) embedSvgImage(snap, o, c);
+      snap.cloneOf.set(o, c);
+    });
+    if (!holder) {
+      holder = document.createElementNS(SVG_NS, "svg");
+      holder.setAttribute("width", "0");
+      holder.setAttribute("height", "0");
+      holder.setAttribute("style", "position:absolute;width:0;height:0;overflow:hidden");
+      snap.root.appendChild(holder);
+    }
+    holder.appendChild(copy);
+    snap.live.extras.push(original);
+  }
+}
+
 /** Lowest element that contains every target. */
 function commonAncestor(targets: Element[]): Element {
   let root: Element = targets[0];
@@ -193,7 +275,7 @@ const absoluteUrls = (css: string, base: string) =>
  * (themes, layout modes) count.
  */
 function collectRules(snap: Snapshot, rules: CSSRuleList, sheetIndex: number, base: string) {
-  const { top, classes } = snap.live;
+  const { top, extras, classes } = snap.live;
   let n = 0;
   const walk = (list: CSSRuleList) => {
     for (const rule of list) {
@@ -213,10 +295,12 @@ function collectRules(snap: Snapshot, rules: CSSRuleList, sheetIndex: number, ba
             for (const m of baseSel.matchAll(CLASS_TOKEN)) if (!classes.has(m[1])) absent = true;
             if (absent) continue;
           }
-          let found: Element[];
+          const found: Element[] = [];
           try {
-            found = [...top.querySelectorAll(baseSel)];
-            if (top.matches(baseSel)) found.unshift(top);
+            for (const root of [top, ...extras]) {
+              if (root.matches(baseSel)) found.push(root);
+              found.push(...root.querySelectorAll(baseSel));
+            }
           } catch {
             continue;
           }
@@ -287,7 +371,7 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     warnings: [],
     candidates: [],
     cloneOf: new Map(),
-    live: { top, classes: new Set() },
+    live: { top, extras: [], classes: new Set() },
     context: new Map(),
     cssImages: new Map(),
     css: "",
@@ -321,7 +405,9 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     }
 
     const authored = o.getAttribute("style") ?? "";
+    const label = outsideLabel(o, top);
     sanitizeAttributes(c);
+    if (label) c.setAttribute("title", label);
 
     if (isScaffold) {
       // Plain structure only: no page classes, just how its children are laid out.
@@ -353,6 +439,8 @@ export function buildSnapshot(targets: Element[]): Snapshot {
           },
         });
       }
+    } else if (o instanceof SVGImageElement) {
+      embedSvgImage(snap, o, c);
     } else if (o instanceof HTMLCanvasElement) {
       let data: string | null = null;
       try {
@@ -422,9 +510,12 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     }
   }
   for (const el of remove) el.remove();
+  includeReferenced(snap);
 
   // Class names in and around the selection, for cheap rule rejection.
-  for (const o of originals) for (const name of o.classList) snap.live.classes.add(name);
+  for (const o of [...originals, ...snap.live.extras.flatMap((e) => [e, ...e.querySelectorAll("*")])]) {
+    for (const name of o.classList) snap.live.classes.add(name);
+  }
   for (let el = top.parentElement; el; el = el.parentElement) for (const name of el.classList) snap.live.classes.add(name);
 
   // What the selection inherits from the page around it.

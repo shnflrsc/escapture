@@ -122,7 +122,7 @@ async function fetchImage(url: string, maxWidth?: number, quality = 0.8): Promis
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     let blob = await res.blob();
     if (!blob.type.startsWith("image/")) return { ok: false, error: "not an image" };
-    if (maxWidth && blob.type !== "image/svg+xml") {
+    if (maxWidth && !blob.type.startsWith("image/svg")) {
       const bitmap = await createImageBitmap(blob);
       const small = bitmap.width <= maxWidth && blob.size <= 30 * 1024 && blob.type !== "image/gif";
       if (!small) {

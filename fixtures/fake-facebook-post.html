@@ -19,6 +19,7 @@
       .comments { border-top: 1px solid #ced0d4; margin-top: 12px; padding-top: 8px; display: grid; gap: 8px; }
       .comment { background: #f0f2f5; border-radius: 16px; padding: 8px 12px; font-size: 14px; }
       .comment b { display: block; font-size: 13px; }
+      .stamp { fill: #65676b; font-size: 13px; }
       /* The cases a capture has to get right, as on the real site: */
       :root { --accent: #1877f2; --muted: #65676b; }
       /* depends on an ancestor outside the captured post, and on a variable */
@@ -40,10 +41,12 @@
     <div class="feed">
       <div class="post" data-testid="post-1">
         <div class="head">
-          <img class="avatar" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%2385B8CE'/%3E%3C/svg%3E" />
+          <!-- Real Facebook draws profile pictures as a masked SVG image, not an <img>. -->
+          <svg class="avatar" role="img" aria-label="Sample Classmate" style="height: 40px; width: 40px"><mask id="avatar-mask-1"><circle cx="20" cy="20" r="20" fill="white"></circle></mask><g mask="url(#avatar-mask-1)"><image x="0" y="0" height="100%" width="100%" preserveAspectRatio="xMidYMid slice" xlink:href="avatar.svg" style="height: 40px; width: 40px"></image></g></svg>
           <div>
             <div data-ad-rendering-role="profile_name"><h4 class="name">Sample Classmate</h4></div>
-            <div class="meta">12 October 2026 at 14:03 · Public</div>
+            <!-- ...and feed timestamps as a reference to text kept outside the post, labelled from outside too. -->
+            <div class="meta"><a href="https://www.facebook.com/sample.classmate/posts/1000001"><span aria-labelledby="time-label-1"><svg style="height: 17px; width: 30px; overflow: visible; vertical-align: sub"><use xlink:href="#SvgT1" xmlns:xlink="http://www.w3.org/1999/xlink"></use></svg></span></a> · Public</div>
           </div>
         </div>
         <div class="text">
@@ -68,6 +71,9 @@
         <div class="actions"><span role="button"><i data-ad-rendering-role="like_button"></i>Like</span><span role="button"><i data-ad-rendering-role="comment_button"></i>Comment</span><span role="button"><i data-ad-rendering-role="share_button"></i>Share</span></div>
       </div>
     </div>
+    <!-- Shared text and labels, outside every post, as on the real site. -->
+    <svg width="0" height="0" style="position: absolute"><text id="SvgT1" class="stamp" y="13">17h</text></svg>
+    <span id="time-label-1" style="position: absolute; clip: rect(0 0 0 0); width: 1px; height: 1px; overflow: hidden">Sunday 11 October 2026 at 21:03</span>
     <!-- These must never run inside the SafeTrail viewer. -->
     <script>window.__fixtureScriptRan = true;</script>
     <img alt="" src="data:image/gif;base64,invalid" onerror="window.__fixtureOnerrorRan = true" style="display:none" />
