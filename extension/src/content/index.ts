@@ -1,7 +1,7 @@
 // Isolated-world content script, injected on demand when the student chooses
 // "Capture this page": element picker, tamper checks, snapshot building.
 import { captureHost, gzip, MAX_BYTES, MAX_UPLOAD_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
-import { queryGuard, runChecksAll, type GuardState } from "./checks";
+import { queryGuard, runChecksAll } from "./checks";
 import { buildSnapshot, loadStyles, serialize, sizeBreakdown } from "./snapshot";
 
 declare global {
@@ -101,7 +101,6 @@ class Session {
   private hover: Element | null = null;
   private items: Item[] = [];
   private kind: Kind = detectKind();
-  private guard: GuardState | null = null;
   private picking = false;
   private frame = 0;
 
@@ -113,7 +112,6 @@ class Session {
     if (this.picking) return;
     document.documentElement.appendChild(this.host);
     this.picking = true;
-    void queryGuard().then((g) => (this.guard = g));
     this.renderBar();
     document.addEventListener("mousemove", this.onMove, true);
     document.addEventListener("click", this.onClick, true);
@@ -385,13 +383,27 @@ class Session {
     this.stopPicking();
     // Take our own UI out of the page before reading it.
     this.host.remove();
-    const guard = (await queryGuard()) ?? this.guard;
+    // The page guard is told which elements are being captured by a throw-away
+    // attribute (elements can't be passed between the two script worlds).
+    const mark = `data-st-${crypto.randomUUID().replace(/-/g, "")}`;
+    for (const t of targets) t.setAttribute(mark, "");
+    const guard = await queryGuard(mark);
 
     // --- Same task from here to the end of buildSnapshot: check, then clone. ---
-    const report = runChecksAll(targets, guard);
+    let report = runChecksAll(targets, guard);
     const clientCapturedAt = new Date().toISOString();
-    const snap = report.allPassed ? buildSnapshot(targets) : null;
+    let snap = report.allPassed ? buildSnapshot(targets) : null;
     // --------------------------------------------------------------------------
+    if (snap) {
+      // Ask again: a change made between the first answer and the clone is
+      // reported to the guard a moment later and would otherwise be missed.
+      const after = runChecksAll(targets, await queryGuard(mark));
+      if (!after.allPassed) {
+        report = after;
+        snap = null;
+      }
+    }
+    for (const t of targets) t.removeAttribute(mark);
     document.documentElement.appendChild(this.host);
 
     if (!snap) {

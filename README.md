@@ -85,7 +85,15 @@ To try it without Facebook, run `pnpm fixtures:serve` and capture from http://lo
 
 What the capture does, in the style of SingleFile: it runs the tamper checks and clones the selection in the same task, keeping the page's own class names. It then keeps only the page's style rules that apply to the selection (rules for hover and focus states, fonts and animations are left out; media queries are resolved as they were at capture; theme variables are resolved to their values), and renames the classes to short names. A rule that depended on something outside the selection is rewritten so it still applies. Style sheets the page itself may not read (cross-origin, no CORS) are fetched through the extension; if one cannot be read, the capture is saved with a note that it may look different. Anything not rendered or taking no space is left out, wrappers that carry nothing are removed, and images are embedded as data URIs at the size they are shown (each repeated image is stored once; animated images become their first frame; everything is shrunk further if the capture still does not fit). Scripts, event handlers, forms and anything that could load remotely are stripped. The result is one minified HTML document, hashed byte for byte and uploaded gzip-compressed. The server unpacks it, recomputes the hash and rejects a mismatch.
 
-Tamper checks (capture is refused if any fails): page editing mode (`designMode`) is on or was switched on earlier on this page; the selected area, an ancestor or a descendant is `contenteditable` (the message composer is exempt and its text is left out of the capture); userscript-manager markers are present; a `<script>` or `<style>` element sits inside the selected area.
+Tamper checks (capture is refused if any fails):
+
+1. **Page editing mode** (`designMode`) is on, or was switched on earlier on this page.
+2. **Editable content:** the selected area, an ancestor or a descendant is `contenteditable` (the message composer is exempt and its text is left out of the capture).
+3. **Userscript managers:** their markers are present.
+4. **Injected elements:** a `<script>` or `<style>` element sits inside the selected area.
+5. **DOM provenance:** text in the selected area was changed by something other than the page's own scripts. A guard that loads before the page's scripts hooks every function that can change content and reads the real call stack of each call. A change is accepted only if every script on that stack was served by the page itself; a change with no script behind it at all (the DevTools Elements panel, another extension), or made from the console, a userscript or a script from elsewhere, is recorded. Genuine typing in the message composer is allowed. Changes elsewhere on the page do not block a capture; they are noted in its tamper report.
+
+The provenance guard is ported from our DOM Tamper Detector extension (`extension/src/content/page-guard.js`). It only watches pages that were loaded after the extension was installed or reloaded, so after installing, **reload the Facebook tab**; otherwise capture is refused with that instruction.
 
 ## Testing
 
@@ -136,8 +144,8 @@ A stored capture can be up to 12 MB. It is uploaded gzip-compressed, and the com
 
 These match the Risks section of the proposal. Say them out loud in a demo.
 
-- **Tamper-checked, not tamper-proof.** The checks catch edits made by hand through page editing mode, editable content and common userscripts. They do not catch modified Facebook code (local overrides, a proxy), rewriting in transit, or edits made through the DevTools Elements panel that leave no trace in the page. The page guard that reports editing history runs in the page's own JavaScript world, so a hostile page could forge it.
-- **Mutation-provenance checking is not included.** The experimental check that attributes DOM changes to page scripts was cut (it is on the spec's cut list) because it could not be validated against real Facebook pages.
+- **Tamper-checked, not tamper-proof.** The checks catch edits made by hand: page editing mode, editable content, the DevTools Elements panel and console, userscripts and other extensions. They do not catch modified Facebook code (Local Overrides, a rewriting proxy, a userscript that patches Facebook's own functions so that Facebook itself writes the fake text), or rewriting in transit. Text that is not in the page as text (CSS-generated content, attributes, images) is not watched. A script that runs before the guard could take over its private channel.
+- **The provenance check can refuse a genuine page.** It has been tested on local test pages, not yet on live Facebook. Known causes of a wrong refusal: a browser translation of the page, a password manager or other extension writing text into the selected area, and scripts the site first loads from a new address after the page has settled. The refusal message names the cause.
 - **Captured is not the same as complete.** The hash shows the stored file hasn't changed since it was saved. It does not show the page was genuine or that nothing was left out. Messenger captures include only the messages loaded on screen.
 - **No email verification.** The only sign-up gate is the email domain, so someone could claim a BulSU address they don't own.
 - **Sharing can leak, and can't be undone.** People who receive evidence or a case can pass it on. Shares and links can't be revoked in this version.

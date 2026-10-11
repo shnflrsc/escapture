@@ -23,6 +23,11 @@
       "js": ["page-guard.js"],
       "run_at": "document_start",
       "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.facebook.com/*", "https://web.facebook.com/*", "https://www.messenger.com/*"],
+      "js": ["guard-bridge.js"],
+      "run_at": "document_start"
     }
   ]
 }

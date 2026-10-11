@@ -1,31 +1,33 @@
 import type { TamperCheck, TamperReport } from "../shared/types";
 
+/** The page guard's answer about the elements being captured. See page-guard.js. */
 export type GuardState = {
+  /** False while the page is still loading; changes are only judged once this is true. */
+  armed: boolean;
+  /** Whether the browser's call-site API was available to tell page scripts from others. */
+  callSites: boolean;
+  /** False if any of the guard's hooks on DOM functions was replaced after load. */
+  intact: boolean;
+  /** True if the guard's analysis of a change was disturbed (for example poisoned built-ins). */
+  analysisFailed: boolean;
+  /** True if there were too many unattributed changes to keep track of. */
+  storm: boolean;
+  /** How many marked elements the guard found. */
+  targets: number;
   designModeEverOn: boolean;
-  editableAdded: number;
   userscriptGlobals: string[];
+  /** Why text in the selection changed without coming from the page's own scripts. */
+  hits: string[];
+  /** Unattributed changes elsewhere on the page. */
+  elsewhere: number;
 };
 
-/** Asks the MAIN-world guard for its state. Resolves null if it isn't there. */
-export function queryGuard(timeoutMs = 400): Promise<GuardState | null> {
-  return new Promise((resolve) => {
-    // Per-session nonce so stray messages aren't mistaken for the reply.
-    // A hostile page can still read the query and forge a reply; see page-guard.ts.
-    const nonce = crypto.randomUUID();
-    const done = (value: GuardState | null) => {
-      window.removeEventListener("message", onMessage);
-      clearTimeout(timer);
-      resolve(value);
-    };
-    const onMessage = (event: MessageEvent) => {
-      if (event.source !== window) return;
-      const d = event.data as { source?: string; nonce?: string; state?: GuardState } | null;
-      if (d?.source === "safetrail-guard" && d.nonce === nonce && d.state) done(d.state);
-    };
-    const timer = setTimeout(() => done(null), timeoutMs);
-    window.addEventListener("message", onMessage);
-    window.postMessage({ source: "safetrail-content", type: "guard:query", nonce }, window.location.origin);
-  });
+/**
+ * Asks the MAIN-world guard, through the isolated-world bridge, what happened
+ * to the elements carrying the attribute `mark`. Null if no guard is running.
+ */
+export function queryGuard(mark: string): Promise<GuardState | null> {
+  return globalThis.__safetrailBridge?.query(mark) ?? Promise.resolve(null);
 }
 
 const isEditable = (el: Element) => {
@@ -38,13 +40,35 @@ export const isComposer = (el: Element) => el.getAttribute("role") === "textbox"
 
 const USERSCRIPT_MARKERS = /tampermonkey|violentmonkey|greasemonkey|userscript/i;
 
+/** 5. Did text in the selection change other than through the page's own scripts? */
+function provenance(guard: GuardState | null, expectedTargets: number): TamperCheck {
+  const id = "dom-provenance";
+  const fail = (detail: string): TamperCheck => ({ id, passed: false, detail });
+  if (!guard) {
+    return fail("The tamper guard was not running when this page loaded, so changes to it could not be watched. Reload the page and capture again.");
+  }
+  if (!guard.callSites) return fail("This browser can't tell the page's own scripts from others, so changes can't be checked.");
+  if (!guard.armed) return fail("The page is still loading. Wait a moment and capture again.");
+  if (guard.targets < expectedTargets) return fail("The tamper guard could not find the selected area. Reload the page and capture again.");
+  if (!guard.intact) return fail("The page's built-in functions for changing content were replaced after it loaded.");
+  if (guard.analysisFailed) return fail("A change to the page could not be checked because the page's built-in functions had been altered.");
+  if (guard.storm) return fail("There were too many unexplained changes on this page to check them.");
+  if (guard.hits.length) {
+    return fail(`Text in the selected area was changed by ${guard.hits.join("; and by ")}, not by the page itself.`);
+  }
+  return { id, passed: true };
+}
+
 /**
- * Static tamper checks. Synchronous on purpose: they run immediately before
- * the clone, in the same task, so the page can't change in between.
+ * Tamper checks for one selected element. Synchronous on purpose: they run
+ * immediately before the clone, in the same task, so the page can't change in
+ * between (the guard's answer is fetched just before, and asked for again
+ * just after).
+ *
  * These do NOT stop modified Facebook code, local overrides, proxies or
  * in-transit rewriting. Results must never be described as tamper-proof.
  */
-export function runChecks(target: Element, guard: GuardState | null): TamperReport {
+export function runChecks(target: Element, guard: GuardState | null, expectedTargets = 1): TamperReport {
   const checks: TamperCheck[] = [];
   const warnings: string[] = [];
 
@@ -100,17 +124,20 @@ export function runChecks(target: Element, guard: GuardState | null): TamperRepo
     detail: injected ? `A <${injected.tagName.toLowerCase()}> element is inside the selected area.` : undefined,
   });
 
-  if (!guard) warnings.push("The page guard was not active, so editing history and userscript globals could not be checked.");
-  else if (guard.editableAdded > 0) warnings.push("Content on this page was made editable at some point since it loaded.");
-  // Mutation-provenance checking (attributing DOM changes to page scripts) is
-  // not implemented in this version; see README "Known limitations".
+  // 5. Changes that did not come from the page's own scripts.
+  checks.push(provenance(guard, expectedTargets));
+  if (guard && guard.elsewhere > 0) {
+    warnings.push(
+      `${guard.elsewhere} change${guard.elsewhere === 1 ? "" : "s"} elsewhere on this page did not come from the page's own scripts. The captured area was not affected.`,
+    );
+  }
 
   return { checks, allPassed: checks.every((c) => c.passed), warnings: warnings.length ? warnings : undefined };
 }
 
 /** Runs the checks for every selected item. Capture is refused if any item fails any check. */
 export function runChecksAll(targets: Element[], guard: GuardState | null): TamperReport {
-  const reports = targets.map((t) => runChecks(t, guard));
+  const reports = targets.map((t) => runChecks(t, guard, targets.length));
   const checks = reports[0].checks.map((first, i) => {
     const failed = reports.map((r) => r.checks[i]).find((c) => !c.passed);
     return failed ?? first;

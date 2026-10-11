@@ -19,6 +19,7 @@
       .comments { border-top: 1px solid #ced0d4; margin-top: 12px; padding-top: 8px; display: grid; gap: 8px; }
       .comment { background: #f0f2f5; border-radius: 16px; padding: 8px 12px; font-size: 14px; }
       .comment b { display: block; font-size: 13px; }
+      .more { margin-top: 8px; font-size: 13px; font-weight: 600; color: #65676b; }
       .stamp { fill: #65676b; font-size: 13px; }
       /* The cases a capture has to get right, as on the real site: */
       :root { --accent: #1877f2; --muted: #65676b; }
@@ -58,6 +59,7 @@
           <div class="comment" role="article"><b>Another Student</b>HAHAHA i know exactly who</div>
           <div class="comment" role="article"><b>Third Student</b>tag them next time</div>
         </div>
+        <div class="more"><span id="more" role="button">View more comments</span></div>
       </div>
       <div class="post" data-testid="post-2">
         <div class="head">
@@ -74,6 +76,44 @@
     <!-- Shared text and labels, outside every post, as on the real site. -->
     <svg width="0" height="0" style="position: absolute"><text id="SvgT1" class="stamp" y="13">17h</text></svg>
     <span id="time-label-1" style="position: absolute; clip: rect(0 0 0 0); width: 1px; height: 1px; overflow: hidden">Sunday 11 October 2026 at 21:03</span>
+    <!-- Content the page adds by itself, as the real site does. The tamper guard must accept
+         these, and must refuse the same changes when they come from anywhere else.
+         ?comments=N and ?filler=N make a large post for size tests. -->
+    <script>
+      (function () {
+        var post = document.querySelector('[data-testid="post-1"]');
+        var list = post.querySelector(".comments");
+        var params = new URLSearchParams(location.search);
+        function addComment(name, text, hidden) {
+          var row = document.createElement("div");
+          row.className = "comment";
+          row.setAttribute("role", "article");
+          var who = document.createElement("b");
+          who.textContent = name;
+          row.appendChild(who);
+          row.appendChild(document.createTextNode(text));
+          if (hidden) {
+            var extra = document.createElement("i");
+            extra.style.display = "none";
+            extra.textContent = hidden;
+            row.appendChild(extra);
+          }
+          list.appendChild(row);
+        }
+        for (var i = 0; i < Number(params.get("comments") || 0); i++) {
+          addComment("Student " + i, "comment number " + i + " on this post", "hidden tracking node " + i);
+        }
+        if (params.get("filler")) {
+          var big = document.createElement("div");
+          big.textContent = "ab ".repeat(Number(params.get("filler")));
+          big.style.cssText = "height:10px;overflow:hidden";
+          post.appendChild(big);
+        }
+        document.getElementById("more").addEventListener("click", function () {
+          addComment("Fourth Student", "late to this but same");
+        });
+      })();
+    </script>
     <!-- These must never run inside the SafeTrail viewer. -->
     <script>window.__fixtureScriptRan = true;</script>
     <img alt="" src="data:image/gif;base64,invalid" onerror="window.__fixtureOnerrorRan = true" style="display:none" />

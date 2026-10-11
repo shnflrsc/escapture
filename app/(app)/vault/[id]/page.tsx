@@ -15,6 +15,7 @@ const CHECK_LABELS: Record<string, string> = {
   contenteditable: "No editable content in the captured area",
   "userscript-markers": "No userscript manager detected",
   "injected-elements": "No injected scripts or styles in the captured area",
+  "dom-provenance": "No changes to the captured area from outside the page's own scripts",
 };
 
 // Per-user page: allowed to wait for the server on navigation.
