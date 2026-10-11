@@ -79,7 +79,7 @@
     CSP = gPO(cs0[0]);
     ownFile = R_apply(CSP.getFileName, cs0[0], []) || '';
   } catch (_) { CSP = null; }
-  const csFile = CSP && bindCall(CSP.getFileName), csEval = CSP && bindCall(CSP.isEval), csFn = CSP && bindCall(CSP.getFunctionName), csEvalOrigin = CSP && bindCall(CSP.getEvalOrigin);
+  const csFile = CSP && bindCall(CSP.getFileName), csEval = CSP && bindCall(CSP.isEval), csFn = CSP && bindCall(CSP.getFunctionName), csEvalOrigin = CSP && bindCall(CSP.getEvalOrigin), csLine = CSP && bindCall(CSP.getLineNumber);
 
   // ---------- origin allow-list (what counts as "the page's own script") ----------
   let armed = false;
@@ -127,9 +127,15 @@
     if (!frames || typeof frames === 'string' || typeof frames.length !== 'number') return bad('stack-unavailable');
     let sawApp = false;
     for (let i = 0; i < frames.length; i++) {
-      let file, isEval, fn, eo;
-      try { file = csFile(frames[i]); isEval = csEval(frames[i]); fn = csFn(frames[i]); eo = isEval ? csEvalOrigin(frames[i]) : ''; } catch (_) { return bad('stack-forged'); }
+      let file, isEval, fn, eo, line;
+      try { file = csFile(frames[i]); isEval = csEval(frames[i]); fn = csFn(frames[i]); eo = isEval ? csEvalOrigin(frames[i]) : ''; line = csLine(frames[i]); } catch (_) { return bad('stack-forged'); }
       if (file === ownFile) continue;
+      // SafeTrail fix: a frame with no file AND no position is one of the engine's own built-ins
+      // (Array.forEach, Promise.then, JSON.parse...), which every real app has on its stacks. It is
+      // not code anyone wrote, so it neither clears nor condemns the call. Anything written in
+      // JavaScript, including console input, always has a line number. A call reached ONLY through
+      // built-ins still ends as "no page script behind it" below.
+      if (!file && !isEval && line == null) continue;
       if (isEval) {                                                // new Function/eval is fine only if it was created by a page script
         const at = eo ? str.indexOf(S(eo), 'http') : -1;
         if (at > -1 && isAppUrl(str.slice(S(eo), at))) { sawApp = true; continue; }
@@ -138,7 +144,7 @@
       if (!file) return bad('an anonymous script, such as the DevTools console', true);
       if (file === docUrlNoHash && isHandlerName(fn)) return bad('an inline event-handler attribute (' + fn + ')', true);
       if (file === docUrlNoHash || isAppUrl(file)) { sawApp = true; continue; }
-      return bad('a script that is not part of the page, such as a userscript or another extension', true);
+      return bad('a script that is not part of the page, such as a userscript or another extension (' + (originOf(file) || str.slice(S(file), 0, 60)) + ')', true);
     }
     return sawApp ? OK : bad('a browser function called with no page script behind it');
   }

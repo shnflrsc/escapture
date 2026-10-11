@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="safetrail:fixture-kind" content="facebook_post" />
+    <title>Legitimate app patterns (SafeTrail fixture)</title>
+    <style>
+      body { font-family: Helvetica, Arial, sans-serif; margin: 16px; }
+      .row { display: flex; gap: 12px; align-items: center; margin: 2px 0; font-size: 13px; }
+      button { width: 260px; text-align: left; }
+      .out { min-height: 16px; color: #333; }
+    </style>
+  </head>
+  <body>
+    <h1>Legitimate app patterns</h1>
+    <p>
+      Every button changes its own row through a pattern real web apps use. All of it is the page's own code, so the
+      tamper guard must accept every one. The last section lists patterns that are known to be refused.
+    </p>
+    <div id="rows"></div>
+    <template id="tpl"><b>from a template</b></template>
+    <script>
+      (function () {
+        var rows = document.getElementById("rows");
+        var patterns = [];
+        function add(name, run, expectRefused) {
+          patterns.push({ name: name, run: run, expectRefused: !!expectRefused });
+        }
+        var say = function (out, text) { out.textContent = text; };
+
+        add("direct textContent", function (out) { out.textContent = "ok"; });
+        add("Array.forEach", function (out) { ["a", "b"].forEach(function (t) { out.appendChild(document.createTextNode(t)); }); });
+        add("Array.map + append spread", function (out) { out.append.apply(out, ["a", "b"].map(function (t) { return document.createTextNode(t); })); });
+        add("Array.reduce", function (out) { ["a", "b"].reduce(function (_, t) { out.appendChild(document.createTextNode(t)); }, null); });
+        add("Array.from with mapper", function (out) { Array.from({ length: 2 }, function (_, i) { out.appendChild(document.createTextNode(String(i))); }); });
+        add("Array.sort comparator", function (out) { [2, 1].sort(function (a, b) { out.textContent = "sorted"; return a - b; }); });
+        add("Map.forEach / Set.forEach", function (out) { new Map([["k", "v"]]).forEach(function (v) { out.textContent = v; }); new Set(["s"]).forEach(function (v) { out.append(v); }); });
+        add("for...of over a generator", function (out) { function* g() { yield "x"; yield "y"; } for (var v of g()) out.append(v); });
+        add("Object.assign(el, { textContent })", function (out) { Object.assign(out, { textContent: "assigned" }); });
+        add("String.replace callback", function (out) { "a".replace(/a/, function () { out.textContent = "replaced"; return "b"; }); });
+        add("JSON.parse reviver", function (out) { JSON.parse('{"a":1}', function (k, v) { if (k === "a") out.textContent = "revived"; return v; }); });
+        add("Reflect.apply / call / apply / bind", function (out) { Reflect.apply(say, null, [out, "r"]); say.call(null, out, "c"); say.apply(null, [out, "a"]); say.bind(null, out, "bound")(); });
+        add("Promise.then", function (out) { Promise.resolve("then").then(function (v) { out.textContent = v; }); });
+        add("async / await", function (out) { (async function () { await null; out.textContent = "awaited"; })(); });
+        add("Promise.all", function (out) { Promise.all([1, 2]).then(function (v) { out.textContent = v.join(","); }); });
+        add("queueMicrotask", function (out) { queueMicrotask(function () { out.textContent = "microtask"; }); });
+        add("setTimeout", function (out) { setTimeout(function () { out.textContent = "timeout"; }, 0); });
+        add("setInterval", function (out) { var id = setInterval(function () { clearInterval(id); out.textContent = "interval"; }, 1); });
+        add("requestAnimationFrame", function (out) { requestAnimationFrame(function () { out.textContent = "frame"; }); });
+        add("requestIdleCallback", function (out) { (window.requestIdleCallback || setTimeout)(function () { out.textContent = "idle"; }); });
+        add("MessageChannel (React scheduler)", function (out) { var c = new MessageChannel(); c.port1.onmessage = function () { out.textContent = "scheduled"; }; c.port2.postMessage(null); });
+        add("window.postMessage to self", function (out) { var h = function (e) { if (e.data === "st-pattern") { removeEventListener("message", h); out.textContent = "posted"; } }; addEventListener("message", h); postMessage("st-pattern", "*"); });
+        add("MutationObserver callback", function (out) { var probe = document.createElement("i"); new MutationObserver(function (_, o) { o.disconnect(); out.textContent = "observed"; }).observe(probe, { attributes: true }); probe.setAttribute("x", "1"); });
+        add("ResizeObserver callback", function (out) { var o = new ResizeObserver(function () { o.disconnect(); out.textContent = "resized"; }); o.observe(out); });
+        add("IntersectionObserver callback", function (out) { var o = new IntersectionObserver(function () { o.disconnect(); out.textContent = "intersected"; }); o.observe(out); });
+        add("nested event: el.click()", function (out) { var b = document.createElement("button"); b.addEventListener("click", function () { out.textContent = "nested click"; }); b.click(); });
+        add("dispatchEvent(CustomEvent)", function (out) { out.addEventListener("st", function () { out.textContent = "custom event"; }, { once: true }); out.dispatchEvent(new CustomEvent("st")); });
+        add("handler set as a property (el.onclick = fn)", function (out) { var b = document.createElement("button"); b.onclick = function () { out.textContent = "property handler"; }; b.click(); });
+        add("fetch().then", function (out) { fetch(location.href).then(function (r) { return r.text(); }).then(function () { out.textContent = "fetched"; }); });
+        add("innerHTML", function (out) { out.innerHTML = "<b>inner</b> html"; });
+        add("insertAdjacentHTML", function (out) { out.insertAdjacentHTML("beforeend", "<i>adjacent</i>"); });
+        add("template clone", function (out) { out.appendChild(document.getElementById("tpl").content.cloneNode(true)); });
+        add("DocumentFragment", function (out) { var f = document.createDocumentFragment(); f.append("frag", "ment"); out.appendChild(f); });
+        add("Range.createContextualFragment", function (out) { out.appendChild(document.createRange().createContextualFragment("<u>range</u>")); });
+        add("DOMParser + adoptNode", function (out) { var d = new DOMParser().parseFromString("<p>parsed</p>", "text/html"); out.appendChild(document.adoptNode(d.body.firstChild)); });
+        add("replaceChildren / replaceWith", function (out) { out.replaceChildren("first"); out.firstChild.replaceWith("second"); });
+        add("Text.nodeValue / appendData", function (out) { var t = document.createTextNode("a"); out.appendChild(t); t.nodeValue = "node"; t.appendData(" data"); });
+        add("remove then re-add text", function (out) { out.textContent = "one"; out.firstChild.remove(); out.append("two"); });
+        add("custom element connectedCallback", function (out) { if (!customElements.get("st-pattern")) customElements.define("st-pattern", class extends HTMLElement { connectedCallback() { this.textContent = "custom element"; } }); out.appendChild(document.createElement("st-pattern")); });
+        add("class constructor + super", function (out) { class A { constructor() { out.textContent = "base"; } } class B extends A { constructor() { super(); out.append(" derived"); } } new B(); });
+        add("new Function made by the page", function (out) { new Function("out", "out.textContent = 'new Function'")(out); });
+        add("eval made by the page", function (out) { window.__stOut = out; (0, eval)("window.__stOut.textContent = 'eval'"); });
+        add("getter / setter / Proxy trap", function (out) { var p = new Proxy({}, { get: function () { out.textContent = "proxy"; return 1; } }); void p.x; });
+        add("try / finally and throw-catch", function (out) { try { throw new Error("x"); } catch (e) { out.textContent = "caught"; } finally { out.append(" finally"); } });
+        add("deep recursion (60 frames)", function (out) { (function r(n) { if (n) return r(n - 1); out.textContent = "deep"; })(60); });
+
+        // Known and accepted: indistinguishable from an attack at the DOM layer.
+        add("timer bound directly to a native (setTimeout(el.remove.bind(el)))", function (out) { out.textContent = "x"; setTimeout(out.firstChild.remove.bind(out.firstChild), 0); }, true);
+
+        patterns.forEach(function (p, i) {
+          var row = document.createElement("div");
+          row.className = "row";
+          var b = document.createElement("button");
+          b.id = "p-" + i;
+          b.textContent = p.name;
+          var out = document.createElement("span");
+          out.className = "out";
+          out.id = "out-" + i;
+          b.addEventListener("click", function () { p.run(out); });
+          row.appendChild(b);
+          row.appendChild(out);
+          rows.appendChild(row);
+        });
+        window.__patterns = patterns.map(function (p) { return { name: p.name, expectRefused: p.expectRefused }; });
+      })();
+    </script>
+  </body>
+</html>
