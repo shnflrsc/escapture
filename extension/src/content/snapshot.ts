@@ -59,6 +59,12 @@ export type Snapshot = {
   background: string;
   /** Background of the nearest painted element around the selection, for the wrapper. */
   backdrop: string;
+  /**
+   * The same, measured from the first selected ITEM rather than from the copied root. When
+   * several items are selected the root is their common container, which may itself be what
+   * paints behind them; a merged capture drops that container and needs this instead.
+   */
+  itemBackdrop: string;
   /** Style sheets the page would not let us read directly. See loadStyles. */
   unreadSheets: { href: string; index: number }[];
   warnings: string[];
@@ -405,6 +411,7 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     width: Math.max(...targets.map((t) => t.getBoundingClientRect().width)),
     background: "#ffffff",
     backdrop: "",
+    itemBackdrop: "",
     unreadSheets: [],
     warnings: [],
     candidates: [],
@@ -574,6 +581,13 @@ export function buildSnapshot(targets: Element[]): Snapshot {
       break;
     }
   }
+  for (let el = targets[0].parentElement; el; el = el.parentElement) {
+    const paint = paintOf(getComputedStyle(el));
+    if (paint) {
+      snap.itemBackdrop = paint;
+      break;
+    }
+  }
   // The first non-transparent background behind the selection, so light text
   // captured from a dark page stays readable.
   for (let el: Element | null = targets[0]; el; el = el.parentElement) {
@@ -607,6 +621,12 @@ export function buildSnapshot(targets: Element[]): Snapshot {
  * Then the kept rules are reduced to what the copy needs.
  */
 export async function loadStyles(snap: Snapshot, fetchText: (url: string) => Promise<string | null>) {
+  await readUnreadSheets(snap, fetchText);
+  finalizeStyles(snap);
+}
+
+/** The first half of loadStyles: must run while the snapshot's elements are still on the page. */
+export async function readUnreadSheets(snap: Snapshot, fetchText: (url: string) => Promise<string | null>) {
   let failed = 0;
   for (const { href, index } of snap.unreadSheets) {
     const text = await fetchText(href);
@@ -624,8 +644,57 @@ export async function loadStyles(snap: Snapshot, fetchText: (url: string) => Pro
       failed++;
     }
   }
+  snap.unreadSheets = [];
   if (failed) snap.warnings.push(`${failed} style sheet${failed === 1 ? "" : "s"} could not be read, so this capture may look different from the page.`);
-  finalizeStyles(snap);
+}
+
+/**
+ * Joins items copied at different moments into one snapshot.
+ *
+ * Messenger keeps only a window of messages on the page and unloads the rest
+ * as you scroll, so a long selection never exists on the page all at once.
+ * Each part was copied (and checked) while its items were on the page; here
+ * the chosen items are lifted out of their parts and put in reading order.
+ * `order` is how far above the end of the conversation an item sat, so larger
+ * means earlier. Call loadStyles on the result to finish it.
+ */
+export function mergeSnapshots(parts: { snap: Snapshot; units: { el: Element; order: number }[] }[]): Snapshot {
+  const root = document.createElement("div");
+  const units = parts
+    .flatMap((p) => p.units.map((u) => ({ clone: p.snap.cloneOf.get(u.el), order: u.order })))
+    .filter((u): u is { clone: Element; order: number } => Boolean(u.clone))
+    .sort((a, b) => b.order - a.order);
+  for (const u of units) root.appendChild(u.clone);
+
+  // The same rule found by several parts becomes one rule again.
+  const rules = new Map<string, Candidate>();
+  for (const p of parts) {
+    for (const c of p.snap.candidates) {
+      const key = `${c.order}|${c.base}|${c.pseudo}|${c.decl}`;
+      const known = rules.get(key);
+      if (known) known.matched.push(...c.matched);
+      else rules.set(key, { ...c, matched: [...c.matched] });
+    }
+  }
+  const snaps = parts.map((p) => p.snap);
+  const context = new Map<string, string>();
+  for (const snap of [...snaps].reverse()) for (const [k, v] of snap.context) context.set(k, v); // first part wins
+  return {
+    root,
+    images: snaps.flatMap((x) => x.images),
+    width: Math.max(...snaps.map((x) => x.width)),
+    background: snaps[0].background,
+    backdrop: snaps.find((x) => x.itemBackdrop)?.itemBackdrop ?? "",
+    itemBackdrop: "",
+    unreadSheets: [],
+    warnings: [...new Set(snaps.flatMap((x) => x.warnings))],
+    candidates: [...rules.values()],
+    cloneOf: new Map(snaps.flatMap((x) => [...x.cloneOf])),
+    live: snaps[0].live,
+    context,
+    cssImages: new Map(),
+    css: "",
+  };
 }
 
 /** Removes wrappers that carry nothing: no class, no attributes, no rule, and exactly one element inside. */

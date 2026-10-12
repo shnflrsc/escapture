@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="safetrail:fixture-kind" content="facebook_message" />
+    <title>Long fake Messenger conversation (SafeTrail fixture)</title>
+    <style>
+      body { margin: 0; font-family: Helvetica, Arial, sans-serif; color: #050505; display: flex; height: 100vh; }
+      nav { width: 240px; border-right: 1px solid #dadde1; padding: 16px; font-size: 14px; color: #65676b; }
+      main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+      header { padding: 12px 16px; border-bottom: 1px solid #dadde1; font-weight: 600; }
+      /* One gradient behind the conversation; the sender's bubbles are holes in the white cover. */
+      .thread { flex: 1; overflow-y: auto; background-image: linear-gradient(#aa00ff, #0070f6); background-attachment: fixed; }
+      .slot { height: 52px; }
+      .slot[data-virtualized="true"] { background: #fff; }
+      .row { display: flex; align-items: flex-end; gap: 8px; height: 52px; box-sizing: border-box; padding: 3px 16px; overflow: hidden; }
+      .row.them { background: #fff; }
+      .row.me { justify-content: flex-end; }
+      .av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+      .who { color: #65676b; font-size: 12px; margin: 0 0 2px 12px; }
+      .msg { max-width: 420px; padding: 6px 12px; border-radius: 18px; font-size: 15px; line-height: 1.35; }
+      .them .msg { background: #303030; color: #fff; }
+      .me .msg { background: transparent; color: #fff; box-shadow: 0 0 0 100vmax #fff; }
+      .composer { border-top: 1px solid #dadde1; padding: 12px 16px; color: #65676b; }
+    </style>
+  </head>
+  <body>
+    <nav>Chats<br /><br />SafeTrail test fixture, not a real site</nav>
+    <main role="main">
+      <header>Sample Classmate</header>
+      <!-- Like real Messenger, only the messages near what is on screen exist in the page.
+           The rest are empty placeholders of the same height, and are filled in again when
+           scrolled back to. A long selection therefore never exists on the page all at once. -->
+      <div class="thread" id="thread" data-pagelet="MWInboxDetail_MessageList"></div>
+      <div class="composer">Aa</div>
+    </main>
+    <script>
+      (function () {
+        var TOTAL = 60, ROW = 52, KEEP = 3; // rows kept beyond each edge of what is visible
+        var thread = document.getElementById("thread");
+        var avatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Crect width='28' height='28' fill='%2385B8CE'/%3E%3C/svg%3E";
+        var slots = [];
+        function build(i) {
+          var mine = i % 4 === 3;
+          var row = document.createElement("div");
+          row.className = "row " + (mine ? "me" : "them");
+          row.setAttribute("data-pagelet", "MWMessageRow");
+          row.setAttribute("role", "article");
+          if (!mine) {
+            var img = document.createElement("img");
+            img.className = "av";
+            img.alt = "Kyle";
+            img.src = avatar;
+            row.appendChild(img);
+          }
+          var cell = document.createElement("div");
+          cell.setAttribute("data-message-id", "mid." + i);
+          if (!mine) {
+            var who = document.createElement("div");
+            who.className = "who";
+            who.textContent = "Kyle";
+            cell.appendChild(who);
+          }
+          var msg = document.createElement("div");
+          msg.className = "msg";
+          msg.textContent = (mine ? "my reply number " : "their message number ") + i;
+          cell.appendChild(msg);
+          row.appendChild(cell);
+          return row;
+        }
+        for (var i = 1; i <= TOTAL; i++) {
+          var slot = document.createElement("div");
+          slot.className = "slot";
+          slot.setAttribute("data-virtualized", "true");
+          slot.setAttribute("data-n", String(i));
+          thread.appendChild(slot);
+          slots.push(slot);
+        }
+        function update() {
+          var first = Math.floor(thread.scrollTop / ROW) - KEEP;
+          var last = Math.ceil((thread.scrollTop + thread.clientHeight) / ROW) + KEEP;
+          slots.forEach(function (slot, index) {
+            var wanted = index >= first && index <= last;
+            if (wanted && !slot.firstChild) {
+              slot.appendChild(build(index + 1));
+              slot.setAttribute("data-virtualized", "false");
+            } else if (!wanted && slot.firstChild) {
+              slot.removeChild(slot.firstChild);
+              slot.setAttribute("data-virtualized", "true");
+            }
+          });
+        }
+        thread.addEventListener("scroll", update);
+        thread.scrollTop = thread.scrollHeight; // open at the newest message
+        update();
+      })();
+    </script>
+  </body>
+</html>
