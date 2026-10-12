@@ -619,12 +619,14 @@ class Session {
           ...batches.map((b) => ({ snap: b.snap!, units: gone.filter((i) => i.frozen === b).map((i) => ({ el: i.frozenEl!, order: i.order! })) })),
         ]);
         snap.warnings.push(
-          `${gone.length} of the ${targets.length + gone.length} selected items were no longer loaded on the page at the moment of capture. They were copied, and checked, when they were selected.`,
+          `${gone.length} of the ${targets.length + gone.length} selected items had been unloaded by the page before capture, as long conversations do when you scroll. They were copied and checked when you selected them.`,
         );
       }
     }
     if (snap && lost > 0) {
-      snap.warnings.push(`${lost} selected item${lost === 1 ? " was" : "s were"} unloaded by the page before a copy could be taken, and ${lost === 1 ? "is" : "are"} not in this capture.`);
+      snap.warnings.push(
+        `${lost} selected item${lost === 1 ? " was" : "s were"} unloaded by the page before ${lost === 1 ? "it" : "they"} could be copied, so ${lost === 1 ? "it is" : "they are"} missing from this capture.`,
+      );
     }
     document.documentElement.appendChild(this.host);
 

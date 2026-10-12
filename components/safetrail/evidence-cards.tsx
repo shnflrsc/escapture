@@ -71,6 +71,24 @@ export function CasesCard({
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /**
+ * Notes are written by the extension and stored with the capture. Two of the older
+ * wordings could be read as a sign of tampering, so they are shown as the current
+ * extension would word them. Anything else is shown as stored.
+ */
+function clearNote(note: string): string {
+  const elsewhere = /^(\d+) changes? elsewhere on this page did not come from the page's own scripts\./.exec(note);
+  if (elsewhere) {
+    const n = Number(elsewhere[1]);
+    return `${count(n, "change", "changes")} outside the captured area ${n === 1 ? "was" : "were"} made by something other than the page, such as a browser extension. The captured area was not affected.`;
+  }
+  const replaced = /^Some of the browser's functions for changing content had been replaced on this page \((.*)\)\./.exec(note);
+  if (replaced) {
+    return `The page or a browser extension had replaced built-in browser functions (${replaced[1]}). The captured area was still checked.`;
+  }
+  return note;
+}
+
+/**
  * What stands behind the capture. The badge, a one-line summary and the
  * re-check stay in view; the hash, source, checks and notes open on request.
  */
@@ -91,7 +109,7 @@ export function IntegrityCard({
   checks: { id: string }[];
   notes: string[];
 }) {
-  const unique = [...new Set(notes)];
+  const unique = [...new Set(notes.map(clearNote))];
   return (
     <Card className="flex flex-col gap-4">
       <h3>Integrity</h3>

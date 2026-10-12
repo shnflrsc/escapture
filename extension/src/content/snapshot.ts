@@ -656,7 +656,11 @@ export async function readUnreadSheets(snap: Snapshot, fetchText: (url: string) 
     }
   }
   snap.unreadSheets = [];
-  if (failed) snap.warnings.push(`${failed} style sheet${failed === 1 ? "" : "s"} could not be read, so this capture may look different from the page.`);
+  if (failed) {
+    snap.warnings.push(
+      `${failed} of the page's style sheets could not be read, so this capture may look different from the page. Its text is not affected.`,
+    );
+  }
 }
 
 /**

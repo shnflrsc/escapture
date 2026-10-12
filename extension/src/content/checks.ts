@@ -131,11 +131,13 @@ export function runChecks(target: Element, guard: GuardState | null, expectedTar
     // Sites and other extensions wrap these routinely. Changes are still checked either way: a
     // wrapper that is not the page's own fails the check above, and one that skips the guard
     // leaves changes unexplained, which also fails it.
-    warnings.push(`Some of the browser's functions for changing content had been replaced on this page (${guard.replaced.join(", ")}). Changes were still checked.`);
+    warnings.push(
+      `The page or a browser extension had replaced built-in browser functions (${guard.replaced.join(", ")}). The captured area was still checked.`,
+    );
   }
   if (guard && guard.elsewhere > 0) {
     warnings.push(
-      `${guard.elsewhere} change${guard.elsewhere === 1 ? "" : "s"} elsewhere on this page did not come from the page's own scripts. The captured area was not affected.`,
+      `${guard.elsewhere} change${guard.elsewhere === 1 ? "" : "s"} outside the captured area ${guard.elsewhere === 1 ? "was" : "were"} made by something other than the page, such as a browser extension. The captured area was not affected.`,
     );
   }
 
