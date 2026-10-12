@@ -2,6 +2,7 @@
 // "Capture this page": element picker, tamper checks, snapshot building.
 import { captureHost, gzip, MAX_BYTES, MAX_UPLOAD_BYTES, type Kind, type LastCapture, type Reply } from "../shared/types";
 import { queryGuard, runChecksAll } from "./checks";
+import { saveDiagnostics } from "./diagnostics";
 import { buildSnapshot, loadStyles, serialize, sizeBreakdown } from "./snapshot";
 
 declare global {
@@ -237,6 +238,44 @@ class Session {
     this.renderBar();
   }
 
+  /** Message rows of the conversation with the most loaded messages (there can be several chats open). */
+  private loadedMessages(): Element[] {
+    let rows = [...document.querySelectorAll('[data-pagelet="MWMessageRow"]')];
+    if (!rows.length) rows = [...document.querySelectorAll('[role="main"] [role="row"]')];
+    const groups = new Map<Element, Element[]>();
+    for (const row of rows) {
+      if (row.getBoundingClientRect().height === 0) continue;
+      const list = row.closest('[data-pagelet$="MessageList"], [role="grid"], [role="main"]') ?? document.body;
+      groups.set(list, [...(groups.get(list) ?? []), row]);
+    }
+    return [...groups.values()].sort((a, b) => b.length - a.length)[0] ?? [];
+  }
+
+  private selectAll(rows: Element[]) {
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    // Everything from the first to the last row, including date dividers between them.
+    const all = [first, ...this.between(first, last), last];
+    this.items = all.filter((el, i) => all.indexOf(el) === i).map((el) => ({ leaf: el, el }));
+    this.renderBar();
+  }
+
+  private async diagnose() {
+    const targets = this.items.map((i) => i.el).filter((el) => el.isConnected);
+    if (!targets.length) return;
+    this.host.remove(); // keep our own toolbar out of the description
+    try {
+      await saveDiagnostics(targets, this.kind, (url) =>
+        send<{ text: string }>({ type: "sheet:fetch", url }).then(
+          (r) => (r.ok ? r.text : null),
+          () => null,
+        ),
+      );
+    } finally {
+      document.documentElement.appendChild(this.host);
+    }
+  }
+
   /** Widens or narrows the most recent selection by one level. */
   private resize(wider: boolean) {
     const item = this.items[this.items.length - 1];
@@ -297,9 +336,17 @@ class Session {
         button("Narrower", "secondary", () => this.resize(false), !last || last.el === last.leaf),
       ),
     );
-    const pane = document.querySelector('[role="main"]');
-    if (messages && pane && n === 0) {
-      bar.append(button("Use whole conversation pane", "soft", () => void this.capture([pane])));
+    if (messages && n === 0) {
+      // Selecting every loaded message, one by one, instead of the pane around them: the pane's
+      // size depends on the page around it and comes out blank on its own.
+      const rows = this.loadedMessages();
+      if (rows.length > 1) bar.append(button(`Select all ${rows.length} loaded messages`, "soft", () => this.selectAll(rows)));
+    }
+    if (n > 0) {
+      // Support tool: saves how the selection is built and styled, without its content.
+      const diag = button("Save diagnostics", "ghost", () => void this.diagnose());
+      diag.title = "Saves a file describing the layout and styling of your selection, without any text, names or images. Send it to SafeTrail support when a capture looks wrong.";
+      bar.append(diag);
     }
     const label = n === 0 ? "Capture" : messages ? `Capture ${n} ${n === 1 ? "message" : "messages"}` : "Capture this post";
     bar.append(

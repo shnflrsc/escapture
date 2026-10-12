@@ -57,6 +57,8 @@ export type Snapshot = {
   images: PendingImage[];
   width: number;
   background: string;
+  /** Background of the nearest painted element around the selection, for the wrapper. */
+  backdrop: string;
   /** Style sheets the page would not let us read directly. See loadStyles. */
   unreadSheets: { href: string; index: number }[];
   warnings: string[];
@@ -68,6 +70,32 @@ export type Snapshot = {
   cssImages: Map<string, string | null>;
   css: string;
 };
+
+/**
+ * The background an element paints, as declarations, or "" if it paints none.
+ * Images that would have to be fetched are left out; gradients are kept, with
+ * how they are attached (Messenger draws one gradient behind a whole
+ * conversation and lets it show through the sender's bubbles).
+ */
+function paintOf(cs: CSSStyleDeclaration): string {
+  const color = cs.backgroundColor;
+  const image = cs.backgroundImage;
+  const hasColor = Boolean(color) && color !== "transparent" && !/rgba\(.*,\s*0\)$/.test(color);
+  const hasImage = Boolean(image) && image !== "none" && !image.includes("url(");
+  if (!hasColor && !hasImage) return "";
+  const parts: string[] = [];
+  if (hasColor) parts.push(`background-color:${color}`);
+  if (hasImage) {
+    parts.push(
+      `background-image:${image}`,
+      `background-attachment:${cs.backgroundAttachment}`,
+      `background-size:${cs.backgroundSize}`,
+      `background-position:${cs.backgroundPosition}`,
+      `background-repeat:${cs.backgroundRepeat}`,
+    );
+  }
+  return parts.join(";");
+}
 
 /** Short CSS class names: a, b, ... Z, aa, ab, ... Most-used classes get the shortest. */
 function shortName(i: number): string {
@@ -86,10 +114,19 @@ function takesNoSpace(o: Element, cs: CSSStyleDeclaration): boolean {
     return r.width === 0 && r.height === 0;
   };
   if (!zero(o)) return false;
+  // A zero-size box can still draw something: generated content, a shadow or an outline.
+  const draws = (el: Element) => {
+    for (const pseudo of ["::before", "::after"]) {
+      const content = getComputedStyle(el, pseudo).content;
+      if (content !== "none" && content !== "normal") return true;
+    }
+    const s = el === o ? cs : getComputedStyle(el);
+    return s.boxShadow !== "none" || (s.outlineStyle !== "none" && s.outlineWidth !== "0px");
+  };
   // Text can spill out of a zero-size box unless the box clips it.
   if (o.textContent?.trim() && cs.overflowX === "visible") return false;
   const inner = o.querySelectorAll("*");
-  return inner.length <= 300 && [...inner].every(zero);
+  return inner.length <= 300 && !draws(o) && [...inner].every((el) => zero(el) && !draws(el));
 }
 
 function placeholder(doc: Document, width: number, height: number): HTMLElement {
@@ -367,6 +404,7 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     images: [],
     width: Math.max(...targets.map((t) => t.getBoundingClientRect().width)),
     background: "#ffffff",
+    backdrop: "",
     unreadSheets: [],
     warnings: [],
     candidates: [],
@@ -415,6 +453,9 @@ export function buildSnapshot(targets: Element[]): Snapshot {
       const layout = CONTAINER_PROPS.map((p) => [p, cs.getPropertyValue(p)])
         .filter(([p, v]) => v && v !== "normal" && !(p === "display" && v === "block") && !(p === "flex-direction" && v === "row") && v !== "nowrap")
         .map(([p, v]) => `${p}:${v}`);
+      // ...and what it paints behind them: the selected items may be see-through in places.
+      const paint = paintOf(cs);
+      if (paint) layout.push(paint);
       if (layout.length) c.setAttribute("style", layout.join(";"));
       continue;
     }
@@ -523,6 +564,15 @@ export function buildSnapshot(targets: Element[]): Snapshot {
   for (const prop of INHERITED_CONTEXT) {
     const value = outer.getPropertyValue(prop);
     if (value) snap.context.set(prop, value);
+  }
+  // Whatever the nearest element around the selection paints (colour or gradient)
+  // goes on the wrapper, so see-through parts of the selection keep what was behind them.
+  for (let el = top.parentElement; el; el = el.parentElement) {
+    const paint = paintOf(getComputedStyle(el));
+    if (paint) {
+      snap.backdrop = paint;
+      break;
+    }
   }
   // The first non-transparent background behind the selection, so light text
   // captured from a dark page stays readable.
@@ -738,7 +788,7 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">` +
     `<title>SafeTrail capture</title><style>${css}</style></head>` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">` +
-    `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(context)}">${root.outerHTML}</div></body></html>\n`
+    `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(snap.backdrop)};${esc(context)}">${root.outerHTML}</div></body></html>\n`
   );
 }
 
