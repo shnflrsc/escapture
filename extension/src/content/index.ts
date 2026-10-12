@@ -35,8 +35,11 @@ const CSS = `
 .box { border: 2px dashed #3A6D88; background: rgba(102,163,191,0.12); }
 .sel { border: 2px solid #3A6D88; background: rgba(102,163,191,0.22); }
 .bar, .panel { position: fixed; z-index: 2147483647; left: 50%; transform: translateX(-50%); background: #fff; color: #1E2A32; border: 1px solid #DCE6EB; border-radius: 12px; box-shadow: 0 8px 24px rgba(30,42,50,0.18); font-size: 14px; line-height: 20px; }
-.bar { bottom: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end; width: max-content; max-width: min(980px, calc(100vw - 32px)); }
-.bar p { margin: 0; flex: 1 1 300px; min-width: 240px; }
+.bar { bottom: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end; width: max-content; max-width: min(1100px, calc(100vw - 32px)); }
+.bar.top { bottom: auto; top: 16px; }
+.bar.slim { padding: 8px 12px; flex-wrap: nowrap; }
+.bar p { margin: 0; flex: 1 1 260px; min-width: 240px; }
+.bar .count { margin: 0 4px; font-weight: 600; white-space: nowrap; flex: none; min-width: 0; }
 .bar small { display: block; color: #55646E; font-size: 13px; line-height: 18px; }
 .group { display: inline-flex; gap: 8px; flex-shrink: 0; }
 .panel { top: 16px; padding: 16px; width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; }
@@ -87,6 +90,13 @@ function detectKind(): Kind {
   return "facebook_post";
 }
 
+type Dock = "top" | "bottom";
+// The toolbar covers part of the page, and what it covers can't be clicked. In a conversation
+// the newest messages are at the bottom and can't be scrolled clear of it, so it starts at the
+// top there. A post's author and time are at its top, so it starts at the bottom there.
+const DEFAULT_DOCK: Record<Kind, Dock> = { facebook_message: "top", facebook_post: "bottom" };
+const DOCK_KEY = "toolbarDock";
+
 /** `leaf` is what was actually clicked; `el` is the area chosen around it. */
 type Item = { leaf: Element; el: Element };
 
@@ -103,6 +113,8 @@ class Session {
   private items: Item[] = [];
   private kind: Kind = detectKind();
   private picking = false;
+  /** Where the toolbar sits, when the student has moved it. Remembered per kind of capture. */
+  private docks: Partial<Record<Kind, Dock>> = {};
   private frame = 0;
 
   constructor() {
@@ -113,6 +125,13 @@ class Session {
     if (this.picking) return;
     document.documentElement.appendChild(this.host);
     this.picking = true;
+    void chrome.storage.local.get(DOCK_KEY).then((stored) => {
+      const saved = stored[DOCK_KEY] as Partial<Record<Kind, Dock>> | undefined;
+      if (saved && typeof saved === "object") {
+        this.docks = saved;
+        if (this.picking) this.renderBar();
+      }
+    });
     this.renderBar();
     document.addEventListener("mousemove", this.onMove, true);
     document.addEventListener("click", this.onClick, true);
@@ -318,24 +337,38 @@ class Session {
         "small",
         {},
         messages
-          ? "Only messages loaded on screen can be captured. Scroll up to load more first. This is meant for conversations you took part in."
+          ? "Only messages loaded on screen can be captured, so scroll up to load more first. For conversations you took part in."
           : "Click a selection again to remove it. Hold Alt to pick the exact element. Press Esc to cancel.",
       ),
     );
 
     const last = this.items[n - 1];
-    const bar = h(
+    const dock = this.docks[this.kind] ?? DEFAULT_DOCK[this.kind];
+    const move = button(dock === "top" ? "Move to bottom" : "Move to top", "ghost", () => {
+      this.docks = { ...this.docks, [this.kind]: dock === "top" ? "bottom" : "top" };
+      void chrome.storage.local.set({ [DOCK_KEY]: this.docks });
+      this.renderBar();
+    });
+    move.title = "Move this bar out of the way. Anything it covers can't be selected.";
+    const adjust = h(
       "div",
-      { class: "bar", role: "dialog", "aria-label": "SafeTrail capture" },
-      text,
-      h("div", { class: "seg", role: "group", "aria-label": "What are you capturing?" }, post, chat),
-      h(
-        "div",
-        { class: "group" },
-        button("Wider", "secondary", () => this.resize(true), !last),
-        button("Narrower", "secondary", () => this.resize(false), !last || last.el === last.leaf),
-      ),
+      { class: "group" },
+      button("Wider", "secondary", () => this.resize(true), !last),
+      button("Narrower", "secondary", () => this.resize(false), !last || last.el === last.leaf),
     );
+    // Once something is selected the instructions have done their job: the bar shrinks to
+    // one row so it covers as little of the page as possible.
+    const slim = n > 0;
+    const bar = h("div", { class: `bar ${dock}${slim ? " slim" : ""}`, role: "dialog", "aria-label": "SafeTrail capture" });
+    if (slim) {
+      const count = h("p", { class: "count", "aria-live": "polite" }, messages ? `${n} selected` : "Post selected");
+      count.title = messages
+        ? "Click a message to add it, or a selected one to remove it. Shift-click selects everything in between."
+        : "Click the post again to remove the selection. Hold Alt to pick the exact element.";
+      bar.append(count, adjust, move);
+    } else {
+      bar.append(text, h("div", { class: "seg", role: "group", "aria-label": "What are you capturing?" }, post, chat), move);
+    }
     if (messages && n === 0) {
       // Selecting every loaded message, one by one, instead of the pane around them: the pane's
       // size depends on the page around it and comes out blank on its own.
@@ -354,7 +387,7 @@ class Session {
         "div",
         { class: "group" },
         button("Cancel", "ghost", this.close),
-        button(label, "primary", () => void this.capture(this.items.map((i) => i.el)), n === 0),
+        ...(n > 0 ? [button(label, "primary", () => void this.capture(this.items.map((i) => i.el)))] : []),
       ),
     );
     this.ui.replaceChildren(bar);
