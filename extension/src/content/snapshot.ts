@@ -151,6 +151,8 @@ function placeholder(doc: Document, width: number, height: number): HTMLElement 
 function sanitizeAttributes(el: Element) {
   // SVG ids are kept: gradients, clip paths and <use> refer to them.
   const svg = el.namespaceURI === "http://www.w3.org/2000/svg";
+  const isLink = el.tagName.toLowerCase() === "a";
+  const linkLabel = isLink ? el.getAttribute("aria-label") : null;
   for (const attr of [...el.attributes]) {
     const name = attr.name.toLowerCase();
     if (name === "class" || (svg && name === "id")) continue;
@@ -166,7 +168,7 @@ function sanitizeAttributes(el: Element) {
       el.removeAttribute(attr.name);
     }
   }
-  if (el instanceof HTMLAnchorElement || el.tagName.toLowerCase() === "a") {
+  if (isLink) {
     const href = el.getAttribute("href") ?? el.getAttribute("xlink:href");
     el.removeAttribute("xlink:href");
     let safe: string | null = null;
@@ -178,11 +180,15 @@ function sanitizeAttributes(el: Element) {
         safe = u.href;
       }
     } catch {}
+    // Links are made inert: without an address a click does nothing, so captured content can
+    // never take the viewer anywhere. Where the link pointed is kept as plain text (a tooltip
+    // here, and the list that serialize adds under the capture).
+    el.removeAttribute("href");
+    el.removeAttribute("rel");
     if (safe) {
-      el.setAttribute("href", safe);
-      el.setAttribute("rel", "noopener noreferrer nofollow");
-    } else {
-      el.removeAttribute("href");
+      el.setAttribute("data-href", safe);
+      if (!el.hasAttribute("title")) el.setAttribute("title", safe);
+      if (linkLabel) el.setAttribute("data-label", linkLabel.slice(0, 80));
     }
   }
   if (el instanceof HTMLInputElement || el instanceof HTMLButtonElement || el instanceof HTMLTextAreaElement) {
@@ -834,6 +840,31 @@ function shareRepeatedImages(root: Element): string {
   return rules.join("");
 }
 
+/**
+ * Where the capture's links pointed, as plain text under the capture. The links
+ * themselves are inert, so this is the only place the addresses appear. It is
+ * clearly marked as added by SafeTrail and is not part of what was on screen.
+ */
+function linkList(root: Element): string {
+  const seen = new Map<string, string>();
+  for (const a of root.querySelectorAll("a[data-href]")) {
+    const url = a.getAttribute("data-href")!;
+    const text = (a.textContent?.replace(/\s+/g, " ").trim() || a.getAttribute("data-label") || "").slice(0, 80);
+    if (!seen.has(url) || (!seen.get(url) && text)) seen.set(url, text);
+    if (seen.size >= 300) break;
+  }
+  if (!seen.size) return "";
+  const items = [...seen]
+    .map(([url, text]) => `<li style="margin:0 0 6px">${text ? `${esc(text)}<br>` : ""}<span style="word-break:break-all;color:#1E2A32">${esc(url)}</span></li>`)
+    .join("");
+  return (
+    `<section style="margin:24px 0 0;padding:12px 16px;border:1px solid #DCE6EB;border-radius:10px;background:#fff;color:#55646E;font:13px/18px system-ui,-apple-system,'Segoe UI',sans-serif">` +
+    `<p style="margin:0 0 4px;font-weight:600;color:#1E2A32">Links in this capture</p>` +
+    `<p style="margin:0 0 8px">Added by SafeTrail. Links in the capture above can't be clicked. These are the addresses they pointed to.</p>` +
+    `<ol style="margin:0;padding-left:20px">${items}</ol></section>`
+  );
+}
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Wraps the clone in a minimal standalone document. Leaves `snap` untouched, so it can be called again. */
@@ -849,6 +880,7 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     url.startsWith("data:") || url.startsWith("#") ? whole : `url("${snap.cssImages.get(url) ?? BLANK}")`,
   );
   const css = (rules + shareRepeatedImages(root)).replace(/<\//g, "<\\/");
+  const links = linkList(root);
   const context = [...snap.context].map(([prop, value]) => `${prop}:${value}`).join(";");
   return (
     `<!doctype html><html lang="${esc(document.documentElement.lang || "en")}"><head><meta charset="utf-8">` +
@@ -857,7 +889,7 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">` +
     `<title>SafeTrail capture</title><style>${css}</style></head>` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">` +
-    `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(snap.backdrop)};${esc(context)}">${root.outerHTML}</div></body></html>\n`
+    `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(snap.backdrop)};${esc(context)}">${root.outerHTML}</div>${links}</body></html>\n`
   );
 }
 
