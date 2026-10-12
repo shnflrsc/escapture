@@ -129,7 +129,7 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
           </Card>
 
           {reviewer && (
-            <Card className="flex flex-col gap-4">
+            <Card className="order-first flex flex-col gap-4">
               <h3>Cases</h3>
               {attachedTo.length === 0 ? (
                 <p className="text-sm leading-[22px] text-muted">Not attached to any case yet.</p>
