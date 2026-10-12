@@ -56,6 +56,13 @@ export const evidenceUpload = z.object({
 });
 
 export const evidenceScope = z.enum(["mine", "shared"]).default("mine");
+export const evidenceSort = z.enum(["newest", "oldest", "name"]);
+export const evidenceListQuery = z.object({
+  scope: evidenceScope,
+  q: z.string().trim().max(120).optional(),
+  kind: evidenceKind.optional(),
+  sort: evidenceSort.optional(),
+});
 export const renameEvidence = z.object({ label: z.string().trim().min(1, "Give it a name.").max(120) });
 
 export const shareByEmail = z.object({ email, acknowledge });

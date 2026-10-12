@@ -57,24 +57,37 @@ export function VerifyNow({ evidenceId }: { evidenceId: string }) {
   );
 }
 
-export function EvidenceOwnerActions({
+type Controlled = { open: boolean; onClose: () => void };
+
+export const LOCKED_NOTE = "This evidence is part of an escalated case, so it can't be renamed or deleted.";
+
+/** The wording of the two ways to share one piece of evidence, wherever they are offered. */
+export const evidenceEmailShare = (evidenceId: string) => ({
+  endpoint: `/api/evidence/${evidenceId}/shares`,
+  title: "Share this evidence",
+  risk: "You are choosing to share this evidence. The person you share it with will be able to see it, and anything shared can be passed on. Sharing can't be undone in this version of SafeTrail.",
+  successText: "Evidence shared.",
+});
+export const evidenceLinkShare = (evidenceId: string) => ({
+  endpoint: `/api/evidence/${evidenceId}/links`,
+  title: "Create a password link",
+  risk: "Anyone who has this link, its password and a SafeTrail account will be able to see this evidence, and anything shared can be passed on.",
+});
+
+export function RenameEvidenceDialog({
+  open,
+  onClose,
   evidenceId,
   label,
-  locked,
-}: {
-  evidenceId: string;
-  label: string;
-  locked: boolean;
-}) {
+}: Controlled & { evidenceId: string; label: string }) {
   const router = useRouter();
   const toast = useToast();
-  const [dialog, setDialog] = useState<"rename" | "delete" | null>(null);
   const [name, setName] = useState(label);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const close = () => {
-    setDialog(null);
+    onClose();
     setError(null);
     setLoading(false);
   };
@@ -94,6 +107,45 @@ export function EvidenceOwnerActions({
     }
   }
 
+  return (
+    <Dialog open={open} onClose={close} title="Rename this evidence">
+      <form onSubmit={rename} className="flex flex-col gap-4">
+        <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} error={error} />
+        <div className="flex justify-end gap-3">
+          <Button variant="ghost" onClick={close}>
+            Go back
+          </Button>
+          <Button type="submit" loading={loading}>
+            Save name
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+export function DeleteEvidenceDialog({
+  open,
+  onClose,
+  evidenceId,
+  label,
+  onDeleted,
+}: Controlled & {
+  evidenceId: string;
+  /** Names the item in the dialog, for when it is opened from a list. */
+  label?: string;
+  onDeleted: () => void;
+}) {
+  const toast = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const close = () => {
+    onClose();
+    setError(null);
+    setLoading(false);
+  };
+
   async function remove() {
     setLoading(true);
     setError(null);
@@ -101,8 +153,7 @@ export function EvidenceOwnerActions({
       await api(`/api/evidence/${evidenceId}`, { method: "DELETE" });
       close();
       toast("Evidence deleted.");
-      router.push("/vault");
-      router.refresh();
+      onDeleted();
     } catch (err) {
       setLoading(false);
       setError(errorMessage(err));
@@ -110,19 +161,44 @@ export function EvidenceOwnerActions({
   }
 
   return (
+    <Dialog
+      open={open}
+      onClose={close}
+      title="Delete this evidence?"
+      description={`${label ? `“${label}” will be deleted. ` : ""}You won't be able to get it back. It will also be removed from any draft cases and from anyone you shared it with.`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={close}>
+            Go back
+          </Button>
+          <Button variant="danger-solid" loading={loading} onClick={remove}>
+            Delete evidence
+          </Button>
+        </>
+      }
+    >
+      {error && <Banner tone="attention">{error}</Banner>}
+    </Dialog>
+  );
+}
+
+export function EvidenceOwnerActions({
+  evidenceId,
+  label,
+  locked,
+}: {
+  evidenceId: string;
+  label: string;
+  locked: boolean;
+}) {
+  const router = useRouter();
+  const [dialog, setDialog] = useState<"rename" | "delete" | null>(null);
+  const close = () => setDialog(null);
+
+  return (
     <div className="flex flex-col gap-3">
-      <EmailShareButton
-        endpoint={`/api/evidence/${evidenceId}/shares`}
-        buttonLabel="Share by email"
-        title="Share this evidence"
-        risk="You are choosing to share this evidence. The person you share it with will be able to see it, and anything shared can be passed on. Sharing can't be undone in this version of SafeTrail."
-        successText="Evidence shared."
-      />
-      <LinkShareButton
-        endpoint={`/api/evidence/${evidenceId}/links`}
-        title="Create a password link"
-        risk="Anyone who has this link, its password and a SafeTrail account will be able to see this evidence, and anything shared can be passed on."
-      />
+      <EmailShareButton buttonLabel="Share by email" {...evidenceEmailShare(evidenceId)} />
+      <LinkShareButton {...evidenceLinkShare(evidenceId)} />
       <Button variant="secondary" disabled={locked} onClick={() => setDialog("rename")}>
         <Pencil size={18} strokeWidth={1.75} aria-hidden />
         Rename
@@ -134,43 +210,20 @@ export function EvidenceOwnerActions({
       {locked && (
         <p className="flex items-start gap-1 text-[13px] leading-[18px] text-muted">
           <Info size={16} strokeWidth={1.75} aria-hidden className="mt-px shrink-0" />
-          This evidence is part of an escalated case, so it can&apos;t be renamed or deleted.
+          {LOCKED_NOTE}
         </p>
       )}
 
-      <Dialog open={dialog === "rename"} onClose={close} title="Rename this evidence">
-        <form onSubmit={rename} className="flex flex-col gap-4">
-          <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} error={error} />
-          <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={close}>
-              Go back
-            </Button>
-            <Button type="submit" loading={loading}>
-              Save name
-            </Button>
-          </div>
-        </form>
-      </Dialog>
-
-      <Dialog
+      <RenameEvidenceDialog open={dialog === "rename"} onClose={close} evidenceId={evidenceId} label={label} />
+      <DeleteEvidenceDialog
         open={dialog === "delete"}
         onClose={close}
-        title="Delete this evidence?"
-        description="You won't be able to get it back. It will also be removed from any draft cases and from anyone you shared it with."
-        footer={
-          <>
-            <Button variant="ghost" onClick={close}>
-              Go back
-            </Button>
-            <Button variant="danger-solid" loading={loading} onClick={remove}>
-              Delete evidence
-            </Button>
-          </>
-        }
-      >
-        {error && <Banner tone="attention">{error}</Banner>}
-      </Dialog>
+        evidenceId={evidenceId}
+        onDeleted={() => {
+          router.push("/vault");
+          router.refresh();
+        }}
+      />
     </div>
   );
 }
-

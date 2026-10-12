@@ -12,7 +12,7 @@ Three kinds of people use it:
 - **Case reviewers.** Work through cases on a shared Review Board. They need density, scannability and trust signals.
 - **Administrators.** Create reviewer accounts. Low-frequency, simple screens.
 
-Target: **desktop browsers only for this MVP.** Do not build mobile layouts or mobile-specific variants.
+Target: **desktop browsers first.** The layout is designed at 1280px. Below 1024px the sidebar becomes a drawer opened from a top bar, and the Vault is laid out for tablets and phones. Other pages only need to stay usable there; do not build separate mobile variants of them.
 
 ## 2. Design principles
 
@@ -160,7 +160,7 @@ Load both through `next/font/google` (self-hosted at build time). Do not add any
   - Active item: `brand-100` background, `brand-800` text, 10px radius. Unread notifications show a small `brand-700` dot, not a red count badge.
 - **Page structure:** H1 and one short sentence of context on the left, at most one primary button on the right, then content. Do not stack banners above the header.
 - **Content width:** students max 1040px, centered. Reviewers use the full width up to 1440px.
-- **Minimum supported viewport: 1024px wide.** Below that, nothing needs to look designed, but must not break or overlap.
+- **Designed for 1024px and wider.** Below that the sidebar collapses into a drawer (a top bar with a menu button), page padding tightens, and the Vault table stacks into a list. Other pages need not look designed there, but must not break, overlap or scroll sideways.
 
 ### Two density modes, one system
 
@@ -434,7 +434,7 @@ Rules for code:
 - Emoji, exclamation marks, countdowns, or urgency language.
 - Dense dashboards for students: no widget grids, stat tiles or charts on student screens.
 - Repeating the same card grid on every page. Choose the layout that fits the task (list, detail, form, timeline).
-- Mobile-specific layouts for this MVP.
+- Separate mobile-only screens or components. Narrow widths reuse the same page, rearranged.
 - Generic AI aesthetics: purple-blue gradients, floating cards on mesh backgrounds, "sparkle" icons, stock hero sections, or filler illustrations.
 
 ## 17. Pre-merge checklist

@@ -47,7 +47,12 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // The close event arrives a moment after the dialog closes. If it has been
+      // opened again by then (a dialog mounted already open, in development's
+      // double-run of effects), that event is stale and must not close it.
+      onClose={() => {
+        if (!ref.current?.open) onClose();
+      }}
       className={cn(
         "m-auto w-[calc(100%-32px)] rounded-2xl border border-border bg-card p-0 text-ink shadow-modal",
         wide ? "max-w-[720px]" : "max-w-[560px]",

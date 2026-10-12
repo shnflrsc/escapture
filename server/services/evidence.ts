@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { formatDateTime, kindLabel } from "@/lib/format";
 import { safeEqual, sha256Hex } from "@/lib/hash";
@@ -190,22 +190,67 @@ const listColumns = {
   ownerEmail: user.email,
 };
 
-export async function listEvidence(actor: Actor, scope: "mine" | "shared") {
+export type EvidenceListFilters = {
+  /** Matches the name; in the shared list, also the name of the person who shared it. */
+  q?: string;
+  kind?: Row["kind"];
+  /** Left out: newest capture first for "mine", most recently shared first for "shared". */
+  sort?: "newest" | "oldest" | "name";
+};
+
+/** LIKE treats %, _ and \ specially; a search for "50%" should mean those characters. */
+const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, "\\$&")}%`;
+
+const sortOrder = (sort: NonNullable<EvidenceListFilters["sort"]>) =>
+  sort === "name"
+    ? [asc(sql`lower(${evidence.label})`), desc(evidence.capturedAt)]
+    : [sort === "oldest" ? asc(evidence.capturedAt) : desc(evidence.capturedAt)];
+
+export async function listEvidence(actor: Actor, scope: "mine" | "shared", filters: EvidenceListFilters = {}) {
+  const q = filters.q?.trim();
+  const kind = filters.kind ? eq(evidence.kind, filters.kind) : undefined;
   if (scope === "mine") {
     return db
-      .select(listColumns)
+      .select({
+        ...listColumns,
+        // Only the owner's own list says anything about cases. Attachments made by
+        // reviewers are not counted: reporters never see those.
+        caseCount: sql<number>`(select count(*)::int from ${caseEvidence} where ${caseEvidence.evidenceId} = ${evidence.id} and ${caseEvidence.side} = 'reporter')`,
+        // Same rule as the lock on rename and delete: attached to any case that is no longer a draft.
+        locked: sql<boolean>`exists (select 1 from ${caseEvidence} inner join ${cases} on ${cases.id} = ${caseEvidence.caseId} where ${caseEvidence.evidenceId} = ${evidence.id} and ${cases.status} <> 'draft')`,
+      })
       .from(evidence)
       .innerJoin(user, eq(user.id, evidence.ownerId))
-      .where(eq(evidence.ownerId, actor.id))
-      .orderBy(desc(evidence.capturedAt));
+      .where(and(eq(evidence.ownerId, actor.id), kind, q ? ilike(evidence.label, likePattern(q)) : undefined))
+      .orderBy(...sortOrder(filters.sort ?? "newest"));
   }
   return db
     .select(listColumns)
     .from(evidenceShares)
     .innerJoin(evidence, eq(evidence.id, evidenceShares.evidenceId))
     .innerJoin(user, eq(user.id, evidence.ownerId))
-    .where(and(eq(evidenceShares.userId, actor.id), ne(evidence.ownerId, actor.id)))
-    .orderBy(desc(evidenceShares.createdAt));
+    .where(
+      and(
+        eq(evidenceShares.userId, actor.id),
+        ne(evidence.ownerId, actor.id),
+        kind,
+        q ? or(ilike(evidence.label, likePattern(q)), ilike(user.name, likePattern(q))) : undefined,
+      ),
+    )
+    .orderBy(...(filters.sort ? sortOrder(filters.sort) : [desc(evidenceShares.createdAt)]));
+}
+
+/** How many items each vault tab holds, before any search or filter. */
+export async function countEvidence(actor: Actor) {
+  const [[mine], [shared]] = await Promise.all([
+    db.select({ n: count() }).from(evidence).where(eq(evidence.ownerId, actor.id)),
+    db
+      .select({ n: count() })
+      .from(evidenceShares)
+      .innerJoin(evidence, eq(evidence.id, evidenceShares.evidenceId))
+      .where(and(eq(evidenceShares.userId, actor.id), ne(evidence.ownerId, actor.id))),
+  ]);
+  return { mine: mine.n, shared: shared.n };
 }
 
 export async function getEvidence(actor: Actor, id: string) {

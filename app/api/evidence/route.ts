@@ -1,6 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import {
-  evidenceScope,
+  evidenceListQuery,
   evidenceUpload,
   MAX_EVIDENCE_BYTES,
   MAX_UPLOAD_REQUEST_BYTES,
@@ -15,8 +15,15 @@ const tooLarge = () => new AppError("too_large", 413, "This capture is too large
 
 export const GET = handle(async (req) => {
   const user = await requireUser();
-  const scope = evidenceScope.parse(new URL(req.url).searchParams.get("scope") ?? undefined);
-  return json({ items: await listEvidence(user, scope) });
+  const params = new URL(req.url).searchParams;
+  const pick = (key: string) => params.get(key) ?? undefined;
+  const { scope, ...filters } = evidenceListQuery.parse({
+    scope: pick("scope"),
+    q: pick("q"),
+    kind: pick("kind"),
+    sort: pick("sort"),
+  });
+  return json({ items: await listEvidence(user, scope, filters) });
 });
 
 export const POST = handle(async (req) => {

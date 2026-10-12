@@ -24,7 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense
       fallback={
-        <div className="p-10 pl-[288px]">
+        <div className="p-4 lg:p-10 lg:pl-[288px]">
           <PageSkeleton />
         </div>
       }

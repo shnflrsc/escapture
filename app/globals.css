@@ -37,6 +37,14 @@
   --control-h: 36px; --card-pad: 16px; --page-pad: 32px; --section-gap: 24px;
 }
 
+/* Below the sidebar breakpoint (1024px): the same layout with less air around it. */
+@media (max-width: 1023px) {
+  .app-shell { --page-pad: 24px; --section-gap: 24px; }
+}
+@media (max-width: 639px) {
+  .app-shell { --page-pad: 16px; --card-pad: 16px; }
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-card: var(--card);
@@ -98,6 +106,8 @@ a.link:hover, .link:hover { color: var(--brand-800); text-decoration: underline;
 
 dialog::backdrop { background: var(--overlay); }
 dialog[open] { animation: dialog-in 200ms ease-out; }
+dialog.drawer[open] { animation: drawer-in 200ms ease-out; }
+@keyframes drawer-in { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .skeleton { background: var(--subtle); border-radius: var(--radius); animation: soft-pulse 2s ease-in-out infinite; }

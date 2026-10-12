@@ -173,6 +173,23 @@ async function main() {
   check("Jules can open it", (await call(J, "GET", `/api/evidence/${mayaEv}`)).status === 200);
   const julesShared = await call(J, "GET", "/api/evidence?scope=shared");
   check("it appears in Jules's shared list", julesShared.body.items?.some((i: { id: string }) => i.id === mayaEv));
+
+  // The vault list: search, filter and sort happen on the server.
+  type Listed = { id: string; kind: string; label: string; caseCount?: number; locked?: boolean };
+  const list = async (token: string, query: string) => (await call(token, "GET", `/api/evidence?${query}`)).body.items as Listed[];
+  const allMine = await list(M, "scope=mine");
+  const onlyMessages = await list(M, "scope=mine&kind=facebook_message");
+  check("the kind filter narrows the list", onlyMessages.length > 0 && onlyMessages.length < allMine.length && onlyMessages.every((i) => i.kind === "facebook_message"), onlyMessages);
+  check("search matches the name, ignoring case", (await list(M, "scope=mine&q=FACEBOOK%20POST")).every((i) => i.label.toLowerCase().includes("facebook post")) && (await list(M, "scope=mine&q=facebook%20post")).length > 0);
+  check("a search that matches nothing returns nothing", (await list(M, "scope=mine&q=no-such-name-" + run)).length === 0);
+  check("% in a search is a character, not a wildcard", (await list(M, "scope=mine&q=%25")).length === 0);
+  const oldest = await list(M, "scope=mine&sort=oldest");
+  check("oldest first reverses newest first", oldest.map((i) => i.id).join() === [...allMine].reverse().map((i) => i.id).join(), oldest.map((i) => i.id));
+  check("an unknown kind -> 400", (await call(M, "GET", "/api/evidence?kind=tweet")).status === 400);
+  check("an unknown sort -> 400", (await call(M, "GET", "/api/evidence?sort=random")).status === 400);
+  check("your own list says whether each item is in a case or locked", allMine.every((i) => i.caseCount === 0 && i.locked === false), allMine);
+  check("a shared list carries no case information", julesShared.body.items.every((i: Listed) => !("caseCount" in i) && !("locked" in i)));
+  check("the shared list can be searched by who shared it", (await list(J, "scope=shared&q=maya")).some((i) => i.id === mayaEv) && (await list(J, "scope=shared&q=no-such-person")).length === 0);
   check("a stranger gets 404 on the item", (await call(A, "GET", `/api/evidence/${mayaEv}`)).status === 404);
   check("a stranger gets 404 on the file", (await call(A, "GET", `/api/evidence/${mayaEv}/file`)).status === 404);
   check("recipients cannot re-share", (await call(J, "POST", `/api/evidence/${mayaEv}/shares`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true })).status === 403);
@@ -235,6 +252,8 @@ async function main() {
   check("detach -> 409", (await call(M, "DELETE", `/api/cases/${caseId}/evidence/${mayaEv}`)).status === 409);
   check("delete attached evidence -> 409", (await call(M, "DELETE", `/api/evidence/${mayaEv}`)).status === 409);
   check("rename attached evidence -> 409", (await call(M, "PATCH", `/api/evidence/${mayaEv}`, { label: "Renamed" })).status === 409);
+  const lockedRow = (await list(M, "scope=mine")).find((i) => i.id === mayaEv);
+  check("the owner's list shows it as in a case and locked", lockedRow?.caseCount === 1 && lockedRow.locked === true, lockedRow);
   check("add collaborator -> 409", (await call(M, "POST", `/api/cases/${caseId}/collaborators`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true })).status === 409);
   check("escalate again -> 409", (await call(M, "POST", `/api/cases/${caseId}/escalate`, { digest: preview2.body.digest, confirm: true })).status === 409);
   check("unattached evidence can still be deleted", (await call(M, "DELETE", `/api/evidence/${mayaEv2}`)).status === 200);
