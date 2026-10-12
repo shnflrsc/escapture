@@ -32,6 +32,15 @@ export const tamperReport = z.object({
   allPassed: z.boolean(),
   warnings: z.array(z.string().max(500)).max(32).optional(),
   extensionVersion: z.string().max(32).optional(),
+  // Size of the captured area on the original page. Only used to size the viewer.
+  size: z
+    .object({
+      width: z.number().int().min(1).max(20_000),
+      height: z.number().int().min(1).max(2_000_000),
+      // How tall the finished capture is when laid out at a few frame widths.
+      fit: z.array(z.object({ w: z.number().int().min(100).max(4000), h: z.number().int().min(1).max(2_000_000) })).max(6).optional(),
+    })
+    .optional(),
 });
 
 export const evidenceUpload = z.object({

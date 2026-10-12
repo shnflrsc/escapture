@@ -651,7 +651,11 @@ class Session {
       ),
     );
     const warnings = [...(report.warnings ?? []), ...snap.warnings];
-    const tamperReport = { ...report, warnings: warnings.length ? warnings : undefined };
+    const tamperReport: TamperReport = {
+      ...report,
+      warnings: warnings.length ? warnings : undefined,
+      size: { width: Math.max(1, Math.round(snap.width)), height: Math.max(1, Math.round(snap.height)) },
+    };
 
     // Embed images through the background worker, a few at a time, each at
     // the size it is shown on the page. If the result is over the upload
@@ -717,6 +721,10 @@ class Session {
       await this.report({ ok: false, refused: true, message, at: clientCapturedAt });
       return;
     }
+
+    // How tall the finished capture is in the viewer, so the viewer can fit itself to it.
+    const heights = await send<{ fit: { w: number; h: number }[] }>({ type: "capture:measure", html }).catch(() => null);
+    if (heights?.ok && tamperReport.size) tamperReport.size.fit = heights.fit;
 
     const reply = await send<{ result: LastCapture }>({
       type: "capture:upload",

@@ -43,6 +43,7 @@ if (isLocal) {
 writeFileSync(path.join(dist, "manifest.json"), JSON.stringify(manifest, null, 2));
 
 for (const f of ["popup.html", "popup.css"]) cpSync(path.join(here, "src/popup", f), path.join(dist, f));
+cpSync(path.join(here, "src/offscreen/offscreen.html"), path.join(dist, "offscreen.html"));
 const fonts = [
   ["lora", "lora-latin-600-normal.woff2"],
   ["nunito", "nunito-latin-400-normal.woff2"],
@@ -61,6 +62,7 @@ const options = {
     "page-guard": path.join(here, "src/content/page-guard.js"),
     "guard-bridge": path.join(here, "src/content/guard-bridge.ts"),
     popup: path.join(here, "src/popup/popup.ts"),
+    offscreen: path.join(here, "src/offscreen/offscreen.ts"),
   },
   outdir: dist,
   bundle: true,

@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EvidenceOwnerActions, VerifyNow } from "@/components/safetrail/evidence-actions";
+import { EvidenceFrame } from "@/components/safetrail/evidence-frame";
 import { TamperBadge } from "@/components/ui/badge";
 import { Card, PageHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -59,12 +60,10 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
               Captured content. This is a saved copy, shown in a frame that can&apos;t run scripts.
             </p>
             {/* Untrusted HTML (I8): script-less sandbox, served with a sandbox CSP. */}
-            <iframe
-              sandbox=""
+            <EvidenceFrame
               src={`/api/evidence/${ev.id}/file`}
               title={`Captured content: ${ev.label}`}
-              referrerPolicy="no-referrer"
-              className="h-[max(360px,calc(100vh-330px))] w-full rounded-md border border-border bg-white"
+              size={ev.tamperReport.size}
             />
           </div>
         </Card>

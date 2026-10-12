@@ -34,6 +34,7 @@ export type TamperReport = {
   allPassed: boolean;
   warnings?: string[];
   extensionVersion?: string;
+  size?: { width: number; height: number; fit?: { w: number; h: number }[] };
 };
 
 export const evidence = pgTable(

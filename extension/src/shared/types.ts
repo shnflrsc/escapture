@@ -11,7 +11,15 @@ export type TamperReport = {
   allPassed: boolean;
   warnings?: string[];
   extensionVersion?: string;
+  /**
+   * Size of the captured area on the original page, in CSS pixels, and `fit`: how tall the
+   * finished capture is when laid out at a few frame widths. The viewer sizes itself from these.
+   */
+  size?: { width: number; height: number; fit?: { w: number; h: number }[] };
 };
+
+/** Frame widths the capture is measured at, covering the SafeTrail viewer on small and large windows. */
+export const FIT_WIDTHS = [360, 480, 600];
 
 export type LastCapture =
   | { ok: true; id: string; label: string; url: string; at: string }
@@ -27,6 +35,7 @@ export type Message =
   | { type: "capture:result"; result: LastCapture }
   | { type: "image:fetch"; url: string; maxWidth?: number; quality?: number }
   | { type: "sheet:fetch"; url: string }
+  | { type: "capture:measure"; html: string }
   | {
       type: "capture:upload";
       html: string;

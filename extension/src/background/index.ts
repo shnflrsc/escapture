@@ -2,6 +2,7 @@
 // app (it has host permission, so no CORS issue), image fetching, hashing, upload.
 import {
   captureHost,
+  FIT_WIDTHS,
   gzip,
   MAX_BYTES,
   MAX_UPLOAD_BYTES,
@@ -158,6 +159,29 @@ async function fetchSheet(url: string): Promise<Reply<{ text: string }>> {
   }
 }
 
+/**
+ * How tall the finished capture is at the viewer's widths, measured in an offscreen
+ * document (a service worker has no layout). Best effort: without it the viewer estimates.
+ */
+async function measureCapture(html: string): Promise<Reply<{ fit: { w: number; h: number }[] }>> {
+  try {
+    if (!(await chrome.offscreen.hasDocument())) {
+      await chrome.offscreen.createDocument({
+        url: "offscreen.html",
+        reasons: [chrome.offscreen.Reason.DOM_PARSER],
+        justification: "Measure how tall a finished capture is, so the SafeTrail viewer can size itself to it.",
+      });
+    }
+    const reply = (await Promise.race([
+      chrome.runtime.sendMessage({ target: "offscreen", type: "measure", html, widths: FIT_WIDTHS }),
+      new Promise((resolve) => setTimeout(() => resolve(null), 8000)),
+    ])) as { ok?: boolean; fit?: { w: number; h: number }[] } | null;
+    return reply?.ok && reply.fit?.length ? { ok: true, fit: reply.fit } : { ok: false, error: "not measured" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "not measured" };
+  }
+}
+
 async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promise<Reply<{ result: LastCapture }>> {
   const at = new Date().toISOString();
   const fail = async (message: string, refused = false) => {
@@ -223,6 +247,8 @@ async function handle(msg: Message): Promise<unknown> {
       return fetchImage(msg.url, msg.maxWidth, msg.quality);
     case "sheet:fetch":
       return fetchSheet(msg.url);
+    case "capture:measure":
+      return measureCapture(msg.html);
     case "capture:upload":
       return upload(msg);
   }

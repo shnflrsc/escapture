@@ -56,6 +56,9 @@ export type Snapshot = {
   root: Element;
   images: PendingImage[];
   width: number;
+  /** Height of the captured area on the page, and of each selected item (for merged captures). */
+  height: number;
+  heights: Map<Element, number>;
   background: string;
   /** Background of the nearest painted element around the selection, for the wrapper. */
   backdrop: string;
@@ -415,6 +418,8 @@ export function buildSnapshot(targets: Element[]): Snapshot {
     root: clone,
     images: [],
     width: Math.max(...targets.map((t) => t.getBoundingClientRect().width)),
+    height: targets.reduce((sum, t) => sum + t.getBoundingClientRect().height, 0),
+    heights: new Map(targets.map((t) => [t, t.getBoundingClientRect().height])),
     background: "#ffffff",
     backdrop: "",
     itemBackdrop: "",
@@ -689,6 +694,8 @@ export function mergeSnapshots(parts: { snap: Snapshot; units: { el: Element; or
     root,
     images: snaps.flatMap((x) => x.images),
     width: Math.max(...snaps.map((x) => x.width)),
+    height: parts.reduce((sum, p) => sum + p.units.reduce((n, u) => n + (p.snap.heights.get(u.el) ?? 0), 0), 0),
+    heights: new Map(),
     background: snaps[0].background,
     backdrop: snaps.find((x) => x.itemBackdrop)?.itemBackdrop ?? "",
     itemBackdrop: "",
