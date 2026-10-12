@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 
 /** Native <dialog>: traps focus, closes on Escape and restores focus. */
@@ -30,6 +30,18 @@ export function Dialog({
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
   }, [open]);
+
+  // Next.js keeps the page you navigate away from mounted but hidden, instead of
+  // removing it. A modal dialog left open there would still be modal: it makes the
+  // whole document inert, so nothing on the new page could be clicked. This cleanup
+  // runs when the page is hidden (and on unmount) and closes it, which also resets
+  // the owner's state through onClose.
+  useLayoutEffect(() => {
+    const d = ref.current;
+    return () => {
+      if (d?.open) d.close();
+    };
+  }, []);
 
   return (
     <dialog

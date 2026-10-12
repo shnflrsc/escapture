@@ -33,6 +33,7 @@ export function NewCaseButton() {
       const c = await api<{ id: string }>("/api/cases", {
         body: { title: form.get("title"), description: form.get("description") },
       });
+      close(); // the dialog must not stay open behind the next page
       router.push(`/cases/${c.id}`);
     } catch (err) {
       setLoading(false);

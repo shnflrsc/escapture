@@ -99,6 +99,7 @@ export function EvidenceOwnerActions({
     setError(null);
     try {
       await api(`/api/evidence/${evidenceId}`, { method: "DELETE" });
+      close();
       toast("Evidence deleted.");
       router.push("/vault");
       router.refresh();
