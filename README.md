@@ -155,5 +155,6 @@ These match the Risks section of the proposal. Say them out loud in a demo.
 - **Rate limiting is per server instance** (in memory), which is weak on serverless hosting.
 - **Reviewer attachments lock the shared evidence.** Once a reviewer attaches evidence someone shared with them, its owner can no longer delete it, like any evidence on an escalated case.
 - **Desktop first.** Below 1024px the sidebar becomes a drawer and the Vault is laid out for tablets and phones; the other pages stay usable there but are not designed for it.
+- **An evidence page lists only the cases you are part of.** An item can be locked by a case you cannot open (for example one a reviewer attached it to); the page says it is locked without naming that case.
 - **The Vault list is not paged.** Search, the kind filter and sorting run on the server, but every matching item is shown on one page.
 - **Out of scope:** other platforms, the university's own investigation and sanctions, accused persons who are not BulSU students, judging whether a report is true, email or SMS notifications, case assignment, outcome categories, account deletion, reopening cases, an admin UI, legal pages.

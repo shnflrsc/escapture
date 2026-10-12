@@ -1,8 +1,9 @@
 "use client";
 
-import { EllipsisVertical } from "lucide-react";
+import { ChevronDown, EllipsisVertical } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 export type MenuItem = {
@@ -24,6 +25,7 @@ export function Menu({
   label,
   items,
   note,
+  text,
   className,
 }: {
   /** What the button is for, e.g. "Actions for Screenshot of the post". */
@@ -31,6 +33,8 @@ export function Menu({
   items: MenuItem[];
   /** Shown under the items; use it to say why some are disabled. */
   note?: string;
+  /** Shows a labelled button instead of the three dots. */
+  text?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -105,8 +109,8 @@ export function Menu({
       <button
         ref={button}
         type="button"
-        aria-label={label}
-        title="More actions"
+        aria-label={text ? undefined : label}
+        title={text ? undefined : "More actions"}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -117,12 +121,23 @@ export function Menu({
             show(e.key === "ArrowUp");
           }
         }}
-        className={cn(
-          "flex size-10 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800",
-          open && "bg-brand-100 text-brand-800",
-        )}
+        className={
+          text
+            ? buttonClass("secondary", "w-full")
+            : cn(
+                "flex size-10 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800",
+                open && "bg-brand-100 text-brand-800",
+              )
+        }
       >
-        <EllipsisVertical size={20} strokeWidth={1.75} aria-hidden />
+        {text ? (
+          <>
+            {text}
+            <ChevronDown size={18} strokeWidth={1.75} aria-hidden />
+          </>
+        ) : (
+          <EllipsisVertical size={20} strokeWidth={1.75} aria-hidden />
+        )}
       </button>
       {open && (
         <div
@@ -134,6 +149,7 @@ export function Menu({
           className={cn(
             "fade-in absolute right-0 z-20 flex min-w-[220px] flex-col rounded-xl border border-border bg-card p-1 shadow-raised",
             up ? "bottom-full mb-1" : "top-full mt-1",
+            text && "left-0",
           )}
         >
           {items.map((item) =>

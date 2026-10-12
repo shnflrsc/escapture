@@ -224,6 +224,19 @@ async function main() {
   check("Jules can edit the description", (await call(J, "PATCH", `/api/cases/${caseId}`, { description: "What happened last week. Jules saw it too." })).status === 200);
   check("Jules attaches his own item", (await call(J, "POST", `/api/cases/${caseId}/evidence`, { evidenceId: julesEv })).status === 201);
   check("Jules cannot attach Maya's item", (await call(J, "POST", `/api/cases/${caseId}/evidence`, { evidenceId: mayaEv2 })).status === 403);
+
+  // The evidence page's case list: only cases the viewer is part of.
+  type InCases = { attached: { id: string; status: string }[]; available: { id: string }[] };
+  const inCases = async (token: string, ev: string) => (await call(token, "GET", `/api/evidence/${ev}/cases`)).body as InCases;
+  const ownerView = await inCases(M, mayaEv);
+  check("the owner sees the case her evidence is in, and it is no longer offered", ownerView.attached.some((c) => c.id === caseId && c.status === "draft") && !ownerView.available.some((c) => c.id === caseId), ownerView);
+  check("evidence not in the case is offered the draft", (await inCases(M, mayaEv2)).available.some((c) => c.id === caseId) && (await inCases(M, mayaEv2)).attached.length === 0);
+  const collabView = await inCases(J, mayaEv);
+  check("a collaborator it was shared with sees the case, but cannot add someone else's evidence", collabView.attached.some((c) => c.id === caseId) && collabView.available.length === 0, collabView);
+  check("a stranger gets 404 on the case list", (await call(A, "GET", `/api/evidence/${mayaEv}/cases`)).status === 404);
+  check("Jules shares his attached item with Alex", (await call(J, "POST", `/api/evidence/${julesEv}/shares`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true })).status === 201);
+  const sharedOnly = await inCases(A, julesEv);
+  check("someone it was only shared with learns nothing about the case", sharedOnly.attached.length === 0 && sharedOnly.available.length === 0, sharedOnly);
   check("Jules cannot add collaborators", (await call(J, "POST", `/api/cases/${caseId}/collaborators`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true })).status === 403);
   check("Maya can open Jules's attached item", (await call(M, "GET", `/api/evidence/${julesEv}`)).status === 200);
   check("Alex gets 404 on the case (I6)", (await call(A, "GET", `/api/cases/${caseId}`)).status === 404);
@@ -282,6 +295,9 @@ async function main() {
   check("Alex shares his evidence with the reviewer", (await call(A, "POST", `/api/evidence/${alexEv}/shares`, { email: reviewerEmail, acknowledge: true })).status === 201);
   const rAttach = await call(R, "POST", `/api/review/cases/${caseId}/evidence`, { evidenceId: alexEv });
   check("the reviewer attaches it with side=reviewer", rAttach.status === 201 && rAttach.body.side === "reviewer", rAttach.body);
+  const alexView = await inCases(A, alexEv);
+  check("a reviewer's attachment is not listed for the owner", alexView.attached.length === 0, alexView);
+  check("reviewers cannot use the student case list", (await call(R, "GET", `/api/evidence/${alexEv}/cases`)).status === 403);
   const rc2 = await call(R, "GET", `/api/review/cases/${caseId}`);
   check("reviewer sees it under reviewer attachments only", rc2.body.reviewerEvidence.some((e: { id: string }) => e.id === alexEv) && !rc2.body.reporterEvidence.some((e: { id: string }) => e.id === alexEv));
   const mayaCase = await call(M, "GET", `/api/cases/${caseId}`);

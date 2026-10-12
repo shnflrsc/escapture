@@ -1,189 +1,142 @@
-# Tasks: Student Vault redesign
+# Tasks: Evidence page
 
-Plan and rationale: [plan.md](plan.md). **Approved and implemented.** Browser checks were run with a throwaway headless-Chrome script, not a test kept in the repository.
+Plan and rationale: [plan.md](plan.md). **Approved and implemented.** One limitation: on a 1280 by 800 screen the Sharing card ends about 80px below the fold for a student. Browser checks were run with a throwaway headless-Chrome script, not a test kept in the repository.
 
-Standing checks for every task: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and the page still loads signed in as a student.
+Standing checks for every task: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `/vault/[id]` still loads for a student owner, a student recipient and a reviewer.
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Cases
 
-### - [x] Task 1: Evidence list query
+### - [x] Task 1: Cases-for-evidence query
 
-**Description:** Extend the list service so the vault can search, filter and sort on the server, and so "My evidence" rows know whether an item is in a case and whether it is locked. The existing `GET /api/evidence` keeps working for callers that send no new parameters.
+**Description:** A read query for students that returns the cases holding a piece of evidence which the viewer can open, and the viewer's draft cases the evidence could still be added to. Reviewers keep the existing query.
 
 **Acceptance criteria:**
-- [x] `listEvidence` accepts optional `q` (matches the name; on the shared scope also the sharer's name), `kind` and `sort` (newest, oldest, name), and returns the same items as today when none are given.
-- [x] "Mine" rows carry `caseCount` and `locked`; shared rows carry neither.
-- [x] A count per scope is available for the tab labels.
+- [x] Returns only cases the viewer owns or collaborates on, reporter side only, with id, title and status.
+- [x] Returns the viewer's draft cases that do not hold the evidence yet, and only when the viewer owns the evidence.
+- [x] Someone the evidence was merely shared with gets no case they are not part of; reviewer attachments never appear.
 
 **Verification:**
 - [x] `pnpm typecheck && pnpm lint && pnpm test`
-- [x] `pnpm smoke` passes with new checks: search narrows the list, an unknown `kind` or `sort` is a 400, a recipient's shared list has no case fields.
+- [x] `pnpm smoke` with new checks: owner sees the case; a collaborator sees it; a plain recipient sees none; a reviewer attachment is not listed for the owner.
 
 **Dependencies:** None
 
-**Files likely touched:** `server/services/evidence.ts`, `lib/validators.ts`, `app/api/evidence/route.ts`, `scripts/smoke.ts`
+**Files likely touched:** `server/services/cases.ts`, `scripts/smoke.ts`
 
-**Estimated scope:** Medium
+**Estimated scope:** Small
 
-### - [x] Task 2: Vault table
+### - [x] Task 2: Cases card with Add to a case
 
-**Description:** Replace the tall rows on `/vault` with a compact table built for scanning, in a new vault-only component. `EvidenceRow` stays untouched for the case and reviewer pages.
+**Description:** One Cases card, first in the side column, for both roles. Students see their cases for this item and the owner can add it to a draft case; reviewers keep their list and their attach button.
 
 **Acceptance criteria:**
-- [x] Columns: Name with kind icon, Kind, Captured, Shared by (shared tab), Status (tamper-check badge; "In a case" or "Locked" when true). The whole row opens the item; long names truncate with the full name available.
-- [x] Below 768px the same rows stack as a list (name, then kind and date, then status) with no horizontal scrolling.
-- [x] Hover, focus-visible and keyboard activation work on every row; the page looks unchanged for case and reviewer pages.
+- [x] Each case shows its title as a link, its status badge, and for reviewers which side added it. With none: "Not in a case yet."
+- [x] The owner's "Add to a case" opens a dialog listing their draft cases and attaches through the existing route; the list updates and a toast confirms. With no draft case the button is disabled and says there are no cases.
+- [x] The reviewer's card behaves exactly as today, including never listing drafts.
 
 **Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test`
-- [x] Browser check at 1280px and 375px: more rows visible than before, nothing clipped, Tab reaches each row and Enter opens it.
+- [x] `pnpm typecheck && pnpm lint && pnpm smoke`
+- [x] Browser check: owner adds to a draft; owner with no drafts; recipient; reviewer attach flow.
 
 **Dependencies:** Task 1
 
-**Files likely touched:** `components/safetrail/vault-table.tsx` (new), `app/(app)/vault/page.tsx`
+**Files likely touched:** `components/safetrail/attach-to-case.tsx`, `components/safetrail/evidence-cases.tsx` (new), `app/(app)/vault/[id]/page.tsx`
 
-**Estimated scope:** Small
+**Estimated scope:** Medium
 
-### Checkpoint: Foundation
-- [x] Standing checks pass
-- [x] Vault shows the real data in the new table, both tabs
+### Checkpoint: Cases
+- [x] Standing checks and `pnpm smoke` pass
+- [x] A student can go from a capture to a draft case without leaving the page
 - [x] Review with human before continuing
 
 ---
 
-## Phase 2: Finding things
+## Phase 2: Declutter
 
-### - [x] Task 3: Toolbar and address state
+### - [x] Task 3: Integrity card and header facts
 
-**Description:** Add the controls for finding an item, with their state in the address so it survives opening an item and coming back.
-
-**Acceptance criteria:**
-- [x] Tabs show counts. Search, kind filter (All, Posts, Messages) and sort (Newest, Oldest, Name) each change the list, and are reflected in `?tab=&q=&kind=&sort=`. Switching tab keeps the search text.
-- [x] Opening an item and pressing Back returns to the same filtered list. The controls work with JavaScript disabled (a plain form).
-- [x] When filters match nothing, a "no matches" state names what was searched and offers Clear; it is different from the empty-vault state.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test`
-- [x] Browser check: type a search, filter, sort, open an item, go back; reload the address directly; clear.
-
-**Dependencies:** Tasks 1, 2
-
-**Files likely touched:** `components/safetrail/vault-toolbar.tsx` (new), `app/(app)/vault/page.tsx`
-
-**Estimated scope:** Medium
-
-### - [x] Task 4: How to capture, on demand
-
-**Description:** Move the permanent "How to capture" panel behind a header button that opens the same content in a dialog.
+**Description:** Replace the overloaded details card with a short Integrity card, and move the basic facts to one line under the title.
 
 **Acceptance criteria:**
-- [x] A "How to capture" button in the page header opens the existing steps and the loaded-messages note in a dialog; the panel no longer sits under the list.
-- [x] The empty-vault state still explains what to do and offers the same button.
-- [x] The dialog closes on Escape, returns focus to the button, and is not left open after navigating away.
+- [x] The card shows the tamper-check badge (wording unchanged), one summary line with the number of checks passed and notes, and Verify now.
+- [x] One "Details" disclosure holds the full hash with Copy, the source address, the list of checks, the notes (deduplicated) and "What this means". It starts open for reviewers and closed for students.
+- [x] The header shows kind, captured time and, when it is not yours, the owner. The strip above the frame is gone.
 
 **Verification:**
 - [x] `pnpm typecheck && pnpm lint`
-- [x] Browser check: open and close by mouse and keyboard, on an empty and a non-empty vault.
+- [x] Browser check: a capture with no notes and one with several; as student and as reviewer; Verify now still reports a match.
 
 **Dependencies:** None
 
-**Files likely touched:** `components/safetrail/how-to-capture.tsx` (new), `app/(app)/vault/page.tsx`
+**Files likely touched:** `components/safetrail/evidence-integrity.tsx` (new), `app/(app)/vault/[id]/page.tsx`
 
 **Estimated scope:** Small
 
-### Checkpoint: Finding things
+### - [x] Task 4: Sharing card with actions menu
+
+**Description:** A short Sharing card for the owner: who has access, and the owner's actions in a "More" menu.
+
+**Acceptance criteria:**
+- [x] The card lists who has access, or "Only you."
+- [x] Share by email, Create a password link, Rename and Delete are in one menu and work as before; Rename and Delete are disabled with the reason when the item is locked.
+- [x] The lock reason is shown on the card whether or not the viewer can see the case that caused it.
+
+**Verification:**
+- [x] `pnpm typecheck && pnpm lint && pnpm smoke`
+- [x] Browser check: all four actions; a locked item; the vault row menu still works.
+
+**Dependencies:** None
+
+**Files likely touched:** `components/safetrail/evidence-actions.tsx`, `app/(app)/vault/[id]/page.tsx`
+
+**Estimated scope:** Small
+
+### Checkpoint: Declutter
 - [x] Standing checks and `pnpm smoke` pass
-- [x] A student with 20+ items can find one by name in a few seconds
+- [x] No fact appears twice on the page; the side column fits on one screen at 1280 by 800 for a student
 - [x] Review with human before continuing
 
 ---
 
-## Phase 3: Acting on items
+## Phase 3: Finish
 
-### - [x] Task 5: Menu primitive
+### - [x] Task 5: One column below 1024px
 
-**Description:** One accessible menu component in the existing UI kit, for row actions.
+**Description:** Make the page usable on tablets and phones: capture first, then Cases, Integrity and Sharing.
 
 **Acceptance criteria:**
-- [x] A button with an accessible name opens a menu; arrow keys move between items, Enter or Space activates, Escape closes and returns focus, clicking outside closes.
-- [x] Items support a disabled state with a visible reason, and a danger style.
-- [x] Uses existing tokens only; respects reduced motion.
+- [x] Below 1024px the cards stack under the capture with no sideways scrolling and nothing clipped.
+- [x] The capture frame keeps a sensible height at 375, 768 and 1280.
+- [x] At 1024px and wider the two-column layout is used.
 
 **Verification:**
 - [x] `pnpm typecheck && pnpm lint`
-- [x] Keyboard-only walkthrough; check it is not clipped at the bottom and right edges of the window.
+- [x] Browser check at 375, 768, 1024 and 1280 with a post capture and a messages capture.
 
-**Dependencies:** None
+**Dependencies:** Tasks 2, 3, 4
 
-**Files likely touched:** `components/ui/menu.tsx` (new)
+**Files likely touched:** `app/(app)/vault/[id]/page.tsx`, `components/safetrail/evidence-frame.tsx`
 
 **Estimated scope:** Small
 
-### - [x] Task 6: Row actions
+### - [x] Task 6: Verification pass and cleanup
 
-**Description:** Let the owner act on an item from the list: Open, Rename, Share by email, Create password link, Delete. Reuses the existing dialogs and API routes; no server rule changes.
-
-**Acceptance criteria:**
-- [x] The dialogs currently inside `evidence-actions.tsx` are usable from both the detail page and a row menu, and the detail page behaves exactly as before.
-- [x] Owner rows offer all five actions; shared rows offer Open only. Delete and Rename are disabled with the existing explanation when the item is locked.
-- [x] After each action the list updates, a toast confirms it, and a failure shows the server's message with the dialog still open.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke`
-- [x] Browser check: rename, share, create link, delete from the list; the same four from the detail page; a locked item; a shared item.
-
-**Dependencies:** Tasks 2, 5
-
-**Files likely touched:** `components/safetrail/evidence-actions.tsx`, `components/safetrail/share-dialogs.tsx`, `components/safetrail/vault-table.tsx`, `app/(app)/vault/[id]/page.tsx`
-
-**Estimated scope:** Medium
-
-### Checkpoint: Acting on items
-- [x] Standing checks and `pnpm smoke` pass
-- [x] Every visible control on the vault does what it says; none is a placeholder
-- [x] Review with human before continuing
-
----
-
-## Phase 4: Narrow screens and finish
-
-### - [x] Task 7: Collapsible navigation (only if Open question 1 is answered yes)
-
-**Description:** Below 1024px the sidebar becomes a drawer opened from a small top bar, so the vault is usable on tablets and phones. At 1024px and wider nothing changes.
+**Description:** Check the finished page against the one-pager and remove anything left over.
 
 **Acceptance criteria:**
-- [x] At 1024px and wider every page renders exactly as it does today.
-- [x] Below 1024px a top bar shows the logo and a menu button; the drawer lists the same destinations, shows the active one, closes on Escape, on choosing a destination and on outside click, and traps focus while open.
-- [x] DESIGN.md §1, §6 and §16 are updated to match, with your approval of the wording.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm build`
-- [x] Browser check of the vault, a case page and the review board at 1280px, 768px and 375px.
-
-**Dependencies:** None (decision needed)
-
-**Files likely touched:** `components/safetrail/app-shell.tsx`, `app/(app)/layout.tsx`, `DESIGN.md`
-
-**Estimated scope:** Medium
-
-### - [x] Task 8: Verification pass and cleanup
-
-**Description:** Check the finished page against the brief's acceptance criteria and remove anything left over.
-
-**Acceptance criteria:**
-- [x] Each of the brief's thirteen acceptance criteria is checked off with what was observed, or listed as a remaining limitation.
-- [x] Contrast of any new colour pair is computed and recorded as DESIGN.md §4.4 requires; no new hex values in components.
-- [x] No unused components, styles or exports remain from the old vault layout; README mentions the new controls where it describes the vault.
+- [x] Every item in the one-pager's scope is done or listed as a limitation.
+- [x] The label is still exactly "Captured with tamper checks" / "Passed tamper checks"; the capture is still only shown in the script-less frame.
+- [x] No unused components or exports remain; README mentions the cases list where it describes the vault.
 
 **Verification:**
 - [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke && pnpm build`
-- [x] Keyboard-only run through the whole page; widths 1280, 768 and 375.
+- [x] Keyboard-only run through the page; the reviewer and vault browser checks still pass.
 
-**Dependencies:** Tasks 1 to 6 (and 7 if included)
+**Dependencies:** Tasks 1 to 5
 
-**Files likely touched:** `README.md`, `DESIGN.md`, files touched above
+**Files likely touched:** `README.md`, files touched above
 
 **Estimated scope:** Small
 

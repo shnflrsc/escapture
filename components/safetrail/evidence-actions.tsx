@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
 import { api, errorMessage } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/format";
-import { EmailShareButton, LinkShareButton } from "./share-dialogs";
 
 type VerifyResult = { stored: string; recomputed: string; match: boolean; checkedAt: string };
 
@@ -179,51 +178,5 @@ export function DeleteEvidenceDialog({
     >
       {error && <Banner tone="attention">{error}</Banner>}
     </Dialog>
-  );
-}
-
-export function EvidenceOwnerActions({
-  evidenceId,
-  label,
-  locked,
-}: {
-  evidenceId: string;
-  label: string;
-  locked: boolean;
-}) {
-  const router = useRouter();
-  const [dialog, setDialog] = useState<"rename" | "delete" | null>(null);
-  const close = () => setDialog(null);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <EmailShareButton buttonLabel="Share by email" {...evidenceEmailShare(evidenceId)} />
-      <LinkShareButton {...evidenceLinkShare(evidenceId)} />
-      <Button variant="secondary" disabled={locked} onClick={() => setDialog("rename")}>
-        <Pencil size={18} strokeWidth={1.75} aria-hidden />
-        Rename
-      </Button>
-      <Button variant="danger" disabled={locked} onClick={() => setDialog("delete")}>
-        <Trash2 size={18} strokeWidth={1.75} aria-hidden />
-        Delete
-      </Button>
-      {locked && (
-        <p className="flex items-start gap-1 text-[13px] leading-[18px] text-muted">
-          <Info size={16} strokeWidth={1.75} aria-hidden className="mt-px shrink-0" />
-          {LOCKED_NOTE}
-        </p>
-      )}
-
-      <RenameEvidenceDialog open={dialog === "rename"} onClose={close} evidenceId={evidenceId} label={label} />
-      <DeleteEvidenceDialog
-        open={dialog === "delete"}
-        onClose={close}
-        evidenceId={evidenceId}
-        onDeleted={() => {
-          router.push("/vault");
-          router.refresh();
-        }}
-      />
-    </div>
   );
 }

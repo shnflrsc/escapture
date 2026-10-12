@@ -142,6 +142,39 @@ export async function listCases(actor: Actor) {
   }));
 }
 
+/**
+ * For the evidence page: the cases holding this evidence that the viewer owns or
+ * collaborates on, and the drafts its owner could still add it to. Says nothing about
+ * anyone else's cases, and never counts what reviewers attached (I5).
+ */
+export async function casesForEvidence(actor: Actor, ev: { id: string; isOwner: boolean }) {
+  const mine = await listCases(actor);
+  if (mine.length === 0) return { attached: [], available: [] };
+  const holding = new Set(
+    (
+      await db
+        .select({ caseId: caseEvidence.caseId })
+        .from(caseEvidence)
+        .where(
+          and(
+            eq(caseEvidence.evidenceId, ev.id),
+            eq(caseEvidence.side, "reporter"),
+            inArray(
+              caseEvidence.caseId,
+              mine.map((c) => c.id),
+            ),
+          ),
+        )
+    ).map((r) => r.caseId),
+  );
+  const brief = (c: (typeof mine)[number]) => ({ id: c.id, title: c.title, status: c.status });
+  return {
+    attached: mine.filter((c) => holding.has(c.id)).map(brief),
+    // Only your own evidence can go into a case, and only while the case is a draft.
+    available: ev.isOwner ? mine.filter((c) => c.status === "draft" && !holding.has(c.id)).map(brief) : [],
+  };
+}
+
 /** Student-side view: reporter evidence only, status events without reviewer identities. */
 export async function getCase(actor: Actor, caseId: string) {
   const { c, facts } = await loadCase(db, caseId);
