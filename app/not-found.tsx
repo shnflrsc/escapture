@@ -9,7 +9,7 @@ export default function NotFound() {
         The page may have moved, or you may not have access to it. Nothing has been changed.
       </p>
       <Link href="/" className={buttonClass("primary")}>
-        Go to your home page
+        Go to the home page
       </Link>
     </main>
   );

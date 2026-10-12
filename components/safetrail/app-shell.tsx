@@ -75,7 +75,7 @@ export function AppShell({
 
   const sidebar = (
     <>
-      <Link href="/" className="rounded-md px-2 py-2" onClick={() => setMenuOpen(false)}>
+      <Link href={items[0].href} className="rounded-md px-2 py-2" onClick={() => setMenuOpen(false)}>
         <Logo />
       </Link>
       <nav aria-label="Main" className="mt-6 flex flex-col gap-1">
@@ -141,7 +141,7 @@ export function AppShell({
           <MenuIcon size={22} strokeWidth={1.75} aria-hidden />
           {unread > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-brand-700" aria-hidden />}
         </button>
-        <Link href="/" className="rounded-md px-1 py-1">
+        <Link href={items[0].href} className="rounded-md px-1 py-1">
           <Logo />
         </Link>
       </header>
