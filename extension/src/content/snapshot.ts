@@ -180,9 +180,9 @@ function sanitizeAttributes(el: Element) {
         safe = u.href;
       }
     } catch {}
-    // Links are made inert: without an address a click does nothing, so captured content can
+    // Links never leave the capture: the real address is taken off, so captured content can
     // never take the viewer anywhere. Where the link pointed is kept as plain text (a tooltip
-    // here, and the list that serialize adds under the capture).
+    // here, and the panel that serialize adds, shown when the link is clicked).
     el.removeAttribute("href");
     el.removeAttribute("rel");
     if (safe) {
@@ -840,29 +840,36 @@ function shareRepeatedImages(root: Element): string {
   return rules.join("");
 }
 
+// Shown when a captured link is clicked. No script is involved: each link points at a
+// spot in this same document, and the rule below shows the panel whose spot is the target.
+const LINK_PANEL_CSS =
+  ".st-tip{display:none;position:fixed;left:8px;right:8px;bottom:8px;z-index:2147483647;box-sizing:border-box;padding:10px 12px;" +
+  "border:1px solid #7690A0;border-radius:10px;background:#fff;color:#55646E;box-shadow:0 8px 24px rgba(30,42,50,.18);" +
+  "font:13px/18px system-ui,-apple-system,'Segoe UI',sans-serif;text-align:left}" +
+  ".st-tip:target{display:block}" +
+  ".st-tip b{display:block;margin:4px 0;font-weight:400;color:#1E2A32;word-break:break-all;user-select:all;-webkit-user-select:all}" +
+  ".st-tip a{float:right;margin-left:12px;color:#3A6D88;font-weight:600;text-decoration:none}";
+
 /**
- * Where the capture's links pointed, as plain text under the capture. The links
- * themselves are inert, so this is the only place the addresses appear. It is
- * clearly marked as added by SafeTrail and is not part of what was on screen.
+ * Captured links never leave the capture. Clicking one opens a small panel at
+ * the bottom saying where it pointed; one click on the address selects all of
+ * it for copying. The panels are marked as added by SafeTrail and are not part
+ * of what was on screen. Returns the panels' markup, or "" if there are no links.
  */
-function linkList(root: Element): string {
-  const seen = new Map<string, string>();
+function linkPanels(root: Element): string {
+  const ids = new Map<string, string>();
   for (const a of root.querySelectorAll("a[data-href]")) {
     const url = a.getAttribute("data-href")!;
-    const text = (a.textContent?.replace(/\s+/g, " ").trim() || a.getAttribute("data-label") || "").slice(0, 80);
-    if (!seen.has(url) || (!seen.get(url) && text)) seen.set(url, text);
-    if (seen.size >= 300) break;
+    let id = ids.get(url);
+    if (!id) {
+      if (ids.size >= 2000) continue; // beyond this the link stays inert, with its tooltip
+      ids.set(url, (id = `st-l${ids.size.toString(36)}`));
+    }
+    a.setAttribute("href", `#${id}`);
   }
-  if (!seen.size) return "";
-  const items = [...seen]
-    .map(([url, text]) => `<li style="margin:0 0 6px">${text ? `${esc(text)}<br>` : ""}<span style="word-break:break-all;color:#1E2A32">${esc(url)}</span></li>`)
+  return [...ids]
+    .map(([url, id]) => `<div class="st-tip" id="${id}"><a href="#st-close">Close</a>Added by SafeTrail. This link pointed to:<b>${esc(url)}</b>Click the address to select it, then copy.</div>`)
     .join("");
-  return (
-    `<section style="margin:24px 0 0;padding:12px 16px;border:1px solid #DCE6EB;border-radius:10px;background:#fff;color:#55646E;font:13px/18px system-ui,-apple-system,'Segoe UI',sans-serif">` +
-    `<p style="margin:0 0 4px;font-weight:600;color:#1E2A32">Links in this capture</p>` +
-    `<p style="margin:0 0 8px">Added by SafeTrail. Links in the capture above can't be clicked. These are the addresses they pointed to.</p>` +
-    `<ol style="margin:0;padding-left:20px">${items}</ol></section>`
-  );
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -880,14 +887,14 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     url.startsWith("data:") || url.startsWith("#") ? whole : `url("${snap.cssImages.get(url) ?? BLANK}")`,
   );
   const css = (rules + shareRepeatedImages(root)).replace(/<\//g, "<\\/");
-  const links = linkList(root);
+  const links = linkPanels(root);
   const context = [...snap.context].map(([prop, value]) => `${prop}:${value}`).join(";");
   return (
     `<!doctype html><html lang="${esc(document.documentElement.lang || "en")}"><head><meta charset="utf-8">` +
     `<meta name="safetrail:source-url" content="${esc(meta.sourceUrl)}">` +
     `<meta name="safetrail:client-captured-at" content="${esc(meta.clientCapturedAt)}">` +
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">` +
-    `<title>SafeTrail capture</title><style>${css}</style></head>` +
+    `<title>SafeTrail capture</title><style>${css}${links ? LINK_PANEL_CSS : ""}</style></head>` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">` +
     `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(snap.backdrop)};${esc(context)}">${root.outerHTML}</div>${links}</body></html>\n`
   );

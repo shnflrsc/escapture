@@ -64,7 +64,7 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
               src={`/api/evidence/${ev.id}/file`}
               title={`Captured content: ${ev.label}`}
               referrerPolicy="no-referrer"
-              className="h-[640px] w-full rounded-md border border-border bg-white"
+              className="h-[max(360px,calc(100vh-330px))] w-full rounded-md border border-border bg-white"
             />
           </div>
         </Card>
