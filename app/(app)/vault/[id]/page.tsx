@@ -2,13 +2,16 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EvidenceOwnerActions, VerifyNow } from "@/components/safetrail/evidence-actions";
+import { AttachToCase } from "@/components/safetrail/attach-to-case";
 import { EvidenceFrame } from "@/components/safetrail/evidence-frame";
+import { StatusBadge } from "@/components/ui/badge";
 import { TamperBadge } from "@/components/ui/badge";
 import { Card, PageHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { formatDateTime, kindLabel } from "@/lib/format";
 import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
 import { getEvidence } from "@/server/services/evidence";
+import { casesWithEvidence, listBoard } from "@/server/services/review";
 import { listEvidenceShares } from "@/server/services/shares";
 
 const CHECK_LABELS: Record<string, string> = {
@@ -29,13 +32,22 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
   const ev = await orNotFound(getEvidence(user, id));
   const shares = ev.isOwner ? await listEvidenceShares(user, id) : [];
   const reviewer = user.role === "reviewer";
+  // A reviewer may attach evidence that is theirs to use: shared with them, or their own.
+  const attachable = reviewer && (ev.sharedWithMe || ev.isOwner);
+  const attachedTo = reviewer ? await casesWithEvidence(user, id) : [];
+  const openCases = attachable
+    ? (await listBoard(user)).filter((c) => !attachedTo.some((a) => a.id === c.id)).map((c) => ({ id: c.id, title: c.title, reporterName: c.reporterName }))
+    : [];
 
   return (
     <>
       <div>
-        <Link href={reviewer ? "/review" : "/vault"} className="link inline-flex items-center gap-1 text-sm">
+        <Link
+          href={reviewer ? (ev.sharedWithMe ? "/review/shared" : "/review") : "/vault"}
+          className="link inline-flex items-center gap-1 text-sm"
+        >
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
-          {reviewer ? "Back to the Review Board" : "Back to your vault"}
+          {reviewer ? (ev.sharedWithMe ? "Back to Shared with me" : "Back to the Review Board") : "Back to your vault"}
         </Link>
       </div>
       <PageHeader
@@ -115,6 +127,34 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
             </dl>
             <VerifyNow evidenceId={ev.id} />
           </Card>
+
+          {reviewer && (
+            <Card className="flex flex-col gap-4">
+              <h3>Cases</h3>
+              {attachedTo.length === 0 ? (
+                <p className="text-sm leading-[22px] text-muted">Not attached to any case yet.</p>
+              ) : (
+                <ul className="flex flex-col gap-2 text-sm leading-[22px]">
+                  {attachedTo.map((c) => (
+                    <li key={c.id} className="flex flex-wrap items-center gap-2">
+                      <Link href={`/review/${c.id}`} className="link">
+                        {c.title}
+                      </Link>
+                      <StatusBadge status={c.status} />
+                      <span className="text-muted">{c.side === "reviewer" ? "Added by reviewers" : "From the reporter"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {attachable ? (
+                <AttachToCase evidenceId={ev.id} cases={openCases} />
+              ) : (
+                <p className="text-[13px] leading-[18px] text-muted">
+                  You can attach evidence to other cases only when it has been shared with you directly.
+                </p>
+              )}
+            </Card>
+          )}
 
           {ev.isOwner && (
             <Card className="flex flex-col gap-4">

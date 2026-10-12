@@ -43,6 +43,8 @@ function toDto(row: Row, actor: Actor, facts: EvidenceFacts) {
     clientCapturedAt: row.clientCapturedAt,
     tamperReport: row.tamperReport,
     isOwner: row.ownerId === actor.id,
+    /** Shared directly with the viewer, by email or a redeemed link. */
+    sharedWithMe: facts.sharedWithUser,
     locked: facts.attachedToNonDraftCase,
   };
 }

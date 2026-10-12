@@ -196,6 +196,17 @@ export async function attachReviewerEvidence(actor: Actor, caseId: string, evide
   });
 }
 
+/** The cases (never drafts) a piece of evidence is attached to, and on which side. */
+export async function casesWithEvidence(actor: Actor, evidenceId: string) {
+  assertRole(actor, "reviewer");
+  return db
+    .select({ id: cases.id, title: cases.title, status: cases.status, side: caseEvidence.side })
+    .from(caseEvidence)
+    .innerJoin(cases, eq(cases.id, caseEvidence.caseId))
+    .where(and(eq(caseEvidence.evidenceId, evidenceId), inArray(cases.status, ["escalated", "under_review", "closed"])))
+    .orderBy(desc(caseEvidence.createdAt));
+}
+
 export async function listArchives(actor: Actor, q?: string) {
   assertRole(actor, "reviewer");
   const term = q?.trim();

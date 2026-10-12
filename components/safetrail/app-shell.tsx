@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Bell, Columns3, FolderOpen, LockKeyhole, LogOut } from "lucide-react";
+import { Archive, Bell, Columns3, FolderOpen, Inbox, LockKeyhole, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -20,8 +20,9 @@ const NAV: Record<Role, { href: string; label: string; Icon: typeof Bell; match:
       href: "/review",
       label: "Review Board",
       Icon: Columns3,
-      match: (p) => p.startsWith("/review") && !p.startsWith("/review/archives"),
+      match: (p) => p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared"),
     },
+    { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
     { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
   ],
   admin: [],
