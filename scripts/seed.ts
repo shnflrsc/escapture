@@ -70,9 +70,9 @@ async function main() {
       description:
         "A classmate posted about me after our quiz and then messaged me about the group project. Jules was in the same group and saw the messages too.",
     });
-    await attachEvidence(maya, escalated.id, post.id);
+    await attachEvidence(maya, escalated.id, [post.id]);
     await addCollaborator(maya, escalated.id, jules.email);
-    await attachEvidence(jules, escalated.id, julesChat.id);
+    await attachEvidence(jules, escalated.id, [julesChat.id]);
     const preview = await escalationPreview(maya, escalated.id);
     await escalate(maya, escalated.id, preview.digest);
 
@@ -81,7 +81,7 @@ async function main() {
       title: "Messages from last night",
       description: "Still deciding whether to report this.",
     });
-    await attachEvidence(maya, draft.id, chat.id);
+    await attachEvidence(maya, draft.id, [chat.id]);
     console.log("Created demo evidence, one escalated case and one draft.");
   }
 

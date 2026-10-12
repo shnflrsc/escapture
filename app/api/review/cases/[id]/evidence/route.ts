@@ -1,4 +1,4 @@
-import { attachEvidence as attachSchema, uuid } from "@/lib/validators";
+import { attachOneEvidence as attachSchema, uuid } from "@/lib/validators";
 import { requireUser } from "@/server/auth";
 import { handle, json } from "@/server/http";
 import { attachReviewerEvidence } from "@/server/services/review";

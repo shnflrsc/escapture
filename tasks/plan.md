@@ -1,83 +1,100 @@
-# Implementation Plan: Evidence page (capture, cases, integrity, sharing)
+# Implementation Plan: Case page (assemble a draft)
 
-Status: **approved and implemented** with the recommended answers (Add to a case in the Cases card; all notes shown once Details is open). Tasks are tracked in [todo.md](todo.md).
+Status: **approved and implemented.** Tasks are tracked in [todo.md](todo.md).
 
-This replaces the vault redesign plan, which was finished and committed in `5f2b47c`.
+This replaces the evidence page plan, which was finished and committed in `0e57dac`.
+
+## Problem
+
+How might we make a draft case quick to assemble (evidence, people, the account of what happened) for one or several students, without the page explaining itself in every section?
 
 ## Overview
 
-Rework `/vault/[id]` so the capture stays the focus and the side column stops being one overloaded card. The column becomes three short cards: Cases, Integrity and Sharing. Students see which of their cases an item is in and can add it to a draft case from here. Technical detail (hash, source, checks, notes) moves behind one "Details" disclosure. No server rule about who may view, attach, rename or delete changes.
+Rework `/cases/[id]` into one page you assemble. Evidence becomes a table with an "Add evidence" button that opens a picker of your vault with checkboxes. The title and description are edited in place and save themselves, and the page picks up other people's changes. The owner can delete a draft and remove collaborators; a collaborator can leave. Section subtitles and the header sentence go. The evidence page's back link returns to the case you came from.
 
 ## Decisions already made
 
-- Student first; the reviewer's view of the same page must still work.
-- Two columns stay: capture on the left, cards on the right. No full-width capture, no tabs.
-- Students can see and add to cases from this page. Removing stays on the case page.
-- Details start **open for reviewers**, closed for students.
-- When the owner has no draft case, "Add to a case" is disabled and says there are no cases. It does not offer to create one.
-- Reviewers never see a reporter's draft cases in the list.
+- **Sync** means autosave plus staying current, not live co-typing. If two people change the same field, the later save is refused and both versions are shown.
+- **Delete:** the owner only, on drafts only. Collaborators are notified. Evidence stays in each person's vault; case links stop working.
+- **Text:** every section subtitle and the header sentence are removed. Warnings stay inside dialogs where a decision is made.
+- **Remove or leave:** the owner can remove a collaborator from a draft and a collaborator can leave. Either way that person's evidence is removed from the case. The removed person and the owner are notified.
+- **Escalating:** only "no evidence" blocks it, as today. An empty description is a warning in the dialog.
+- **Who added what:** the evidence table shows who added each item, and offers Remove only where the server allows it.
 
 ## Architecture decisions
 
-- **One Cases card for both roles.** Students get cases they own or collaborate on that hold this item on the reporter side. Reviewers keep today's list (never drafts, both sides). The viewer's role picks the query; the card is the same component.
-- **A new read query for students**, in the cases service: the cases holding this evidence that the viewer can open, plus the viewer's draft cases it is not in yet. It reports nothing about cases the viewer cannot open, and never reviewer attachments.
-- **"Add to a case" reuses the existing dialog and the existing attach route** (`POST /api/cases/:id/evidence`). `AttachToCase` takes its endpoint and wording as inputs instead of being reviewer-only.
-- **The button lives in the Cases card, not the page header.** The one-pager put it in the header, but the reviewer's button is already in the card and two copies would be clutter. The card is first in the column, so it is still the first action on the page. Say if you want it in the header instead.
-- **Integrity card = badge, one summary line, Verify now, one disclosure.** The summary is built from the stored report ("5 checks passed · 2 notes"). Notes can number up to 32 at 500 characters each, so they are deduplicated and shown only inside Details.
-- **Sharing card = who has access, plus a "More" menu** for Share by email, Create a password link, Rename and Delete, reusing the menu and dialogs built for the vault.
-- **Header gets one line of facts** (kind, captured time, owner when it is not you). The strip above the frame is removed because it repeats the card.
-- **Below 1024px the page becomes one column**: capture, then Cases, Integrity, Sharing.
+- **Evidence table:** name, kind, captured, added by, and a remove action. It follows the vault table's look but is its own small component, because its columns and actions differ. Rows link to the evidence page.
+- **Picker:** a dialog listing your own vault items not yet in the case, with the vault's search and kind filter, checkboxes and a count on the Add button. Collaborators see their own vault, matching the server rule that you can only add your own evidence.
+- **Adding several items is one request** to the existing `POST /api/cases/:id/evidence`, which will also accept a list. It is all or nothing, in one transaction. The single-item form keeps working, because the evidence page uses it.
+- **Back link:** the case links to `/vault/:id?from=<caseId>`. The evidence page shows "Back to the case" only when that case is one the viewer can open; otherwise it falls back to today's link.
+- **Autosave:** title and description are edited in place and saved shortly after you stop typing, with a small "Saving… / Saved" indicator. Each save sends the text the field had when you started. The server applies it only if the field still has that text; otherwise it answers with a conflict and the current text. No database change is needed. Today a second save silently overwrites the first, so this also fixes a real loss of work.
+- **Staying current:** while a draft is open and the tab is visible, the page asks the server every few seconds whether the case changed, and refreshes if so. A field you are typing in, or that has an unsaved edit, is never replaced.
+- **Delete case:** a new `DELETE /api/cases/:id` and a new rule, owner and draft only. Notifications are tied to a case and are removed with it, so the "case deleted" notification is stored without a case link.
+- **Remove and leave:** a new `DELETE /api/cases/:id/collaborators/:userId`. The owner may name any collaborator; a collaborator may name only themselves. It removes that person's evidence from the case in the same transaction.
+- **Header:** title, status chip, Escalate, and a "More" menu with Delete case (owner) or Leave case (collaborator), reusing the menu built for the vault.
+- **Ready to escalate:** Escalate is always clickable for the owner of a draft. Its dialog lists what is missing (no evidence blocks; empty description warns) before the existing preview. The "add evidence first" banner goes.
+- **No schema change** in any task.
 
 ## Dependency graph
 
 ```
-Task 1  cases-for-evidence query (student)
-   └── Task 2  Cases card with Add to a case
-Task 3  Integrity card and header facts      (independent)
-Task 4  Sharing card with actions menu       (independent)
-Task 5  one column below 1024px              (after 2, 3, 4)
-Task 6  verification and cleanup             (last)
+Task 1  evidence table and page text cleanup
+   ├── Task 2  evidence picker (multi-select, one request)
+   └── Task 3  back link from evidence to case
+Task 4  autosave with same-field conflict     (independent)
+   └── Task 5  stay current while open
+Task 6  delete a draft case                   (independent; adds the header menu)
+   └── Task 7  remove a collaborator / leave  (uses the header menu)
+Task 8  ready-to-escalate check               (independent)
+Task 9  verification and cleanup              (last)
 ```
-
-Tasks 3 and 4 do not depend on 1 or 2.
 
 ## Task list
 
 See [todo.md](todo.md) for acceptance criteria and verification per task.
 
-### Phase 1: Cases
-- Task 1: Cases-for-evidence query
-- Task 2: Cases card with Add to a case
+### Phase 1: Evidence
+- Task 1: Evidence table and page text cleanup
+- Task 2: Evidence picker
+- Task 3: Back to the case from an evidence page
 
-### Phase 2: Declutter
-- Task 3: Integrity card and header facts
-- Task 4: Sharing card with actions menu
+### Phase 2: Editing together
+- Task 4: Autosave with same-field conflict
+- Task 5: Stay current while open
 
-### Phase 3: Finish
-- Task 5: One column below 1024px
-- Task 6: Verification pass and cleanup
+### Phase 3: People and lifecycle
+- Task 6: Delete a draft case
+- Task 7: Remove a collaborator, leave a case
+- Task 8: Ready-to-escalate check
+
+### Phase 4: Finish
+- Task 9: Verification pass and cleanup
 
 ## Risks and mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| The case list leaks a case the viewer should not know about (a reviewer attachment, or the owner's other cases shown to someone the item was shared with) | High | The query joins on the viewer's own ownership or collaboration and on the reporter side only. Smoke checks cover a recipient, a collaborator and a reviewer attachment. |
-| An item is locked but the viewer's case list is empty (locked by a reviewer attachment, or by a case they cannot open) | Medium | The lock line states the reason on its own, without depending on the list. |
-| Hiding the hash and checks weakens trust for students | Medium | The badge, the summary line and Verify now stay visible; Details is one click and keeps its state while on the page. |
-| Changing `AttachToCase` and `EvidenceOwnerActions` breaks the reviewer flow or the vault row menu | Medium | Re-run the reviewer and vault browser checks after Tasks 2 and 4. |
-| The capture frame sizes its height from its width; a one-column layout changes that width | Low | The frame already picks its height from measured widths; check captures at 375, 768 and 1280. |
+| Autosave loses or overwrites text | High | Saves carry the starting text and are refused on mismatch; the typed text is kept on any failure; a field in use is never replaced by a refresh. Browser check with two signed-in students editing the same and different fields. |
+| Delete or remove races with escalation | High | Both take the same row lock escalation takes and re-check "draft" inside the transaction. Smoke checks: delete and remove are refused once escalated. |
+| Removing a person leaves their evidence on the case, or deleting a case deletes evidence | High | Removal detaches that person's items in the same transaction; deleting a case only detaches. Smoke checks confirm the files still exist in each vault. |
+| A collaborator removes someone else, or a removed person keeps access | High | Rule in `server/authz.ts` with unit tests; smoke checks for each role, and that the removed person gets 404 afterwards. |
+| The `from` parameter is used to show a link to a case the viewer cannot open | Medium | The evidence page checks the case through the existing service before showing the link. |
+| Checking for changes every few seconds adds load | Low | Only on drafts, only while the tab is visible, and the check returns a timestamp, not the case. |
+| Removing subtitles loses "reviewers will see only what is listed here" | Medium | The escalation dialog already lists exactly what is sent; the ready check sits above it. |
 | No browser tests live in the repo | Low | Verification uses a throwaway headless-Chrome script, as before; say so in the summary. |
 
 ## Not doing
 
-- Full-width capture with an info panel, and tabs.
-- Verifying the file automatically on load.
-- A printable record sheet, private notes on evidence, a full-screen view.
-- Removing evidence from a case from this page.
-- Creating a case from the "Add to a case" dialog.
-- Any change to stored captures or to the capture frame itself.
+- Live character-by-character co-editing, or showing who is currently editing.
+- A step-by-step flow, or people shown as chips.
+- Adding evidence from other people's vaults, or selecting several items in the vault to add to a case.
+- Removing collaborators, deleting, or editing after escalation.
+- Restoring a deleted case.
+- Trimming the remaining info banners (locked case, "you were added").
 
 ## Open questions
 
-1. Is the Cases card the right home for "Add to a case", or do you want it in the page header as the one-pager said?
-2. Notes inside Details: show all of them once expanded (recommended), or cap at a few with "Show all"?
+None blocking. Two defaults I will use unless you say otherwise:
+
+1. Autosave waits about one second after you stop typing, and also saves when you leave the field.
+2. The page checks for other people's changes every five seconds.

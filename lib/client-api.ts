@@ -3,6 +3,8 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message: string,
+    /** Anything else the server sent with the error. */
+    public data: Record<string, unknown> = {},
   ) {
     super(message);
   }
@@ -30,6 +32,7 @@ export async function api<T = unknown>(
       res.status,
       data?.error?.code ?? data?.code ?? "error",
       data?.error?.message ?? data?.message ?? "Something went wrong. Please try again.",
+      data?.error ?? {},
     );
   }
   return data as T;

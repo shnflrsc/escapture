@@ -98,6 +98,18 @@ function ownerOnlyWhileDraft(u: U, c: CaseFacts): Decision {
 }
 
 export const canAddCollaborator = ownerOnlyWhileDraft;
+/** A draft can be deleted by the person who started it. After escalation it is a record (I3). */
+export const canDeleteCase = ownerOnlyWhileDraft;
+
+/** The owner may take any collaborator off a draft; a collaborator may only leave. */
+export function canRemoveCollaborator(u: U, c: CaseFacts, targetId: string): Decision {
+  const role = caseRole(u, c);
+  if (!role) return "not_found";
+  if (c.status !== "draft") return "locked";
+  if (targetId === c.ownerId) return "forbidden";
+  if (role !== "owner" && targetId !== u.id) return "forbidden";
+  return c.collaboratorIds.includes(targetId) ? "ok" : "not_found";
+}
 export const canPreviewEscalation = ownerOnlyWhileDraft;
 
 export function canEscalate(u: U, c: CaseFacts): Decision {

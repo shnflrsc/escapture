@@ -1,17 +1,14 @@
 import { ArrowLeft, Lock } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  AttachEvidence,
-  CaseDetailsForm,
-  DetachButton,
-  EscalateButton,
-} from "@/components/safetrail/case-actions";
-import { EvidenceList, EvidenceRow } from "@/components/safetrail/evidence-row";
+import { CaseMenu, EscalateButton, RemovePersonButton } from "@/components/safetrail/case-actions";
+import { CaseEvidenceTable } from "@/components/safetrail/case-evidence-table";
+import { CaseField, CaseLive } from "@/components/safetrail/case-fields";
+import { EvidencePicker } from "@/components/safetrail/evidence-picker";
 import { EmailShareButton, LinkShareButton } from "@/components/safetrail/share-dialogs";
 import { Timeline } from "@/components/safetrail/timeline";
 import { StatusBadge } from "@/components/ui/badge";
-import { Card, PageHeader, Section } from "@/components/ui/card";
+import { Card, Section } from "@/components/ui/card";
 import { Banner } from "@/components/ui/feedback";
 import { formatDateTime } from "@/lib/format";
 import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
@@ -29,34 +26,40 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const draft = c.status === "draft";
   const owner = c.role === "owner";
   const attached = new Set(c.evidence.map((e) => e.id));
-  const available = draft ? (await listEvidence(user, "mine")).filter((e) => !attached.has(e.id)) : [];
+  const vault = draft ? await listEvidence(user, "mine") : [];
 
   return (
     <>
+      {draft && <CaseLive caseId={c.id} updatedAt={c.updatedAt.toISOString()} />}
       <div>
         <Link href="/cases" className="link inline-flex items-center gap-1 text-sm">
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
           Back to cases
         </Link>
       </div>
-      <PageHeader
-        title={c.title}
-        description={
-          <span className="flex flex-wrap items-center gap-2">
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div className="flex min-w-0 flex-1 basis-[320px] flex-col gap-1">
+          {draft ? (
+            <>
+              {/* The title is a field on a draft; the page still needs a heading. */}
+              <h1 className="sr-only">{c.title}</h1>
+              <CaseField caseId={c.id} field="title" value={c.title} />
+            </>
+          ) : (
+            <h1 className="break-words">{c.title}</h1>
+          )}
+          <p className="flex flex-wrap items-center gap-2 text-muted">
             <StatusBadge status={c.status} />
-            {draft
-              ? "Only you and the people you add can see this draft."
-              : owner
-                ? "Your case"
-                : `Case by ${c.owner.name}`}
-          </span>
-        }
-        action={
-          draft && owner ? (
-            <EscalateButton caseId={c.id} disabled={c.evidence.length === 0} />
-          ) : undefined
-        }
-      />
+            {!owner && `Case by ${c.owner.name}`}
+          </p>
+        </div>
+        {draft && (
+          <div className="flex shrink-0 items-center gap-2">
+            {owner && <EscalateButton caseId={c.id} hasEvidence={c.evidence.length > 0} />}
+            <CaseMenu caseId={c.id} title={c.title} ownerName={c.owner.name} role={owner ? "owner" : "collaborator"} />
+          </div>
+        )}
+      </header>
 
       {!draft && c.escalatedAt && (
         <Banner tone="info">
@@ -67,9 +70,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           Reviewers can see this case. It can&apos;t be edited or withdrawn, and its evidence can&apos;t be deleted.
         </Banner>
       )}
-      {draft && owner && c.evidence.length === 0 && (
-        <Banner tone="info">Add at least one piece of evidence before you can escalate this case.</Banner>
-      )}
       {draft && !owner && (
         <Banner tone="info">
           {c.owner.name} added you to this case. You can edit the details and add your own evidence. Only{" "}
@@ -77,22 +77,26 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         </Banner>
       )}
 
-      <Section title="What happened">
-        <Card>
-          {draft ? (
-            <CaseDetailsForm caseId={c.id} title={c.title} description={c.description} />
-          ) : (
-            <p className="max-w-prose whitespace-pre-wrap">{c.description || "No description was added."}</p>
-          )}
-        </Card>
-      </Section>
+      <Card>
+        {draft ? (
+          <CaseField caseId={c.id} field="description" value={c.description} />
+        ) : (
+          <p className="max-w-prose whitespace-pre-wrap">{c.description || "No description was added."}</p>
+        )}
+      </Card>
 
       <Section
         title="Evidence"
-        description={
-          draft
-            ? "You can add evidence from your own vault. Reviewers will see only what is listed here."
-            : "This is the evidence reviewers can see."
+        action={
+          draft ? (
+            <EvidencePicker
+              caseId={c.id}
+              vaultEmpty={vault.length === 0}
+              available={vault
+                .filter((e) => !attached.has(e.id))
+                .map((e) => ({ id: e.id, label: e.label, kind: e.kind, capturedAt: e.capturedAt }))}
+            />
+          ) : undefined
         }
       >
         {c.evidence.length === 0 ? (
@@ -100,28 +104,21 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <p className="text-sm leading-[22px] text-muted">No evidence has been added yet.</p>
           </Card>
         ) : (
-          <EvidenceList>
-            {c.evidence.map((e) => (
-              <EvidenceRow
-                key={e.id}
-                item={e}
-                note={`Added by ${e.ownerId === user.id ? "you" : e.ownerName}`}
-                action={
-                  draft && (owner || e.attachedBy === user.id) ? (
-                    <DetachButton caseId={c.id} evidenceId={e.id} />
-                  ) : undefined
-                }
-              />
-            ))}
-          </EvidenceList>
+          <CaseEvidenceTable
+            caseId={c.id}
+            items={c.evidence.map((e) => ({
+              id: e.id,
+              label: e.label,
+              kind: e.kind,
+              capturedAt: e.capturedAt,
+              addedBy: e.ownerId === user.id ? "you" : e.ownerName,
+              canRemove: draft && (owner || e.attachedBy === user.id),
+            }))}
+          />
         )}
-        {draft && <AttachEvidence caseId={c.id} available={available.map((e) => ({ id: e.id, label: e.label }))} />}
       </Section>
 
-      <Section
-        title="People on this case"
-        description="Reviewers will see the name and email of everyone listed here."
-      >
+      <Section title="People on this case">
         <Card className="flex flex-col gap-4">
           <ul className="flex flex-col gap-2 text-sm leading-[22px]">
             <li>
@@ -129,11 +126,14 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               <span className="text-muted">{c.owner.email} · Reported this case</span>
             </li>
             {c.collaborators.map((p) => (
-              <li key={p.id}>
-                <span className="font-semibold">{p.name}</span>{" "}
-                <span className="text-muted">
-                  {p.email} · Added {p.via === "link" ? "with a link" : "by email"}
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-x-3">
+                <span className="min-w-0 break-words">
+                  <span className="font-semibold">{p.name}</span>{" "}
+                  <span className="text-muted">
+                    {p.email} · Added {p.via === "link" ? "with a link" : "by email"}
+                  </span>
                 </span>
+                {draft && owner && <RemovePersonButton caseId={c.id} userId={p.id} name={p.name} />}
               </li>
             ))}
           </ul>
@@ -143,7 +143,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                 endpoint={`/api/cases/${c.id}/collaborators`}
                 buttonLabel="Add someone by email"
                 title="Add someone to this case"
-                risk="You are choosing to share this case. The person you add will see the case and its evidence, can edit the details and can add their own evidence. Reviewers will see their name and email. This can't be undone in this version of SafeTrail."
+                risk="You are choosing to share this case. The person you add will see the case and its evidence, can edit the details and can add their own evidence. Reviewers will see their name and email. You can remove them while the case is a draft."
                 confirmLabel="I understand, add them"
                 successText="They have been added to the case."
               />
@@ -158,7 +158,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       </Section>
 
       {!draft && (
-        <Section title="Status" description="Updates from the reviewers appear here.">
+        <Section title="Status">
           <Card>
             <Timeline events={c.events} />
           </Card>

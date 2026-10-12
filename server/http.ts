@@ -4,7 +4,7 @@ import { AppError } from "./errors";
 
 export function errorResponse(err: unknown): Response {
   if (err instanceof AppError) {
-    return Response.json({ error: { code: err.code, message: err.message } }, { status: err.status });
+    return Response.json({ error: { code: err.code, message: err.message, ...err.data } }, { status: err.status });
   }
   if (err instanceof ZodError) {
     const first = err.issues[0];

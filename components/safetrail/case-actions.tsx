@@ -1,13 +1,14 @@
 "use client";
 
-import { Lock, Plus } from "lucide-react";
+import { Lock, LogOut, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TamperBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Banner, Skeleton } from "@/components/ui/feedback";
-import { Input, Select, Textarea } from "@/components/ui/field";
+import { Input, Textarea } from "@/components/ui/field";
+import { Menu } from "@/components/ui/menu";
 import { useToast } from "@/components/ui/toast";
 import { api, ApiError, errorMessage } from "@/lib/client-api";
 import { formatDateTime, kindLabel } from "@/lib/format";
@@ -76,135 +77,177 @@ export function NewCaseButton() {
   );
 }
 
-export function CaseDetailsForm({
-  caseId,
+/** A confirm dialog for the actions that take a case, or a person, away. */
+function ConfirmDialog({
+  open,
+  onClose,
   title,
   description,
+  confirmLabel,
+  danger = false,
+  run,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  danger?: boolean;
+  /** Does it. Throwing keeps the dialog open with the message. */
+  run: () => Promise<void>;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const close = () => {
+    onClose();
+    setError(null);
+    setLoading(false);
+  };
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      title={title}
+      description={description}
+      footer={
+        <>
+          <Button variant="ghost" onClick={close}>
+            Go back
+          </Button>
+          <Button
+            variant={danger ? "danger-solid" : "primary"}
+            loading={loading}
+            onClick={async () => {
+              setLoading(true);
+              setError(null);
+              try {
+                await run();
+                close();
+              } catch (err) {
+                setLoading(false);
+                setError(errorMessage(err));
+              }
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      {error && <Banner tone="attention">{error}</Banner>}
+    </Dialog>
+  );
+}
+
+/** The header's "More" menu on a draft: the owner can delete it, a collaborator can leave it. */
+export function CaseMenu({
+  caseId,
+  title,
+  ownerName,
+  role,
 }: {
   caseId: string;
   title: string;
-  description: string;
+  ownerName: string;
+  role: "owner" | "collaborator";
 }) {
   const router = useRouter();
   const toast = useToast();
-  const [values, setValues] = useState({ title, description });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const dirty = values.title !== title || values.description !== description;
+  const [open, setOpen] = useState(false);
+  const owner = role === "owner";
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      await api(`/api/cases/${caseId}`, { method: "PATCH", body: values });
-      toast("Changes saved.");
-      router.refresh();
-    } catch (err) {
-      setError(errorMessage(err));
-      if (err instanceof ApiError && err.status === 409) router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  }
+  // The case is gone for this person either way: back to the list.
+  const leavePage = (message: string) => {
+    toast(message);
+    router.push("/cases");
+    router.refresh();
+  };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      {error && <Banner tone="attention">{error}</Banner>}
-      <Input
-        label="Title"
-        value={values.title}
-        onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
-        required
-        maxLength={160}
+    <>
+      <Menu
+        label="More actions for this case"
+        items={[
+          owner
+            ? {
+                label: "Delete case",
+                icon: <Trash2 size={18} strokeWidth={1.75} aria-hidden />,
+                danger: true,
+                onSelect: () => setOpen(true),
+              }
+            : {
+                label: "Leave case",
+                icon: <LogOut size={18} strokeWidth={1.75} aria-hidden />,
+                onSelect: () => setOpen(true),
+              },
+        ]}
       />
-      <Textarea
-        label="What happened"
-        value={values.description}
-        onChange={(e) => setValues((v) => ({ ...v, description: e.target.value }))}
-        maxLength={10000}
-        hint="Describe it in your own words. You can keep editing until you escalate."
-      />
-      <div>
-        <Button type="submit" variant="secondary" loading={loading} disabled={!dirty}>
-          Save changes
-        </Button>
-      </div>
-    </form>
+      {owner ? (
+        <ConfirmDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Delete this case?"
+          description={`“${title}” will be deleted for everyone on it, and you won't be able to get it back. The evidence stays in each person's vault.`}
+          confirmLabel="Delete case"
+          danger
+          run={async () => {
+            await api(`/api/cases/${caseId}`, { method: "DELETE" });
+            leavePage("Case deleted.");
+          }}
+        />
+      ) : (
+        <ConfirmDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Leave this case?"
+          description={`You will no longer be able to open it, and the evidence you added will be removed from it. Your evidence stays in your vault. ${ownerName} will be told that you left.`}
+          confirmLabel="Leave case"
+          run={async () => {
+            await api(`/api/cases/${caseId}/collaborators/me`, { method: "DELETE" });
+            leavePage("You left the case.");
+          }}
+        />
+      )}
+    </>
   );
 }
 
-export function AttachEvidence({
-  caseId,
-  available,
-}: {
-  caseId: string;
-  available: { id: string; label: string }[];
-}) {
+/** Owner only: take a collaborator off a draft. */
+export function RemovePersonButton({ caseId, userId, name }: { caseId: string; userId: string; name: string }) {
   const router = useRouter();
   const toast = useToast();
-  const [selected, setSelected] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  if (available.length === 0) {
-    return (
-      <p className="text-sm leading-[22px] text-muted">
-        There is nothing else in your vault to add. Evidence you capture with the extension will appear here.
-      </p>
-    );
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selected) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await api(`/api/cases/${caseId}/evidence`, { body: { evidenceId: selected } });
-      setSelected("");
-      toast("Added to the case.");
-      router.refresh();
-    } catch (err) {
-      setError(errorMessage(err));
-      if (err instanceof ApiError && err.status === 409) router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  const [open, setOpen] = useState(false);
   return (
-    <form onSubmit={submit} className="flex items-end gap-3">
-      <div className="min-w-0 flex-1">
-        <Select
-          label="Add evidence from your vault"
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          error={error}
-        >
-          <option value="">Choose an item</option>
-          {available.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <Button type="submit" variant="soft" loading={loading} disabled={!selected}>
-        Add to case
+    <>
+      <Button variant="ghost" className="h-9 px-3" onClick={() => setOpen(true)} aria-label={`Remove ${name}`}>
+        Remove
       </Button>
-    </form>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Remove ${name} from this case?`}
+        description={`${name} will no longer be able to open it, and the evidence they added will be removed from it. They will be told.`}
+        confirmLabel="Remove"
+        run={async () => {
+          await api(`/api/cases/${caseId}/collaborators/${userId}`, { method: "DELETE" });
+          toast(`${name} was removed from the case.`);
+          router.refresh();
+        }}
+      />
+    </>
   );
 }
 
-export function DetachButton({ caseId, evidenceId }: { caseId: string; evidenceId: string }) {
+export function DetachButton({ caseId, evidenceId, label }: { caseId: string; evidenceId: string; label: string }) {
   const router = useRouter();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   return (
     <Button
       variant="ghost"
+      className="h-9 px-3"
       loading={loading}
+      aria-label={`Remove ${label} from this case`}
       onClick={async () => {
         setLoading(true);
         try {
@@ -231,8 +274,12 @@ type Preview = {
   digest: string;
 };
 
-/** The one irreversible step: preview exactly what reviewers will see, then confirm (I4). */
-export function EscalateButton({ caseId, disabled }: { caseId: string; disabled: boolean }) {
+/**
+ * The one irreversible step: preview exactly what reviewers will see, then confirm (I4).
+ * Before the preview it says what is still missing: no evidence stops it, no description
+ * is only pointed out.
+ */
+export function EscalateButton({ caseId, hasEvidence }: { caseId: string; hasEvidence: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -243,7 +290,7 @@ export function EscalateButton({ caseId, disabled }: { caseId: string; disabled:
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !hasEvidence) return;
     let cancelled = false;
     api<Preview>(`/api/cases/${caseId}/escalation-preview`)
       .then((p) => !cancelled && setPreview(p))
@@ -251,7 +298,7 @@ export function EscalateButton({ caseId, disabled }: { caseId: string; disabled:
     return () => {
       cancelled = true;
     };
-  }, [open, caseId, reload]);
+  }, [open, caseId, reload, hasEvidence]);
 
   const close = () => {
     setOpen(false);
@@ -285,11 +332,22 @@ export function EscalateButton({ caseId, disabled }: { caseId: string; disabled:
 
   return (
     <>
-      <Button variant="weighty" disabled={disabled} onClick={() => setOpen(true)}>
+      <Button variant="weighty" onClick={() => setOpen(true)}>
         Escalate to reviewers
       </Button>
       <Dialog
-        open={open}
+        open={open && !hasEvidence}
+        onClose={close}
+        title="Not ready to escalate yet"
+        description="Add at least one piece of evidence first. Reviewers need something to look at."
+        footer={
+          <Button variant="secondary" onClick={close}>
+            Go back
+          </Button>
+        }
+      />
+      <Dialog
+        open={open && hasEvidence}
         onClose={close}
         wide
         title="Review what reviewers will see"
@@ -309,6 +367,12 @@ export function EscalateButton({ caseId, disabled }: { caseId: string; disabled:
         {!preview && !error && <Skeleton className="h-48 w-full" />}
         {preview && (
           <>
+            {!preview.description && (
+              <Banner tone="info">
+                This case has no description. You can escalate without one, but reviewers will only have the evidence
+                to go on.
+              </Banner>
+            )}
             <div>
               <h4>{preview.title}</h4>
               <p className="mt-1 max-w-prose text-sm leading-[22px] whitespace-pre-wrap">

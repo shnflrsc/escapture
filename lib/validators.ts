@@ -73,9 +73,18 @@ const title = z.string().trim().min(1, "Give your case a title.").max(160);
 const description = z.string().trim().max(10000);
 export const createCase = z.object({ title, description: description.default("") });
 export const updateCase = z
-  .object({ title: title.optional(), description: description.optional() })
+  .object({
+    title: title.optional(),
+    description: description.optional(),
+    // What each field held when the edit began. Not trimmed: it is compared with the stored text.
+    base: z.object({ title: z.string().max(160).optional(), description: z.string().max(10000).optional() }).optional(),
+  })
   .refine((v) => v.title !== undefined || v.description !== undefined, "Nothing to update.");
-export const attachEvidence = z.object({ evidenceId: uuid });
+export const attachOneEvidence = z.object({ evidenceId: uuid });
+export const attachEvidence = z.union([
+  attachOneEvidence,
+  z.object({ evidenceIds: z.array(uuid).min(1, "Choose at least one item.").max(100) }),
+]);
 export const escalate = z.object({
   digest: z.string().regex(/^[0-9a-f]{64}$/, "digest must be 64 hex characters."),
   confirm: z.literal(true, { error: "Please confirm before escalating." }),

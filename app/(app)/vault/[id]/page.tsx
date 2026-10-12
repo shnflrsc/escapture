@@ -7,7 +7,7 @@ import { VaultRowMenu } from "@/components/safetrail/vault-row-menu";
 import { Card, PageHeader } from "@/components/ui/card";
 import { formatDateTime, kindLabel } from "@/lib/format";
 import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
-import { casesForEvidence } from "@/server/services/cases";
+import { casesForEvidence, caseVersion } from "@/server/services/cases";
 import { getEvidence } from "@/server/services/evidence";
 import { casesWithEvidence, listBoard } from "@/server/services/review";
 import { listEvidenceShares } from "@/server/services/shares";
@@ -15,13 +15,17 @@ import { listEvidenceShares } from "@/server/services/shares";
 // Per-user page: allowed to wait for the server on navigation.
 export const instant = false;
 
-export default async function EvidencePage({ params }: PageProps<"/vault/[id]">) {
+export default async function EvidencePage({ params, searchParams }: PageProps<"/vault/[id]">) {
   const { id } = await params;
+  const from = (await searchParams).from;
   const user = await pageUser(["student", "reviewer"]);
   if (!isUuid(id)) notFound();
   const ev = await orNotFound(getEvidence(user, id));
   const shares = ev.isOwner ? await listEvidenceShares(user, id) : [];
   const reviewer = user.role === "reviewer";
+  // Opened from a case: lead back to it, but only if it is a case this person can open.
+  const fromCase =
+    !reviewer && typeof from === "string" && isUuid(from) && (await caseVersion(user, from).catch(() => null)) ? from : null;
 
   // Which cases the viewer may know about differs by role: a student sees their own
   // cases, a reviewer sees every case that is no longer a draft.
@@ -46,11 +50,17 @@ export default async function EvidencePage({ params }: PageProps<"/vault/[id]">)
     <>
       <div>
         <Link
-          href={reviewer ? (ev.sharedWithMe ? "/review/shared" : "/review") : "/vault"}
+          href={fromCase ? `/cases/${fromCase}` : reviewer ? (ev.sharedWithMe ? "/review/shared" : "/review") : "/vault"}
           className="link inline-flex items-center gap-1 text-sm"
         >
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
-          {reviewer ? (ev.sharedWithMe ? "Back to Shared with me" : "Back to the Review Board") : "Back to your vault"}
+          {fromCase
+            ? "Back to the case"
+            : reviewer
+              ? ev.sharedWithMe
+                ? "Back to Shared with me"
+                : "Back to the Review Board"
+              : "Back to your vault"}
         </Link>
       </div>
       <PageHeader

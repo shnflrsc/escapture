@@ -3,6 +3,8 @@ export class AppError extends Error {
     public code: string,
     public status: number,
     message: string,
+    /** Extra fields for the client, sent next to the code and message. */
+    public data?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "AppError";

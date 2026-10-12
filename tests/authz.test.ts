@@ -104,8 +104,22 @@ describe("cases, student side", () => {
     expect(authz.canDetachEvidence(maya, escalated, { attachedBy: "maya" })).toBe("locked");
   });
 
-  it("only the owner adds collaborators, previews and escalates, only while draft", () => {
-    for (const fn of [authz.canAddCollaborator, authz.canPreviewEscalation, authz.canEscalate]) {
+  it("the owner removes any collaborator, a collaborator only leaves, only while draft", () => {
+    const two = { ...draft, collaboratorIds: ["jules", "alex"] };
+    expect(authz.canRemoveCollaborator(maya, two, "jules")).toBe("ok");
+    expect(authz.canRemoveCollaborator(jules, two, "jules")).toBe("ok");
+    expect(authz.canRemoveCollaborator(jules, two, "alex")).toBe("forbidden");
+    expect(authz.canRemoveCollaborator(maya, two, "maya")).toBe("forbidden");
+    expect(authz.canRemoveCollaborator(jules, two, "maya")).toBe("forbidden");
+    expect(authz.canRemoveCollaborator(maya, draft, "alex")).toBe("not_found");
+    expect(authz.canRemoveCollaborator(alex, draft, "jules")).toBe("not_found");
+    expect(authz.canRemoveCollaborator(reviewer, escalated, "jules")).toBe("not_found");
+    expect(authz.canRemoveCollaborator(maya, escalated, "jules")).toBe("locked");
+    expect(authz.canRemoveCollaborator(jules, closed, "jules")).toBe("locked");
+  });
+
+  it("only the owner adds collaborators, previews, escalates and deletes, only while draft", () => {
+    for (const fn of [authz.canAddCollaborator, authz.canPreviewEscalation, authz.canEscalate, authz.canDeleteCase]) {
       expect(fn(maya, draft)).toBe("ok");
       expect(fn(jules, draft)).toBe("forbidden");
       expect(fn(alex, draft)).toBe("not_found");

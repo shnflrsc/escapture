@@ -6,7 +6,7 @@ It has four connected parts:
 
 1. **Escrow Capture** (Chrome extension): saves a frozen, script-free copy of a post or conversation, after running tamper checks, straight into the student's vault.
 2. **Escrow Vault**: private storage. Every item records the SHA-256 of the exact stored bytes and a server-side capture time, and can be re-verified at any time.
-3. **Cases**: a student gathers evidence, invites people they trust, previews exactly what reviewers will see, and escalates. Escalation locks the case.
+3. **Cases**: a student gathers evidence, invites people they trust, previews exactly what reviewers will see, and escalates. Escalation locks the case. A draft saves itself as it is edited, shows other people's changes within a few seconds, and can be deleted by the person who started it; people can be removed from it or leave it, and their evidence leaves with them.
 4. **Review Board**: reviewers work through escalated cases, attach evidence shared with them (kept separate from the reporter's), and close cases with a note.
 
 Product source of truth: *SafeTrail - Final MVP Proposal*. Build spec: [INSTRUCTIONS.md](INSTRUCTIONS.md). Visual rules: [DESIGN.md](DESIGN.md).
@@ -128,7 +128,8 @@ Rules the code holds to:
 
 - Authorization is enforced in services on the server. The UI hiding a button is not security, and `proxy.ts` is only an optimistic redirect.
 - Resources a user shouldn't know about answer 404, not 403.
-- Escalate, edit, attach, add-collaborator and delete-evidence each lock the case row and re-check its status, so nothing can slip in while a case is being escalated.
+- Escalate, edit, attach, add-collaborator, remove-collaborator, delete-case and delete-evidence each lock the case row and re-check its status, so nothing can slip in while a case is being escalated.
+- Two people editing one draft can't silently overwrite each other: a save says what the field held when the edit began, and is refused if it has changed since.
 - Student-side views read case evidence through one helper that always filters to the reporter's side.
 - Captured HTML is untrusted. It is served only from `/api/evidence/:id/file` with a `sandbox` Content-Security-Policy and shown only in an `<iframe sandbox="">`.
 
@@ -149,7 +150,8 @@ These match the Risks section of the proposal. Say them out loud in a demo.
 - **The provenance check can refuse a genuine page.** It has been tested on local test pages, not yet on live Facebook. Known causes of a wrong refusal: a browser translation of the page, a password manager or other extension writing text into the selected area, and scripts the site first loads from a new address after the page has settled. The refusal message names the cause.
 - **Captured is not the same as complete.** The hash shows the stored file hasn't changed since it was saved. It does not show the page was genuine or that nothing was left out. Messenger captures include only the messages loaded on screen.
 - **No email verification.** The only sign-up gate is the email domain, so someone could claim a BulSU address they don't own.
-- **Sharing can leak, and can't be undone.** People who receive evidence or a case can pass it on. Shares and links can't be revoked in this version.
+- **Sharing can leak.** People who receive evidence or a case can pass it on. Evidence shares and links can't be revoked in this version. A collaborator can be removed from a draft case, but not after it is escalated, and case links stay valid until the case is escalated or deleted.
+- **Drafts sync by checking, not live.** An open draft asks the server every five seconds whether it changed. Two people typing in the same field at once will meet a "someone else changed this" choice rather than see each other type.
 - **A capture is a restyled copy, not a pixel copy.** It uses the page's own style rules, so it looks like the page, but text reflows to the viewer's width, fonts fall back to system fonts, and hover or animated states are not kept.
 - **Dependence on Facebook.** Capture reads Facebook's pages with a generic element picker, so layout changes are less likely to break it, but it has only been exercised on the local fixture pages so far. Fonts are not embedded, so captured text may use a fallback typeface.
 - **Rate limiting is per server instance** (in memory), which is weak on serverless hosting.

@@ -5,6 +5,8 @@ import { attachEvidence } from "@/server/services/cases";
 
 export const POST = handle<{ id: string }>(async (req, { id }) => {
   const user = await requireUser();
-  const { evidenceId } = attachSchema.parse(await req.json());
-  return json(await attachEvidence(user, uuid.parse(id), evidenceId), 201);
+  const input = attachSchema.parse(await req.json());
+  const one = "evidenceId" in input;
+  const result = await attachEvidence(user, uuid.parse(id), one ? [input.evidenceId] : input.evidenceIds);
+  return json(one ? { caseId: result.caseId, evidenceId: input.evidenceId } : result, 201);
 });

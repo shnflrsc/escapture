@@ -342,6 +342,62 @@ async function main() {
     return (await call(M, "POST", `/api/cases/${draft2.body.id}/escalate`, { digest: p.body.digest, confirm: true })).status === 400;
   })());
 
+  step("12. Working on a draft together: adding several items, edits, removing, leaving, deleting");
+  const upM = async () => {
+    const b = tag(post);
+    return (await call(M, "POST", "/api/evidence", uploadForm(b, sha256Hex(b), "facebook_post"))).body.id as string;
+  };
+  const [m1, m2, m3] = [await upM(), await upM(), await upM()];
+  const d = (await call(M, "POST", "/api/cases", { title: `Shared draft ${run}`, description: "" })).body.id as string;
+  const dCase = async (t: string = M) => (await call(t, "GET", `/api/cases/${d}`)).body;
+  const dEvidence = async () => ((await dCase()).evidence as { id: string }[]).map((e) => e.id);
+
+  check("several items are added in one request", (await call(M, "POST", `/api/cases/${d}/evidence`, { evidenceIds: [m1, m2] })).status === 201 && (await dEvidence()).length === 2);
+  check("one item that isn't yours refuses the whole request", (await call(M, "POST", `/api/cases/${d}/evidence`, { evidenceIds: [m3, alexEv] })).status === 403 && !(await dEvidence()).includes(m3));
+  check("one item already in the case refuses the whole request", (await call(M, "POST", `/api/cases/${d}/evidence`, { evidenceIds: [m3, m1] })).status === 409 && !(await dEvidence()).includes(m3));
+  check("an empty list is refused", (await call(M, "POST", `/api/cases/${d}/evidence`, { evidenceIds: [] })).status === 400);
+  check("several items cannot be added to an escalated case", (await call(M, "POST", `/api/cases/${caseId}/evidence`, { evidenceIds: [m3] })).status === 409);
+
+  await call(M, "POST", `/api/cases/${d}/collaborators`, { email: `jules.${run}@${DOMAIN}`, acknowledge: true });
+  await call(M, "POST", `/api/cases/${d}/collaborators`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true });
+  const people = (await dCase()).collaborators as { id: string; name: string }[];
+  const julesId = people.find((p) => p.name === "Jules Smoke")!.id;
+  const alexId = people.find((p) => p.name === "Alex Smoke")!.id;
+  const mayaId = (await dCase()).owner.id as string;
+
+  check("Maya saves the description from empty", (await call(M, "PATCH", `/api/cases/${d}`, { description: "Maya's account.", base: { description: "" } })).status === 200);
+  const staleEdit = await call(J, "PATCH", `/api/cases/${d}`, { description: "Jules's account.", base: { description: "" } });
+  check("Jules's edit from the old text is refused, with the current text", staleEdit.status === 409 && staleEdit.body.error.code === "edit_conflict" && staleEdit.body.error.current.description === "Maya's account.", staleEdit.body);
+  check("nothing was overwritten", (await dCase()).description === "Maya's account.");
+  check("a different field saves alongside", (await call(J, "PATCH", `/api/cases/${d}`, { title: `Shared draft ${run} b`, base: { title: `Shared draft ${run}` } })).status === 200 && (await dCase()).description === "Maya's account.");
+  check("starting from the current text saves", (await call(J, "PATCH", `/api/cases/${d}`, { description: "Both accounts.", base: { description: "Maya's account." } })).status === 200);
+  check("an empty title is refused", (await call(M, "PATCH", `/api/cases/${d}`, { title: "  ", base: { title: `Shared draft ${run} b` } })).status === 400);
+  const v1 = await call(J, "GET", `/api/cases/${d}?only=version`);
+  check("the change check returns only a time and a status", v1.status === 200 && JSON.stringify(Object.keys(v1.body).sort()) === '["status","updatedAt"]', v1.body);
+
+  check("Jules adds his own item", (await call(J, "POST", `/api/cases/${d}/evidence`, { evidenceIds: [julesEv] })).status === 201);
+  check("a collaborator cannot remove someone else", (await call(J, "DELETE", `/api/cases/${d}/collaborators/${alexId}`)).status === 403);
+  check("the owner cannot be removed", (await call(M, "DELETE", `/api/cases/${d}/collaborators/${mayaId}`)).status === 403 && (await call(J, "DELETE", `/api/cases/${d}/collaborators/${mayaId}`)).status === 403);
+  const leave = await call(A, "DELETE", `/api/cases/${d}/collaborators/me`);
+  check("a collaborator can leave", leave.status === 200 && leave.body.left === true, leave.body);
+  check("after leaving, the case is gone for them", (await call(A, "GET", `/api/cases/${d}`)).status === 404 && (await call(A, "GET", `/api/cases/${d}?only=version`)).status === 404);
+  check("the owner is told", (await call(M, "GET", "/api/notifications")).body.items.some((n: { title: string }) => n.title === "Alex Smoke left your case"));
+  const removed = await call(M, "DELETE", `/api/cases/${d}/collaborators/${julesId}`);
+  check("the owner removes a collaborator, and their evidence leaves the case", removed.status === 200 && removed.body.evidenceRemoved === 1 && !(await dEvidence()).includes(julesEv), removed.body);
+  check("the removed person can no longer open the case or Maya's evidence in it", (await call(J, "GET", `/api/cases/${d}`)).status === 404 && (await call(J, "GET", `/api/evidence/${m1}`)).status === 404);
+  check("their evidence is still in their vault, and they are told", (await call(J, "GET", `/api/evidence/${julesEv}`)).status === 200 && (await call(J, "GET", "/api/notifications")).body.items.some((n: { title: string }) => n.title === "Maya Smoke removed you from a case"));
+  check("removing someone who is not on the case -> 404", (await call(M, "DELETE", `/api/cases/${d}/collaborators/${julesId}`)).status === 404);
+  check("nobody can be removed after escalation", (await call(M, "DELETE", `/api/cases/${caseId}/collaborators/${julesId}`)).status === 409 && (await call(J, "DELETE", `/api/cases/${caseId}/collaborators/me`)).status === 409);
+
+  check("a stranger cannot delete the draft", (await call(J, "DELETE", `/api/cases/${d}`)).status === 404);
+  await call(M, "POST", `/api/cases/${d}/collaborators`, { email: `jules.${run}@${DOMAIN}`, acknowledge: true });
+  check("a collaborator cannot delete the draft", (await call(J, "DELETE", `/api/cases/${d}`)).status === 403);
+  check("an escalated case cannot be deleted", (await call(M, "DELETE", `/api/cases/${caseId}`)).status === 409 && (await call(R, "DELETE", `/api/cases/${caseId}`)).status === 404);
+  check("the owner deletes the draft", (await call(M, "DELETE", `/api/cases/${d}`)).status === 200 && (await call(M, "GET", `/api/cases/${d}`)).status === 404);
+  const afterDelete = await call(M, "GET", `/api/evidence/${m1}/cases`);
+  check("its evidence is still in the vault and no longer in a case", (await call(M, "GET", `/api/evidence/${m1}/file`)).status === 200 && afterDelete.body.attached.length === 0, afterDelete.body);
+  check("the collaborator is told the case was deleted", (await call(J, "GET", "/api/notifications")).body.items.some((n: { title: string }) => n.title === "Maya Smoke deleted a case you were on"));
+
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length) failures.forEach((f) => console.log(`  - ${f}`));
   await pg.end();

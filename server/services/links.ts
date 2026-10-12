@@ -122,6 +122,7 @@ export async function redeemLink(actor: Actor, token: string, password: string) 
         via: "link",
         acknowledgedAt: link.acknowledgedAt,
       });
+      await tx.update(cases).set({ updatedAt: new Date() }).where(eq(cases.id, caseId));
       await notify(tx, [
         {
           userId: c.ownerId,

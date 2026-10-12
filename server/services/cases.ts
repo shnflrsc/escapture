@@ -6,10 +6,12 @@ import {
   canAddCollaborator,
   canAttachEvidence,
   canCreateCase,
+  canDeleteCase,
   canDetachEvidence,
   canEditCase,
   canEscalate,
   canPreviewEscalation,
+  canRemoveCollaborator,
   canViewCase,
   caseRole,
   enforce,
@@ -17,7 +19,7 @@ import {
 } from "../authz";
 import { db, type Db, type Tx } from "../db";
 import { caseCollaborators, caseEvents, caseEvidence, cases, evidence, user } from "../db/schema";
-import { badRequest, conflict, forbidden, notFound } from "../errors";
+import { AppError, badRequest, conflict, forbidden, notFound } from "../errors";
 import { notify } from "./notifications";
 import { noAccount } from "./shares";
 
@@ -214,44 +216,87 @@ export async function getCase(actor: Actor, caseId: string) {
   };
 }
 
-export async function updateCase(
-  actor: Actor,
-  caseId: string,
-  input: { title?: string; description?: string },
-) {
+export type CaseEdit = {
+  title?: string;
+  description?: string;
+  /** The text each edited field had when the editor started from it. */
+  base?: { title?: string; description?: string };
+};
+
+/**
+ * Saves edits to a draft. Several people can edit one draft, so a field is only
+ * written if it still holds the text the editor started from (`base`). If someone
+ * else changed it meanwhile, nothing is written and the answer carries the
+ * current text, so the editor can choose instead of overwriting.
+ */
+export async function updateCase(actor: Actor, caseId: string, input: CaseEdit) {
   return db.transaction(async (tx) => {
-    const { facts } = await loadCase(tx, caseId, { lock: true });
+    const { c, facts } = await loadCase(tx, caseId, { lock: true });
     enforce(canEditCase(actor, facts), "This case has been escalated, so it can't be edited.");
+    const changes: { title?: string; description?: string } = {};
+    const current: { title?: string; description?: string } = {};
+    for (const field of ["title", "description"] as const) {
+      const next = input[field];
+      if (next === undefined || next === c[field]) continue;
+      const base = input.base?.[field];
+      if (base !== undefined && base !== c[field]) current[field] = c[field];
+      else changes[field] = next;
+    }
+    if (Object.keys(current).length) {
+      throw new AppError("edit_conflict", 409, "Someone else changed this while you were editing.", { current });
+    }
+    if (Object.keys(changes).length === 0) return view(c);
     const [updated] = await tx
       .update(cases)
-      .set({ ...input, updatedAt: new Date() })
+      .set({ ...changes, updatedAt: new Date() })
       .where(eq(cases.id, caseId))
       .returning();
-    return updated;
+    return view(updated);
   });
 }
 
-export async function attachEvidence(actor: Actor, caseId: string, evidenceId: string) {
+const view = (c: CaseRow) => ({ id: c.id, title: c.title, description: c.description, updatedAt: c.updatedAt });
+
+/** A cheap "has anything changed?" for a page that is open on a draft. */
+export async function caseVersion(actor: Actor, caseId: string) {
+  const { c, facts } = await loadCase(db, caseId);
+  enforce(canViewCase(actor, facts));
+  return { updatedAt: c.updatedAt, status: c.status };
+}
+
+/**
+ * Adds one or several of the actor's own items to a draft. All or nothing: one
+ * item that can't be added (not theirs, already in the case) stops the lot.
+ */
+export async function attachEvidence(actor: Actor, caseId: string, evidenceIds: string[]) {
+  const ids = [...new Set(evidenceIds)];
   return db.transaction(async (tx) => {
     const { facts } = await loadCase(tx, caseId, { lock: true });
-    const [ev] = await tx
+    const found = await tx
       .select({ id: evidence.id, ownerId: evidence.ownerId })
       .from(evidence)
-      .where(eq(evidence.id, evidenceId))
-      .limit(1);
-    const decision = canAttachEvidence(actor, facts, ev ?? null);
-    if (decision === "forbidden") {
-      throw forbidden("You can only add evidence from your own vault.");
+      .where(inArray(evidence.id, ids));
+    for (const id of ids) {
+      const decision = canAttachEvidence(actor, facts, found.find((e) => e.id === id) ?? null);
+      if (decision === "forbidden") {
+        throw forbidden("You can only add evidence from your own vault.");
+      }
+      enforce(decision, "This case has been escalated, so evidence can't be added.");
     }
-    enforce(decision, "This case has been escalated, so evidence can't be added.");
     const inserted = await tx
       .insert(caseEvidence)
-      .values({ caseId, evidenceId, attachedBy: actor.id, side: "reporter" })
+      .values(ids.map((evidenceId) => ({ caseId, evidenceId, attachedBy: actor.id, side: "reporter" as const })))
       .onConflictDoNothing()
       .returning({ id: caseEvidence.id });
-    if (!inserted.length) throw conflict("That evidence is already in this case.", "already_attached");
+    if (inserted.length !== ids.length) {
+      // Throwing rolls back the ones that did go in.
+      throw conflict(
+        ids.length === 1 ? "That evidence is already in this case." : "Some of that evidence is already in this case.",
+        "already_attached",
+      );
+    }
     await tx.update(cases).set({ updatedAt: new Date() }).where(eq(cases.id, caseId));
-    return { caseId, evidenceId };
+    return { caseId, evidenceIds: ids };
   });
 }
 
@@ -313,6 +358,75 @@ export async function addCollaborator(actor: Actor, caseId: string, email: strin
       await tx.update(cases).set({ updatedAt: new Date() }).where(eq(cases.id, caseId));
     }
     return { added: { id: recipient.id, name: recipient.name, email: recipient.email } };
+  });
+}
+
+/**
+ * Deletes a draft for everyone on it. The evidence is only detached: it stays in
+ * each person's vault. Collaborators, links and the draft's history go with it.
+ */
+export async function deleteCase(actor: Actor, caseId: string) {
+  await db.transaction(async (tx) => {
+    // The same lock escalation takes, so a case can't be escalated and deleted at once.
+    const { c, facts } = await loadCase(tx, caseId, { lock: true });
+    const decision = canDeleteCase(actor, facts);
+    if (decision === "forbidden") throw forbidden("Only the person who started this case can delete it.");
+    enforce(decision, "This case has been escalated, so it can't be deleted.");
+    await tx.delete(cases).where(eq(cases.id, caseId));
+    // Notifications that point at a case are removed with it, so this one doesn't.
+    await notify(
+      tx,
+      facts.collaboratorIds.map((userId) => ({
+        userId,
+        type: "case_deleted",
+        title: `${actor.name} deleted a case you were on`,
+        body: `${c.title}. Your own evidence is still in your vault.`,
+      })),
+    );
+  });
+}
+
+/**
+ * Takes someone off a draft: the owner removing a collaborator, or a collaborator
+ * leaving. The evidence that person added leaves the case with them, so nothing of
+ * theirs can reach reviewers on a case they are no longer part of.
+ */
+export async function removeCollaborator(actor: Actor, caseId: string, userId: string) {
+  return db.transaction(async (tx) => {
+    const { c, facts } = await loadCase(tx, caseId, { lock: true });
+    const decision = canRemoveCollaborator(actor, facts, userId);
+    if (decision === "forbidden") {
+      throw forbidden(
+        userId === facts.ownerId
+          ? "The person who started a case can't be removed from it."
+          : "Only the person who started this case can remove someone else.",
+      );
+    }
+    enforce(decision, "This case has been escalated, so the people on it can't change.");
+    const theirs = tx.select({ id: evidence.id }).from(evidence).where(eq(evidence.ownerId, userId));
+    const detached = await tx
+      .delete(caseEvidence)
+      .where(
+        and(eq(caseEvidence.caseId, caseId), eq(caseEvidence.side, "reporter"), inArray(caseEvidence.evidenceId, theirs)),
+      )
+      .returning({ id: caseEvidence.id });
+    await tx
+      .delete(caseCollaborators)
+      .where(and(eq(caseCollaborators.caseId, caseId), eq(caseCollaborators.userId, userId)));
+    await tx.update(cases).set({ updatedAt: new Date() }).where(eq(cases.id, caseId));
+    const left = actor.id === userId;
+    await notify(tx, [
+      left
+        ? { userId: c.ownerId, type: "collaborator_left", title: `${actor.name} left your case`, body: c.title, caseId }
+        : {
+            // No link: they can no longer open the case.
+            userId,
+            type: "collaborator_removed",
+            title: `${actor.name} removed you from a case`,
+            body: `${c.title}. Your own evidence is still in your vault.`,
+          },
+    ]);
+    return { removed: userId, left, evidenceRemoved: detached.length };
   });
 }
 
