@@ -21,15 +21,15 @@ Next.js 16 (App Router, Cache Components), React 19, Tailwind v4, TypeScript, Dr
 
 ## Quick start (no external services needed)
 
-Requirements: Node 20.9 or newer and pnpm 11.
+Requirements: Node 20.9 or newer, pnpm 11, and Docker (Docker Desktop on Windows and macOS) for the local database.
 
 ```bash
 pnpm install
 cp .env.example .env.local   # then fill in the values below
-pnpm db:local                # terminal 1: local Postgres (keep it running)
-pnpm db:push                 # create the tables
+pnpm db:local                # local Postgres in Docker; returns once it is ready
+pnpm db:migrate              # create the tables
 pnpm db:seed                 # demo accounts, evidence and cases
-pnpm dev                     # terminal 2: http://localhost:3000
+pnpm dev                     # http://localhost:3000
 ```
 
 For local development set these in `.env.local`:
@@ -40,7 +40,7 @@ DIRECT_URL=postgres://postgres:postgres@localhost:54329/safetrail
 BETTER_AUTH_SECRET=<32+ random bytes, e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`>
 ```
 
-Keep the `pnpm db:local` terminal open while you work, and stop it with Ctrl+C or `pnpm db:stop`. Leave `SUPABASE_URL` empty and evidence files are stored on local disk under `.data/storage`. `pnpm db:local` runs a real Postgres from the `embedded-postgres` package, with its data in `.data/pg`.
+`pnpm db:local` starts Postgres 18 from [docker-compose.yml](docker-compose.yml) in the background, reachable only from this machine on port 54329. `pnpm db:stop` stops it and keeps the data, which lives in the `safetrail-pg` Docker volume; `docker compose down -v` throws the data away for a clean start. Set `LOCAL_DB_PORT` (and the port in `DATABASE_URL`) if 54329 is taken. Leave `SUPABASE_URL` empty and evidence files are stored on local disk under `.data/storage`.
 
 `pnpm db:seed` prints the demo accounts and their shared password: an admin, two reviewers, and the students Maya (reporter), Jules (collaborator) and Alex (the other person).
 
@@ -65,8 +65,8 @@ Keep the `pnpm db:local` terminal open while you work, and stop it with Ctrl+C o
 | `pnpm dev` / `build` / `start` | Next.js |
 | `pnpm typecheck` / `lint` / `test` | TypeScript, ESLint, Vitest unit tests |
 | `pnpm smoke` | End-to-end API walkthrough against a running dev server (see Testing) |
-| `pnpm db:local` / `db:stop` | Start or stop the local Postgres for development. It is an ordinary background process (`postgres.exe`), not a container. If one was left behind by a closed terminal and no longer answers, `db:local` replaces it. |
-| `pnpm db:push` / `db:generate` / `db:migrate` / `db:studio` | Drizzle schema tools. Use `db:migrate` for production. After pulling a change that adds a migration under `drizzle/`, run `pnpm db:push` again on a local database. |
+| `pnpm db:local` / `db:stop` | Start or stop the local Postgres for development: a Docker container defined in `docker-compose.yml`. Docker must be running. Stopping keeps the data. |
+| `pnpm db:push` / `db:generate` / `db:migrate` / `db:studio` | Drizzle schema tools. `db:migrate` applies the migrations under `drizzle/` and is what a new or production database uses. `db:push` syncs the schema directly but asks questions, so it needs an interactive terminal. |
 | `pnpm db:seed` | Idempotent demo data |
 | `pnpm admin:create-user --email <e> --name "<n>" --password <p> --role reviewer\|admin` | Reviewer and admin accounts from the command line. There is no public sign-up for these roles. An administrator can also create reviewers on the Reviewer accounts page; the first admin account has to come from here or from the seed. |
 | `pnpm ext:build` / `ext:watch` | Build the extension into `extension/dist` |

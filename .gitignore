@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local dev data (embedded postgres, local evidence storage)
+# local dev data (local evidence storage; the database lives in a Docker volume)
 /.data/
 !.env.example
 

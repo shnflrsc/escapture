@@ -1,5 +1,4 @@
 allowBuilds:
-  '@embedded-postgres/windows-x64': false
   esbuild: false
   sharp: false
   unrs-resolver: false
