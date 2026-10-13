@@ -1,5 +1,6 @@
 import { Inbox, LockKeyhole, SearchX } from "lucide-react";
 import Link from "next/link";
+import { Pagination } from "@/components/dashboard/data-table";
 import { HowToCapture } from "@/components/safetrail/how-to-capture";
 import { VaultTable } from "@/components/safetrail/vault-table";
 import { VaultToolbar } from "@/components/safetrail/vault-toolbar";
@@ -13,6 +14,8 @@ import { countEvidence, listEvidence } from "@/server/services/evidence";
 
 // Per-user page: allowed to wait for the server on navigation.
 export const instant = false;
+
+const PAGE_SIZE = 25;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
@@ -35,6 +38,10 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
     countEvidence(user),
   ]);
   const total = counts[view.tab];
+  // A long vault is shown a page at a time.
+  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const page = Math.min(pages, Math.max(1, Number.parseInt(first(params.page), 10) || 1));
+  const shown = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const narrowed = Boolean(view.q || view.kind);
 
   return (
@@ -42,7 +49,7 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
       <PageHeader
         title="Vault"
         description="Evidence you capture is saved here. Only you can see your vault unless you choose to share something."
-        action={total > 0 || view.tab === "shared" ? <HowToCapture /> : undefined}
+        action={total > 0 || view.tab === "shared" ? <HowToCapture label="Capture evidence" /> : undefined}
       />
       <div className="flex flex-col gap-4">
         <VaultToolbar view={view} counts={counts} showControls={total > 0} />
@@ -61,7 +68,7 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
           <EmptyState
             icon={<LockKeyhole size={24} strokeWidth={1.75} />}
             title="Your vault is empty"
-            action={<HowToCapture variant="primary" />}
+            action={<HowToCapture variant="primary" label="Capture evidence" />}
           >
             Capture a Facebook post or conversation with the Escrow Capture extension and it will appear here.
           </EmptyState>
@@ -85,7 +92,19 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
             Clear the search and filters to see everything.
           </EmptyState>
         )}
-        {items.length > 0 && <VaultTable items={items} shared={view.tab === "shared"} />}
+        {items.length > 0 && <VaultTable items={shown} shared={view.tab === "shared"} />}
+        <Pagination
+          page={page}
+          pages={pages}
+          total={items.length}
+          unit={items.length === 1 ? "item" : "items"}
+          hrefFor={(to) => vaultHref({ ...view, page: to })}
+        />
+        {view.tab === "mine" && total > 0 && (
+          <p className="text-[13px] leading-[18px] text-muted">
+            Only you can see your vault. Nothing reaches reviewers until you escalate a case.
+          </p>
+        )}
       </div>
     </>
   );

@@ -187,7 +187,7 @@ Do every **P0** task before any **P1** task. Commit after each task.
 ### - [x] Task 11: Board chart, status breakdown, activity, filter chips
 Weekly escalations bar chart (plain SVG, tooltip, "View as table"), a "Cases by status" stacked bar with legend, a recent-activity feed from `case_events`, a "Last update" column, the "Has collaborators" and "Has reviewer attachments" chips, "Clear filters", a result count and the date-range select. At most one chart. Never red.
 
-### - [ ] Task 12: Vault columns
+### - [x] Task 12: Vault columns
 Tamper checks, In cases and Sharing columns (add share and link counts to `listEvidence` `mine`), the footer privacy caption, and the "Capture evidence" label.
 
 ### - [ ] Task 13: Cases list tabs and row anatomy; locked and closed case page

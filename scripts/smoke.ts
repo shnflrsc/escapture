@@ -266,6 +266,8 @@ async function main() {
   check("delete attached evidence -> 409", (await call(M, "DELETE", `/api/evidence/${mayaEv}`)).status === 409);
   check("rename attached evidence -> 409", (await call(M, "PATCH", `/api/evidence/${mayaEv}`, { label: "Renamed" })).status === 409);
   const lockedRow = (await list(M, "scope=mine")).find((i) => i.id === mayaEv);
+  const sharedRow = lockedRow as unknown as { shareCount: number; linkCount: number; caseTitle: string | null };
+  check("the owner's list says how widely each item is shared and which case it is in", sharedRow.shareCount === 1 && sharedRow.linkCount === 0 && typeof sharedRow.caseTitle === "string", sharedRow);
   check("the owner's list shows it as in a case and locked", lockedRow?.caseCount === 1 && lockedRow.locked === true, lockedRow);
   check("add collaborator -> 409", (await call(M, "POST", `/api/cases/${caseId}/collaborators`, { email: `alex.${run}@${DOMAIN}`, acknowledge: true })).status === 409);
   check("escalate again -> 409", (await call(M, "POST", `/api/cases/${caseId}/escalate`, { digest: preview2.body.digest, confirm: true })).status === 409);

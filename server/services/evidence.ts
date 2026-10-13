@@ -20,6 +20,7 @@ import {
   cases,
   evidence,
   evidenceShares,
+  shareLinks,
   user,
   type TamperReport,
 } from "../db/schema";
@@ -216,6 +217,11 @@ export async function listEvidence(actor: Actor, scope: "mine" | "shared", filte
         // Only the owner's own list says anything about cases. Attachments made by
         // reviewers are not counted: reporters never see those.
         caseCount: sql<number>`(select count(*)::int from ${caseEvidence} where ${caseEvidence.evidenceId} = ${evidence.id} and ${caseEvidence.side} = 'reporter')`,
+        // The first case it went into, by name, for the list's "In cases" column.
+        caseTitle: sql<string | null>`(select ${cases.title} from ${caseEvidence} inner join ${cases} on ${cases.id} = ${caseEvidence.caseId} where ${caseEvidence.evidenceId} = ${evidence.id} and ${caseEvidence.side} = 'reporter' order by ${caseEvidence.createdAt} limit 1)`,
+        // How many people it is shared with, and how many password links point at it.
+        shareCount: sql<number>`(select count(*)::int from ${evidenceShares} where ${evidenceShares.evidenceId} = ${evidence.id})`,
+        linkCount: sql<number>`(select count(*)::int from ${shareLinks} where ${shareLinks.evidenceId} = ${evidence.id})`,
         // Same rule as the lock on rename and delete: attached to any case that is no longer a draft.
         locked: sql<boolean>`exists (select 1 from ${caseEvidence} inner join ${cases} on ${cases.id} = ${caseEvidence.caseId} where ${caseEvidence.evidenceId} = ${evidence.id} and ${cases.status} <> 'draft')`,
       })

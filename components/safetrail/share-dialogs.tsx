@@ -99,6 +99,7 @@ export function EmailShareButton({ buttonLabel, ...dialog }: EmailShare & { butt
 
 /** Password-protected link. The URL is shown once, here. */
 export function LinkShareDialog({ open, onClose, endpoint, title, risk }: LinkShare & Controlled) {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,6 +107,8 @@ export function LinkShareDialog({ open, onClose, endpoint, title, risk }: LinkSh
 
   function close() {
     onClose();
+    // A link was made: lists that say how something is shared should show it.
+    if (url) router.refresh();
     setPassword("");
     setError(null);
     setLoading(false);
