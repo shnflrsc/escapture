@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evidence page</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0;background:#F7FAFB}</style>
+</helmet>
+<div class="app st-root" data-density="comfortable">
+  <dc-import name="Sidebar" role="student" active="Vault" hint-size="248px,900px"></dc-import>
+  <div class="app-col">
+    <dc-import name="Topbar" role="student" section="Vault" section-href="Main.dc.html" page="Post on BulSU Freedom Wall" hint-size="100%,64px"></dc-import>
+    <main class="page page-student">
+      <div class="ph">
+        <div>
+          <h1>Post on BulSU Freedom Wall</h1>
+          <div class="meta-row">
+            <span>Facebook post</span><span aria-hidden="true">·</span>
+            <span class="num">Captured 12 Oct 2026, 9:41 PM</span><span aria-hidden="true">·</span>
+            <span class="share"><x-import component-from-global-scope="SafeTrail.Icon" name="eye-off" size="sm"></x-import>Private</span>
+          </div>
+        </div>
+        <div class="ph-actions">
+          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Share</x-import>
+          <x-import component-from-global-scope="SafeTrail.Button" variant="primary">Add to case</x-import>
+          <button type="button" class="iconbtn" aria-label="More actions" style="width: 44px; height: 44px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="split">
+        <section class="viewer" aria-label="Captured page">
+          <div class="viewer-strip">
+            <x-import component-from-global-scope="SafeTrail.TamperCheck" time="12 Oct 2026, 9:41:07 PM"></x-import>
+            <a class="link small" href="#">Open captured file</a>
+          </div>
+          <div class="viewer-body">
+            <article class="capture" aria-label="Captured Facebook post">
+              <div class="capture-head">
+                <span class="capture-av" aria-hidden="true">JR</span>
+                <span><b>J. Ramos</b><span>12 October at 8:02 PM · Public</span></span>
+              </div>
+              <p>Funny how some people act so innocent in class. Everyone in 3A knows what she did. Don't trust her with anything.</p>
+              <div class="capture-stats"><span>48 reactions</span><span>23 comments · 4 shares</span></div>
+              <div class="capture-comment">
+                <span class="capture-av" aria-hidden="true">AL</span>
+                <div class="capture-bubble"><b>A. Lim</b>Hahaha alam na this</div>
+              </div>
+              <div class="capture-comment">
+                <span class="capture-av" aria-hidden="true">KT</span>
+                <div class="capture-bubble"><b>K. Torres</b>Who is this about? Message me</div>
+              </div>
+            </article>
+            <p class="cap" style="text-align: center; margin: 16px 0 0;">Captured content is shown in a frame that can't run scripts. It is not part of SafeTrail.</p>
+          </div>
+        </section>
+
+        <div class="stack">
+          <section class="panel" aria-labelledby="int-h">
+            <h2 id="int-h" class="h4">Integrity</h2>
+            <dl class="dl">
+              <dt>Captured</dt><dd class="mono num">12 Oct 2026, 9:41:07 PM</dd>
+              <dt>Source</dt><dd class="small">facebook.com/groups/bulsufreedomwall/posts/8841…</dd>
+              <dt>File</dt><dd class="small num">capture.html · 412 KB</dd>
+            </dl>
+            <div class="st-hash" style="max-width: none;"><code>sha256 9f2c4e7b1d0a…a41e</code>
+              <x-import component-from-global-scope="SafeTrail.Button" variant="ghost" icon="copy" aria-label="Copy hash">Copy</x-import>
+            </div>
+            <p class="help">The capture passed the extension's checks and the saved file hasn't changed since. It doesn't show that the capture is complete.</p>
+          </section>
+
+          <section class="panel" aria-labelledby="cases-h">
+            <div class="panel-head"><h2 id="cases-h" class="h4">Cases</h2><span class="cap">1 case</span></div>
+            <a class="ev-main" href="StudentCase.dc.html" style="text-decoration: none; color: inherit;">
+              <span style="flex: 1; min-width: 0;"><b>Comments on my post</b><span>Your case · 3 evidence items</span></span>
+              <span class="pill pill-draft"><span class="pdot" aria-hidden="true"></span>Draft</span>
+            </a>
+            <x-import component-from-global-scope="SafeTrail.Button" variant="soft">Add to another case</x-import>
+          </section>
+
+          <section class="panel" aria-labelledby="share-h">
+            <h2 id="share-h" class="h4">Sharing</h2>
+            <p class="small" style="margin: 0;">Only you can see this evidence. If you share it, the people you share with can pass it on.</p>
+            <div class="row">
+              <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Share by email</x-import>
+              <x-import component-from-global-scope="SafeTrail.Button" variant="ghost" icon="lock">Password link</x-import>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

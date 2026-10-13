@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Escalation preview</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="st-root" data-density="comfortable" style="width: 880px; height: 1000px; box-sizing: border-box; background: rgba(30,42,50,0.40); display: flex; align-items: center; justify-content: center; padding: 40px; font-family: var(--font-sans); color: var(--ink);">
+  <section role="dialog" aria-modal="true" aria-labelledby="esc-t" style="width: 720px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 16px 40px rgba(30,42,50,0.14); padding: 24px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+      <div>
+        <h2 id="esc-t" class="h3">Review what reviewers will see</h2>
+        <p class="small muted" style="margin: 4px 0 0;">This is exactly what the university's case reviewers will receive.</p>
+      </div>
+      <button type="button" class="iconbtn" aria-label="Close" style="width: 40px; height: 40px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </div>
+
+    <div style="background: #EFF4F7; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px;">
+      <div class="stack-sm">
+        <span class="group-label">Case</span>
+        <b style="font: 600 17px/24px var(--font-heading);">Comments on my post</b>
+        <p class="small" style="margin: 0;">After an argument in class on 10 October, a classmate posted about me on the BulSU Freedom Wall. Others joined in the comments. The original post was edited the next day. Paolo saw the post before it changed and saved what he could.</p>
+      </div>
+      <hr class="divider">
+      <div class="stack-sm">
+        <span class="group-label">People reviewers will see (2)</span>
+        <ul class="people">
+          <li><span class="avatar">MS</span><span><b>Maya Santos</b><span>maya.santos@bulsu.edu.ph · Created the case</span></span></li>
+          <li><span class="avatar">PC</span><span><b>Paolo Cruz</b><span>paolo.cruz@bulsu.edu.ph · Collaborator</span></span></li>
+        </ul>
+      </div>
+      <hr class="divider">
+      <div class="stack-sm">
+        <span class="group-label">Attached evidence (3)</span>
+        <div>
+          <sc-for list="{{items}}" as="e" hint-placeholder-count="3">
+            <div class="ev-row">
+              <div class="ev-main"><span><b>{{e.title}}</b><span class="num">{{e.meta}}</span></span></div>
+              <x-import component-from-global-scope="SafeTrail.TamperCheck"></x-import>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div class="st-note-panel" style="display: flex; gap: 12px; align-items: flex-start;">
+      <x-import component-from-global-scope="SafeTrail.Icon" name="lock"></x-import>
+      <p class="small" style="margin: 0;">Once you escalate, this case is locked. You can't edit or withdraw it, and attached evidence can't be deleted. Sharing of that evidence with reviewers can't be undone.</p>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px;">
+      <a class="btn btn-ghost" href="StudentCase.dc.html">Go back</a>
+      <a class="btn btn-weighty" href="StudentCases.dc.html">Escalate to reviewers</a>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      items: [
+        { title: 'Post on BulSU Freedom Wall', meta: 'Facebook post · Captured 12 Oct 2026, 9:41 PM · Added by you' },
+        { title: 'Comments on my profile photo', meta: 'Facebook post · Captured 10 Oct 2026, 7:02 PM · Added by you' },
+        { title: 'Original post, before the edit', meta: 'Facebook post · Captured 10 Oct 2026, 8:20 PM · Added by Paolo Cruz' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

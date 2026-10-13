@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SafeTrail header</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<header class="hd" style="font-family: var(--font-sans); color: var(--ink);">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <sc-if value="{{hasPage}}" hint-placeholder-val="{{false}}">
+      <a href="{{sectionHref}}">{{section}}</a>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+      <span class="cur" aria-current="page">{{page}}</span>
+    </sc-if>
+    <sc-if value="{{noPage}}" hint-placeholder-val="{{true}}">
+      <span class="cur" aria-current="page">{{section}}</span>
+    </sc-if>
+  </nav>
+
+  <div class="hd-search" role="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path><path d="m21 21-4.3-4.3"></path></svg>
+    <input type="search" aria-label="{{searchLabel}}" placeholder="{{searchLabel}}">
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button type="button" class="hd-btn" aria-label="Help">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+    </button>
+    <button type="button" class="hd-btn" aria-label="{{bellLabel}}" aria-haspopup="dialog" aria-expanded="{{expanded}}" onClick="{{toggle}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+      <sc-if value="{{hasUnread}}" hint-placeholder-val="{{true}}"><span class="dot" aria-hidden="true"></span></sc-if>
+    </button>
+    <span class="vsep" aria-hidden="true"></span>
+    <button type="button" class="hd-user" aria-label="Account menu">
+      <span class="avatar">{{initials}}</span>
+      <span><b>{{userName}}</b><small>{{userRole}}</small></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{false}}">
+    <section class="pop" role="dialog" aria-label="Notifications">
+      <div class="pop-head">
+        <h2>Notifications</h2>
+        <button type="button" class="btn btn-ghost btn-sm">Mark all as read</button>
+      </div>
+      <ul class="pop-list">
+        <sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+          <li>
+            <a href="{{n.href}}" class="{{n.cls}}">
+              <span class="{{n.iconCls}}"><x-import component-from-global-scope="SafeTrail.Icon" name="{{n.icon}}" size="sm"></x-import></span>
+              <span>
+                <p>{{n.text}}</p>
+                <time>{{n.time}}</time>
+              </span>
+              <sc-if value="{{n.unread}}" hint-placeholder-val="{{false}}"><span class="ndot" role="img" aria-label="Unread"></span></sc-if>
+            </a>
+          </li>
+        </sc-for>
+      </ul>
+      <div class="pop-foot">
+        <a class="link" href="{{allHref}}" style="font-size: 14px;">View all notifications</a>
+      </div>
+    </section>
+  </sc-if>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"role":{"editor":"enum","options":["student","reviewer","admin"],"default":"student"},"section":{"editor":"text","default":"Vault"},"sectionHref":{"editor":"text","default":"Main.dc.html"},"page":{"editor":"text","default":""},"open":{"editor":"boolean","default":false},"$preview":{"width":1192,"height":64}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var role = this.props.role || 'student';
+    var propOpen = this.props.open === true || this.props.open === 'true';
+    var open = this.state && this.state.open != null ? this.state.open : propOpen;
+    var N = {
+      student: [
+        { icon: 'clipboard-list', kind: 'review', text: 'Ms. Reyes moved “Group chat after org meeting” to Under Review.', time: '2 hours ago', unread: true, href: 'StudentCase.dc.html' },
+        { icon: 'paperclip', kind: 'info', text: 'Paolo Cruz attached 2 evidence items to “Comments on my post”.', time: 'Yesterday, 8:14 PM', unread: true, href: 'StudentCase.dc.html' },
+        { icon: 'circle-check', kind: 'done', text: '“Messages in March” was closed. Read the closing note.', time: '10 Oct 2026', unread: false, href: 'StudentCaseClosed.dc.html' },
+        { icon: 'inbox', kind: 'info', text: 'Bea Mendoza shared evidence with you: a Facebook post from 5 Oct.', time: '9 Oct 2026', unread: false, href: 'Main.dc.html' }
+      ],
+      reviewer: [
+        { icon: 'arrow-up', kind: 'attn', text: 'A new case was escalated: “Edited photo shared in GC”.', time: '35 minutes ago', unread: true, href: 'ReviewCase.dc.html' },
+        { icon: 'inbox', kind: 'info', text: 'J. Ramos shared evidence with you by password link.', time: '3 hours ago', unread: true, href: 'SharedWithMe.dc.html' },
+        { icon: 'clipboard-list', kind: 'review', text: 'M. Cruz moved “Group chat, 3 Oct” to Under Review.', time: 'Yesterday, 4:02 PM', unread: false, href: 'ReviewBoard.dc.html' },
+        { icon: 'circle-check', kind: 'done', text: 'You closed “Messages in March”. It moved to Case Archives.', time: '10 Oct 2026', unread: false, href: 'Archives.dc.html' }
+      ],
+      admin: [
+        { icon: 'users', kind: 'ok', text: 'L. Bautista finished setting up their reviewer account.', time: 'Today, 9:12 AM', unread: false, href: 'AdminReviewers.dc.html' },
+        { icon: 'users', kind: 'attn', text: 'The setup link for R. Aquino expires in 2 days.', time: 'Yesterday', unread: false, href: 'AdminReviewers.dc.html' }
+      ]
+    };
+    var iconCls = { review: 'nicon', info: 'nicon', attn: 'nicon nicon-attn', done: 'nicon nicon-done', ok: 'nicon nicon-ok' };
+    var notes = (N[role] || N.student).map(function (n) {
+      return { icon: n.icon, text: n.text, time: n.time, unread: n.unread, href: n.href, cls: n.unread ? 'unread' : '', iconCls: iconCls[n.kind] };
+    });
+    var unreadCount = notes.filter(function (n) { return n.unread; }).length;
+    var users = {
+      student: { name: 'Maya Santos', role: 'Student', initials: 'MS' },
+      reviewer: { name: 'Liza Reyes', role: 'Case reviewer', initials: 'LR' },
+      admin: { name: 'R. Villanueva', role: 'Administrator', initials: 'RV' }
+    };
+    var u = users[role] || users.student;
+    var search = { student: 'Search your vault and cases', reviewer: 'Search cases and reporters', admin: 'Search reviewer accounts' };
+    var page = this.props.page || '';
+    return {
+      section: this.props.section || 'Vault',
+      sectionHref: this.props.sectionHref || '#',
+      page: page,
+      hasPage: !!page,
+      noPage: !page,
+      searchLabel: search[role],
+      open: open,
+      expanded: open ? 'true' : 'false',
+      toggle: function () { self.setState({ open: !open }); },
+      notes: notes,
+      hasUnread: unreadCount > 0,
+      bellLabel: unreadCount > 0 ? 'Notifications, ' + unreadCount + ' unread' : 'Notifications',
+      allHref: role === 'student' ? 'StudentNotifications.dc.html' : '#',
+      userName: u.name, userRole: u.role, initials: u.initials
+    };
+  }
+}
+</script>
+</body>
+</html>
