@@ -284,6 +284,9 @@ async function main() {
   check("the status tab narrows the table and the counts add up", (await table("status=under_review&sort=escalated")).items.every((c) => c.status === "under_review") && newest.counts.all === newest.counts.escalated + newest.counts.under_review && newest.total === newest.counts.all);
   check("drafts and closed cases are never on the board", newest.items.every((c) => c.status === "escalated" || c.status === "under_review"));
   check("an unknown sort or status -> 400", (await call(R, "GET", "/api/review/cases?sort=random")).status === 400 && (await call(R, "GET", "/api/review/cases?status=closed&q=x")).status === 400);
+  const withPeople = await call(R, "GET", "/api/review/cases?collab=1&sort=escalated");
+  check("the collaborators filter keeps only cases that have one, and each row says what last happened", withPeople.status === 200 && withPeople.body.items.some((c: { id: string }) => c.id === caseId) && withPeople.body.items.every((c: { collaboratorCount: number; lastEvent: { type: string } | null }) => c.collaboratorCount > 0 && c.lastEvent), withPeople.body.items?.[0]);
+  check("the reviewer-attachments filter is empty before anything is attached to this case", !(await call(R, "GET", "/api/review/cases?rev=1")).body.items.some((c: { id: string }) => c.id === caseId));
   const summary = await call(R, "GET", "/api/review/summary");
   check("the summary counts match the board", summary.status === 200 && summary.body.escalated === newest.counts.escalated && summary.body.underReview === newest.counts.under_review && summary.body.newThisWeek >= 1 && typeof summary.body.closedThisMonth === "number", summary.body);
   check("students cannot read the board table or its summary", (await call(M, "GET", "/api/review/cases?q=x")).status === 403 && (await call(M, "GET", "/api/review/summary")).status === 403);

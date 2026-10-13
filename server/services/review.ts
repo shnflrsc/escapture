@@ -71,6 +71,10 @@ export type BoardQuery = {
   /** Left out: oldest escalated first, so what has waited longest is on top. */
   sort?: BoardSort;
   page?: number;
+  /** Only cases with at least one collaborator. */
+  collab?: boolean;
+  /** Only cases a reviewer has attached evidence to. */
+  rev?: boolean;
 };
 
 const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -82,7 +86,15 @@ const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
 export async function boardPage(actor: Actor, query: BoardQuery = {}) {
   assertRole(actor, "reviewer");
   const term = query.q?.trim();
-  const search = term ? or(ilike(cases.title, likeTerm(term)), ilike(user.name, likeTerm(term))) : undefined;
+  const search = and(
+    term ? or(ilike(cases.title, likeTerm(term)), ilike(user.name, likeTerm(term))) : undefined,
+    query.collab
+      ? sql`exists (select 1 from ${caseCollaborators} where ${caseCollaborators.caseId} = ${cases.id})`
+      : undefined,
+    query.rev
+      ? sql`exists (select 1 from ${caseEvidence} where ${caseEvidence.caseId} = ${cases.id} and ${caseEvidence.side} = 'reviewer')`
+      : undefined,
+  );
   const open = inArray(cases.status, ["escalated", "under_review"]);
   const where = and(open, query.status ? eq(cases.status, query.status) : undefined, search);
 
@@ -118,10 +130,27 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
   const tally = { escalated: 0, under_review: 0 };
   for (const r of byStatus) if (r.status === "escalated" || r.status === "under_review") tally[r.status] = r.n;
   const total = query.status ? tally[query.status] : tally.escalated + tally.under_review;
-  const c = await counts(rows.map((r) => r.id));
+  const ids = rows.map((r) => r.id);
+  const [c, latest] = await Promise.all([
+    counts(ids),
+    // The newest event of each case on this page, for the "Last update" column.
+    ids.length
+      ? db
+          .selectDistinctOn([caseEvents.caseId], {
+            caseId: caseEvents.caseId,
+            type: caseEvents.type,
+            at: caseEvents.createdAt,
+          })
+          .from(caseEvents)
+          .where(inArray(caseEvents.caseId, ids))
+          .orderBy(caseEvents.caseId, desc(caseEvents.createdAt))
+      : [],
+  ]);
+  const last = new Map(latest.map((e) => [e.caseId, e]));
   return {
     items: rows.map((r) => ({
       ...r,
+      lastEvent: last.get(r.id) ? { type: last.get(r.id)!.type, at: last.get(r.id)!.at } : null,
       evidenceCount: c.evidence.get(r.id) ?? 0,
       collaboratorCount: c.collaborators.get(r.id) ?? 0,
     })),
@@ -130,6 +159,66 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
     page,
     pages: Math.max(1, Math.ceil(total / BOARD_PAGE_SIZE)),
   };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+export type BoardRange = "30d" | "90d" | "all";
+const rangeDays: Record<BoardRange, number | null> = { "30d": 30, "90d": 90, all: null };
+
+/**
+ * What sits around the board's table: escalations per week for the last seven
+ * weeks, how the cases escalated in the chosen period stand now, and the latest
+ * things that happened on open cases. Counts only; nothing from inside a case.
+ */
+export async function boardInsights(actor: Actor, range: BoardRange = "90d", now: Date = new Date()) {
+  assertRole(actor, "reviewer");
+  // Weeks run Monday to Sunday in Manila. `thisMonday` is the start of the current one.
+  const today = new Date(`${dayKey(now)}T00:00:00+08:00`);
+  const sinceMonday = (new Date(`${dayKey(now)}T12:00:00+08:00`).getUTCDay() + 6) % 7;
+  const thisMonday = new Date(today.getTime() - sinceMonday * DAY_MS);
+  const firstWeek = new Date(thisMonday.getTime() - 6 * 7 * DAY_MS);
+  const days = rangeDays[range];
+  const since = days === null ? null : new Date(now.getTime() - days * DAY_MS);
+
+  const [escalations, statuses, events] = await Promise.all([
+    db
+      .select({ at: cases.escalatedAt })
+      .from(cases)
+      .where(and(ne(cases.status, "draft"), gte(cases.escalatedAt, firstWeek))),
+    db
+      .select({ status: cases.status, n: count() })
+      .from(cases)
+      .where(and(ne(cases.status, "draft"), since ? gte(cases.escalatedAt, since) : undefined))
+      .groupBy(cases.status),
+    db
+      .select({
+        id: caseEvents.id,
+        type: caseEvents.type,
+        createdAt: caseEvents.createdAt,
+        caseId: cases.id,
+        caseTitle: cases.title,
+        actorName: user.name,
+      })
+      .from(caseEvents)
+      .innerJoin(cases, eq(cases.id, caseEvents.caseId))
+      .innerJoin(user, eq(user.id, caseEvents.actorId))
+      // A case's time as a draft is the student's own business (I1).
+      .where(and(inArray(cases.status, ["escalated", "under_review"]), ne(caseEvents.type, "created")))
+      .orderBy(desc(caseEvents.createdAt))
+      .limit(8),
+  ]);
+
+  const weeks = Array.from({ length: 7 }, (_, i) => {
+    const start = new Date(firstWeek.getTime() + i * 7 * DAY_MS);
+    const end = new Date(start.getTime() + 7 * DAY_MS);
+    return {
+      start,
+      count: escalations.filter((e) => e.at && e.at >= start && e.at < end).length,
+    };
+  });
+  const tally = { escalated: 0, under_review: 0, closed: 0 };
+  for (const r of statuses) if (r.status !== "draft") tally[r.status] = r.n;
+  return { weeks, statuses: tally, range, activity: events };
 }
 
 /** The four numbers above the board. Each is a count with one plain fact beside it. */

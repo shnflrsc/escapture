@@ -1,5 +1,6 @@
 import { CircleCheck, CircleDot, Columns3, Eye, Inbox, SearchX } from "lucide-react";
 import Link from "next/link";
+import { ActivityFeed, BarChart, lastUpdateText, Panel, StatusBreakdown } from "@/components/dashboard/charts";
 import {
   bodyRow,
   headRow,
@@ -11,22 +12,31 @@ import {
   td,
   th,
 } from "@/components/dashboard/data-table";
+import { FilterChip, ParamSelect } from "@/components/dashboard/filters";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/feedback";
 import { LinkTabs } from "@/components/ui/tabs";
-import { formatDate } from "@/lib/format";
+import { formatDate, timeAgo } from "@/lib/format";
 import { boardQuery } from "@/lib/validators";
 import { pageUser } from "@/server/page-auth";
-import { boardPage, boardSummary, type BoardSort } from "@/server/services/review";
+import { boardInsights, boardPage, boardSummary, type BoardRange, type BoardSort } from "@/server/services/review";
 
 // Per-user page: allowed to wait for the server on navigation.
 export const instant = false;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const RANGES: { value: BoardRange; label: string; note: string }[] = [
+  { value: "30d", label: "Last 30 days", note: "Cases escalated in the last 30 days" },
+  { value: "90d", label: "Last 90 days", note: "Cases escalated in the last 90 days" },
+  { value: "all", label: "All time", note: "Every case that has been escalated" },
+];
+
+type View = { status?: string; q?: string; sort?: string; page?: number; collab?: boolean; rev?: boolean; range?: string };
 
 export default async function ReviewBoardPage({ searchParams }: PageProps<"/review">) {
   const user = await pageUser(["reviewer"]);
@@ -37,16 +47,28 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     q: first(params.q) || undefined,
     sort: first(params.sort) || undefined,
     page: first(params.page) || undefined,
+    collab: first(params.collab) || undefined,
+    rev: first(params.rev) || undefined,
+    range: first(params.range) || undefined,
   });
-  const query = parsed.success ? parsed.data : {};
-  const [board, summary] = await Promise.all([boardPage(user, query), boardSummary(user)]);
+  const raw = parsed.success ? parsed.data : {};
+  const query = { ...raw, collab: Boolean(raw.collab), rev: Boolean(raw.rev) };
+  const range: BoardRange = raw.range ?? "90d";
+  const [board, summary, insights] = await Promise.all([
+    boardPage(user, query),
+    boardSummary(user),
+    boardInsights(user, range),
+  ]);
 
-  const href = (over: { status?: string; q?: string; sort?: string; page?: number }) => {
-    const next = { status: query.status, q: query.q, sort: query.sort, ...over };
+  const href = (over: View) => {
+    const next: View = { ...query, range: raw.range, ...over };
     const s = new URLSearchParams();
     if (next.status) s.set("status", next.status);
     if (next.q) s.set("q", next.q);
+    if (next.collab) s.set("collab", "1");
+    if (next.rev) s.set("rev", "1");
     if (next.sort && next.sort !== "escalated") s.set("sort", next.sort);
+    if (next.range && next.range !== "90d") s.set("range", next.range);
     if (next.page && next.page > 1) s.set("page", String(next.page));
     const qs = s.toString();
     return qs ? `/review?${qs}` : "/review";
@@ -57,7 +79,8 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     const to = (direction === "ascending" ? `-${column}` : column) as BoardSort;
     return { direction, href: href({ sort: to, page: 1 }) };
   };
-  const filtered = Boolean(query.status || query.q);
+  const filtered = Boolean(query.status || query.q || query.collab || query.rev);
+  const clear = href({ status: undefined, q: undefined, collab: false, rev: false, page: 1 });
   const nothingOpen = !filtered && board.counts.all === 0;
 
   return (
@@ -65,6 +88,14 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
       <PageHeader
         title="Review Board"
         description="Cases students have escalated. Open a case to review it. Closed cases move to Case Archives."
+        action={
+          <ParamSelect
+            label="Period"
+            value={range}
+            options={RANGES}
+            hrefs={Object.fromEntries(RANGES.map((r) => [r.value, href({ range: r.value })]))}
+          />
+        }
       />
 
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -87,6 +118,15 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
         <StatTile label="Shared with you" Icon={Inbox} value={summary.sharedUnattached} note="Not yet attached to a case" />
         <StatTile label="Closed this month" Icon={CircleCheck} value={summary.closedThisMonth} note="Now in Case Archives" />
       </dl>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Panel title="Cases escalated per week" note="The last seven weeks, each starting on Monday">
+          <BarChart data={insights.weeks} unit={["case escalated", "cases escalated"]} />
+        </Panel>
+        <Panel title="Cases by status" note={RANGES.find((r) => r.value === range)!.note}>
+          <StatusBreakdown counts={insights.statuses} />
+        </Panel>
+      </div>
 
       {nothingOpen ? (
         <EmptyState icon={<Columns3 size={24} strokeWidth={1.75} />} title="No open cases">
@@ -114,20 +154,31 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                 },
               ]}
             />
-            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
-              {filtered && (
-                <Link href="/review" className={buttonClass("ghost", "h-10 px-3")}>
-                  Clear filters
-                </Link>
-              )}
-              <TableSearch
-                action="/review"
-                label="Search cases and reporters"
-                value={query.q ?? ""}
-                keep={{ status: query.status, sort: query.sort }}
-                className="w-full sm:w-[280px]"
-              />
-            </div>
+            <TableSearch
+              action="/review"
+              label="Search cases and reporters"
+              value={query.q ?? ""}
+              keep={{
+                status: query.status,
+                sort: query.sort,
+                collab: query.collab ? "1" : undefined,
+                rev: query.rev ? "1" : undefined,
+                range: raw.range,
+              }}
+              className="w-full sm:w-[280px]"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterChip label="Has collaborators" href={href({ collab: !query.collab, page: 1 })} on={query.collab} />
+            <FilterChip label="Has reviewer attachments" href={href({ rev: !query.rev, page: 1 })} on={query.rev} />
+            {filtered && (
+              <Link href={clear} className={buttonClass("ghost", "h-9 px-3 text-sm")}>
+                Clear filters
+              </Link>
+            )}
+            <p aria-live="polite" className="tnum ml-auto text-sm leading-5 text-muted">
+              {plural(board.total, "case", "cases")}
+            </p>
           </div>
 
           {board.items.length === 0 ? (
@@ -135,17 +186,17 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
               icon={<SearchX size={24} strokeWidth={1.75} />}
               title="No cases match"
               action={
-                <Link href="/review" className={buttonClass("secondary")}>
+                <Link href={clear} className={buttonClass("secondary")}>
                   Clear filters
                 </Link>
               }
             >
-              {query.q ? `Nothing open matches “${query.q}”.` : "No open case has that status."} Closed cases are in the
-              Case Archives.
+              {query.q ? `Nothing open matches “${query.q}”.` : "No open case matches these filters."} Closed cases are
+              in the Case Archives.
             </EmptyState>
           ) : (
             <>
-              <TableBox caption="Open cases">
+              <TableBox caption="Open cases" minWidth={860}>
                 <thead>
                   <tr className={headRow}>
                     <th scope="col" className={th}>
@@ -160,12 +211,15 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                       Evidence
                     </th>
                     <SortHeader label="Escalated" {...sortable("escalated")} />
+                    <th scope="col" className={th}>
+                      Last update
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {board.items.map((c) => (
                     <tr key={c.id} className={bodyRow}>
-                      <td className={`${td} max-w-[360px]`}>
+                      <td className={`${td} max-w-[320px]`}>
                         <Link href={`/review/${c.id}`} className={`${rowLink} block truncate`} title={c.title}>
                           {c.title}
                         </Link>
@@ -178,6 +232,13 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                       <td className={`${td} tnum text-right`}>{c.evidenceCount}</td>
                       <td className={`${td} tnum whitespace-nowrap text-muted`}>
                         {c.escalatedAt ? formatDate(c.escalatedAt) : ""}
+                      </td>
+                      <td className={`${td} whitespace-nowrap text-muted`}>
+                        {c.lastEvent && (
+                          <>
+                            {lastUpdateText(c.lastEvent.type)} · <span className="tnum">{timeAgo(c.lastEvent.at)}</span>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -194,6 +255,10 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
           )}
         </section>
       )}
+
+      <Panel title="Recent activity" note="The latest updates on open cases">
+        <ActivityFeed items={insights.activity} />
+      </Panel>
     </>
   );
 }
