@@ -202,7 +202,8 @@ Same tokens, fonts and colors in both. Only spacing and sizing change.
 ## 8. Icons and illustration
 
 - **Icons:** Lucide React only. 20px default, 16px inline with text, stroke width 1.75. Icon color follows the text color of its context. Always pair icons with a text label unless the control has an accessible name and a tooltip.
-- **Illustration:** flat, minimal, rounded shapes, used sparingly: empty states and onboarding only. Build from `brand-100` to `brand-400`, `brand-500`, white and `ink` linework. No gradients, no 3D, no photography, no stock clip-art, no human faces, no depictions of bullying or distress. Keep each illustration small (max about 200px tall) and secondary to the text beside it.
+- **Illustration:** flat, minimal, rounded shapes, used sparingly: empty states, onboarding, and the sign-in and register pages only. Build from `brand-100` to `brand-400`, `brand-500`, white and `ink` linework. No gradients, no 3D, no photography, no stock clip-art, no human faces, no depictions of bullying or distress. Keep each illustration small (max about 200px tall) and secondary to the text beside it.
+- **Sign-in and register exception:** the left panel of these two pages holds one larger illustration (up to about 520px), in place of marketing copy. It is an abstract trail with rounded waypoint markers, small evidence cards and a closed vault: register shows the trail starting, sign in shows it reaching the vault. Same palette and rules as above, decorative only (`aria-hidden`), hidden below 1040px. Keep the trail open and flowing, never concentric loops that could read as the fingerprint in the logo.
 - If no suitable illustration exists, use a plain icon in a `brand-100` circle. Do not generate decorative filler.
 
 ## 9. Components
