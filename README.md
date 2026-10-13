@@ -7,7 +7,10 @@ It has four connected parts:
 1. **Escrow Capture** (Chrome extension): saves a frozen, script-free copy of a post or conversation, after running tamper checks, straight into the student's vault.
 2. **Escrow Vault**: private storage. Every item records the SHA-256 of the exact stored bytes and a server-side capture time, and can be re-verified at any time.
 3. **Cases**: a student gathers evidence, invites people they trust, previews exactly what reviewers will see, and escalates. Escalation locks the case. A draft saves itself as it is edited, shows other people's changes within a few seconds, and can be deleted by the person who started it; people can be removed from it or leave it, and their evidence leaves with them.
-4. **Review Board**: reviewers work through escalated cases, attach evidence shared with them (kept separate from the reporter's), and close cases with a note.
+4. **Review Board**: reviewers triage escalated cases in a table with summary counts, attach evidence shared with them (kept separate from the reporter's), and close cases with a note.
+5. **Reviewer accounts**: an administrator creates reviewer accounts with a temporary password. Administrators never see cases or evidence.
+
+Every signed-in page shares one shell: a sidebar, and a header with a breadcrumb, a search of the role's main list, a notification bell and the account menu.
 
 Product source of truth: *SafeTrail - Final MVP Proposal*. Build spec: [INSTRUCTIONS.md](INSTRUCTIONS.md). Visual rules: [DESIGN.md](DESIGN.md).
 
@@ -64,7 +67,7 @@ Keep the `pnpm db:local` terminal open while you work, and stop it with Ctrl+C o
 | `pnpm db:local` / `db:stop` | Start or stop the local Postgres for development. It is an ordinary background process (`postgres.exe`), not a container. If one was left behind by a closed terminal and no longer answers, `db:local` replaces it. |
 | `pnpm db:push` / `db:generate` / `db:migrate` / `db:studio` | Drizzle schema tools. Use `db:migrate` for production. |
 | `pnpm db:seed` | Idempotent demo data |
-| `pnpm admin:create-user --email <e> --name "<n>" --password <p> --role reviewer\|admin` | Reviewer and admin accounts. There is no public sign-up for these roles. |
+| `pnpm admin:create-user --email <e> --name "<n>" --password <p> --role reviewer\|admin` | Reviewer and admin accounts from the command line. There is no public sign-up for these roles. An administrator can also create reviewers on the Reviewer accounts page; the first admin account has to come from here or from the seed. |
 | `pnpm ext:build` / `ext:watch` | Build the extension into `extension/dist` |
 | `pnpm fixtures:serve` | Fake Facebook-like pages on http://localhost:4100 for testing capture |
 
@@ -161,4 +164,5 @@ These match the Risks section of the proposal. Say them out loud in a demo.
 - **An evidence page lists only the cases you are part of.** An item can be locked by a case you cannot open (for example one a reviewer attached it to); the page says it is locked without naming that case.
 - **The Vault list is not paged.** Search, the kind filter and sorting run on the server, but every matching item is shown on one page.
 - **Placeholders on the public pages.** The Terms, Privacy and Contact pages say they are being written, and the landing page's extension links lead to the vault because there is no store listing yet. All of these must be replaced before real students use SafeTrail.
-- **Out of scope:** other platforms, the university's own investigation and sanctions, accused persons who are not BulSU students, judging whether a report is true, email or SMS notifications, case assignment, outcome categories, account deletion, reopening cases, an admin UI, legal pages.
+- **Reviewer accounts get a temporary password, not an invitation.** There is no email delivery, so the administrator passes the password on in person. Reviewers cannot change it themselves yet, and an account cannot be deactivated from the page.
+- **Out of scope:** other platforms, the university's own investigation and sanctions, accused persons who are not BulSU students, judging whether a report is true, email or SMS notifications, case assignment, outcome categories, account deletion, reopening cases, legal pages.

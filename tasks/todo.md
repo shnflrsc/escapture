@@ -171,12 +171,12 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium
 
-### - [ ] Task 10: P0 verification pass
+### - [x] Task 10: P0 verification pass
 
 **Acceptance criteria:**
-- [ ] Every role's whole journey works end to end in the browser: capture or seed, case, escalate, notification, review, close, archive, and admin creating a reviewer.
-- [ ] `pnpm smoke` passes against a running dev server.
-- [ ] DESIGN.md's pre-merge checklist holds for every changed page.
+- [x] Every role's whole journey works end to end in the browser: capture or seed, case, escalate, notification, review, close, archive, and admin creating a reviewer.
+- [x] `pnpm smoke` passes against a running dev server.
+- [x] DESIGN.md's pre-merge checklist holds for every changed page.
 
 **Dependencies:** Tasks 1–9
 
