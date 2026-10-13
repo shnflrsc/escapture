@@ -196,5 +196,5 @@ Tabs All, Drafts, With reviewers and Closed. Folder icon, lock icon and caption 
 ### - [x] Task 14: Sidebar counts and the admin extras (Ask first)
 Counts beside Vault, Cases, Review Board and Shared with me. Admin: Office field, Deactivate/Reactivate and the setup-link flow. **Each admin item needs a schema or auth change, so ask the user before starting it.**
 
-### - [ ] Task 15: Final verification
+### - [x] Task 15: Final verification
 Run the standing checks for every role at 1280px, 1024px and 375px, check reduced motion, and confirm contrast for any new color pair (update DESIGN.md §4.4).

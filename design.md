@@ -112,6 +112,10 @@ Computed with the WCAG relative-luminance formula. Text needs 4.5:1; UI componen
 | `brand-500` on `card` (**fails**, fill only) | 2.78 |
 | `border` on `card` (decorative, not for controls) | 1.27 |
 | `disabled-fg` on `disabled-bg` (disabled controls are exempt) | 2.96 |
+| `muted` / `brand-700` / `brand-800` on `brand-50` | 5.66 / 5.22 / 7.40 |
+| `on-dark-muted` on `brand-900` / `brand-800` (text on dark bands) | 8.28 / 5.98 |
+| Chart marks on `card`: `chart-primary` / `chart-review` (bars, never text) | 5.64 / 8.01 |
+| Chart marks on `card`: `chart-escalated` / `chart-closed` / `chart-axis` (marks need 3:1; labels use `ink` or `muted`) | 3.72 / 3.80 / 3.35 |
 
 If you add or change a color pair, recompute it and update this table.
 
