@@ -1,3 +1,4 @@
+import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { ArrowLeft, Lock } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,6 +31,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
 
   return (
     <>
+      <PageCrumbs title={c.title} />
       {draft && <CaseLive caseId={c.id} updatedAt={c.updatedAt.toISOString()} />}
       <div>
         <Link href="/cases" className="link inline-flex items-center gap-1 text-sm">

@@ -1,3 +1,4 @@
+import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -48,6 +49,7 @@ export default async function EvidencePage({ params, searchParams }: PageProps<"
 
   return (
     <>
+      <PageCrumbs title={ev.label} />
       <div>
         <Link
           href={fromCase ? `/cases/${fromCase}` : reviewer ? (ev.sharedWithMe ? "/review/shared" : "/review") : "/vault"}

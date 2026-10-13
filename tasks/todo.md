@@ -81,14 +81,14 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Small
 
-### - [ ] Task 5: Breadcrumbs and header search on every page
+### - [x] Task 5: Breadcrumbs and header search on every page
 
 **Description:** Every signed-in page sets its breadcrumb trail. Detail pages show "Section › Title". Header search submits to the role's target (plan.md, "Decisions with defaults").
 
 **Acceptance criteria:**
-- [ ] `/vault/[id]` shows "Vault › {label}", `/cases/[id]` shows "Cases › {title}", and `/review/[id]` shows "Review Board › {title}". Top-level pages show their name.
-- [ ] Student search goes to `/vault?q=`, reviewer search to `/review?q=`, and admin search to `/admin/reviewers?q=`. The current query is pre-filled.
-- [ ] The layout doesn't fetch page data to build breadcrumbs.
+- [x] `/vault/[id]` shows "Vault › {label}", `/cases/[id]` shows "Cases › {title}", and `/review/[id]` shows "Review Board › {title}". Top-level pages show their name.
+- [x] Student search goes to `/vault?q=`, reviewer search to `/review?q=`, and admin search to `/admin/reviewers?q=`. The current query is pre-filled.
+- [x] The layout doesn't fetch page data to build breadcrumbs.
 
 **Verification:** Standing checks.
 

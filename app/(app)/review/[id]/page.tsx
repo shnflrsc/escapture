@@ -1,3 +1,4 @@
+import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,6 +30,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
 
   return (
     <>
+      <PageCrumbs title={c.title} />
       <div>
         <Link href={closed ? "/review/archives" : "/review"} className="link inline-flex items-center gap-1 text-sm">
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
