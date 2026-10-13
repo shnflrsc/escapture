@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/safetrail/app-shell";
 import { PageSkeleton } from "@/components/ui/feedback";
 import { pageUser } from "@/server/page-auth";
+import { navCounts } from "@/server/services/nav";
 import { unreadCount } from "@/server/services/notifications";
 
 // Every page here is per-user and reads the session, so navigations are allowed
@@ -12,9 +13,9 @@ export const instant = false;
 // The session is request data, so the shell streams in behind Suspense.
 async function Shell({ children }: { children: React.ReactNode }) {
   const user = await pageUser();
-  const unread = await unreadCount(user);
+  const [unread, counts] = await Promise.all([unreadCount(user), navCounts(user)]);
   return (
-    <AppShell user={{ name: user.name, email: user.email, role: user.role }} unread={unread}>
+    <AppShell user={{ name: user.name, email: user.email, role: user.role }} unread={unread} counts={counts}>
       <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
     </AppShell>
   );

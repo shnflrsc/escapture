@@ -119,10 +119,13 @@ const iconButton =
 export function AppShell({
   user,
   unread,
+  counts = {},
   children,
 }: {
   user: { name: string; email: string; role: Role };
   unread: number;
+  /** How many items each sidebar page holds, by its address. */
+  counts?: Record<string, number>;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -193,6 +196,12 @@ export function AppShell({
                 >
                   <Icon size={20} strokeWidth={1.75} aria-hidden />
                   {label}
+                  {counts[href] !== undefined && (
+                    <span className="tnum ml-auto text-[13px] leading-[18px] font-semibold text-muted">
+                      {counts[href]}
+                      <span className="sr-only"> items</span>
+                    </span>
+                  )}
                   {showDot && (
                     <>
                       <span className="ml-auto size-2 rounded-full bg-brand-700" aria-hidden />

@@ -7,7 +7,7 @@ import { completeSetup } from "@/server/services/admin";
 /** A new reviewer sets their password with the setup link their administrator gave them. */
 export const POST = handle<{ token: string }>(async (req, { token }) => {
   // Slows guessing at tokens; a real token is 32 random bytes.
-  rateLimit(`setup:${req.headers.get("x-forwarded-for") ?? "local"}`, 10, 10 * 60 * 1000);
+  rateLimit(`setup:${req.headers.get("x-forwarded-for") ?? "local"}`, 30, 10 * 60 * 1000);
   const { password } = schema.parse(await req.json());
   return json(await completeSetup(token, password));
 });

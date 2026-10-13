@@ -426,6 +426,7 @@ export async function listSharedForReview(actor: Actor) {
       capturedAt: evidence.capturedAt,
       ownerName: user.name,
       ownerEmail: user.email,
+      via: evidenceShares.via,
       sharedAt: evidenceShares.createdAt,
     })
     .from(evidenceShares)
@@ -454,10 +455,20 @@ export async function listSharedForReview(actor: Actor) {
   }));
 }
 
+export type ArchiveQuery = {
+  q?: string;
+  /** Only cases this reviewer closed. */
+  mine?: boolean;
+  /** Only cases a reviewer attached evidence to. */
+  rev?: boolean;
+  /** Closed within this many days. */
+  days?: number;
+};
+
 /** Closed cases, newest first. The search covers the title, reporter, description and closing note. */
-export async function listArchives(actor: Actor, q?: string) {
+export async function listArchives(actor: Actor, query: ArchiveQuery = {}) {
   assertRole(actor, "reviewer");
-  const term = q?.trim();
+  const term = query.q?.trim();
   const like = term ? likeTerm(term) : null;
   const rows = await db
     .select({
@@ -481,6 +492,13 @@ export async function listArchives(actor: Actor, q?: string) {
               ilike(user.name, like),
             )
           : undefined,
+        query.mine
+          ? sql`exists (select 1 from ${caseEvents} where ${caseEvents.caseId} = ${cases.id} and ${caseEvents.type} = 'closed' and ${caseEvents.actorId} = ${actor.id})`
+          : undefined,
+        query.rev
+          ? sql`exists (select 1 from ${caseEvidence} where ${caseEvidence.caseId} = ${cases.id} and ${caseEvidence.side} = 'reviewer')`
+          : undefined,
+        query.days ? gte(cases.closedAt, new Date(Date.now() - query.days * 24 * 60 * 60 * 1000)) : undefined,
       ),
     )
     .orderBy(desc(cases.closedAt))

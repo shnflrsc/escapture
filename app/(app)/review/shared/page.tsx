@@ -1,7 +1,8 @@
-import { Inbox } from "lucide-react";
+import { Inbox, Lock } from "lucide-react";
 import Link from "next/link";
 import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashboard/data-table";
 import { AttachToCase } from "@/components/safetrail/attach-to-case";
+import { OpenLinkButton } from "@/components/safetrail/open-link";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { buttonClass } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/card";
@@ -27,6 +28,7 @@ export default async function SharedWithReviewerPage({ searchParams }: PageProps
       <PageHeader
         title="Shared with me"
         description="Evidence other SafeTrail users shared with you by email or password link. Attach it to a case to keep it with the review."
+        action={<OpenLinkButton />}
       />
       {all.length === 0 ? (
         <EmptyState icon={<Inbox size={24} strokeWidth={1.75} />} title="Nothing has been shared with you">
@@ -58,7 +60,7 @@ export default async function SharedWithReviewerPage({ searchParams }: PageProps
               Nothing is waiting to be attached to a case.
             </EmptyState>
           ) : (
-            <TableBox caption="Evidence shared with you" minWidth={920}>
+            <TableBox caption="Evidence shared with you" minWidth={1040}>
               <thead>
                 <tr className={headRow}>
                   <th scope="col" className={th}>
@@ -66,6 +68,9 @@ export default async function SharedWithReviewerPage({ searchParams }: PageProps
                   </th>
                   <th scope="col" className={th}>
                     Shared by
+                  </th>
+                  <th scope="col" className={th}>
+                    Via
                   </th>
                   <th scope="col" className={th}>
                     Captured
@@ -95,6 +100,16 @@ export default async function SharedWithReviewerPage({ searchParams }: PageProps
                       <td className={`${td} max-w-[220px]`}>
                         <span className="block truncate">{e.ownerName}</span>
                         <span className="block truncate text-[13px] leading-[18px] text-muted">{e.ownerEmail}</span>
+                      </td>
+                      <td className={`${td} whitespace-nowrap`}>
+                        <span className="inline-flex items-center gap-1.5">
+                          {e.via === "link" ? (
+                            <Lock size={14} strokeWidth={1.75} aria-hidden className="text-muted" />
+                          ) : (
+                            <Inbox size={14} strokeWidth={1.75} aria-hidden className="text-muted" />
+                          )}
+                          {e.via === "link" ? "Password link" : "Email"}
+                        </span>
                       </td>
                       <td className={`${td} mono tnum whitespace-nowrap text-muted`}>{formatDateTime(e.capturedAt)}</td>
                       <td className={`${td} whitespace-nowrap`}>

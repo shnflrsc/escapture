@@ -193,7 +193,7 @@ Tamper checks, In cases and Sharing columns (add share and link counts to `listE
 ### - [x] Task 13: Cases list tabs and row anatomy; locked and closed case page
 Tabs All, Drafts, With reviewers and Closed. Folder icon, lock icon and caption on rows. On the case page: the lock line, then the closing note card first.
 
-### - [ ] Task 14: Sidebar counts and the admin extras (Ask first)
+### - [x] Task 14: Sidebar counts and the admin extras (Ask first)
 Counts beside Vault, Cases, Review Board and Shared with me. Admin: Office field, Deactivate/Reactivate and the setup-link flow. **Each admin item needs a schema or auth change, so ask the user before starting it.**
 
 ### - [ ] Task 15: Final verification
