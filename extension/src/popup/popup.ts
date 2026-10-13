@@ -42,7 +42,7 @@ const when = (iso: string) =>
 function historyList(history: CaptureRecord[]): Node[] {
   if (history.length === 0) return [];
   return [
-    h("h2", {}, "Captured evidence"),
+    h("h2", {}, "History"),
     h(
       "ul",
       { class: "history" },
