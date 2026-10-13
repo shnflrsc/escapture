@@ -65,13 +65,13 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium
 
-### - [ ] Task 4: `/notifications` tabs and day groups
+### - [x] Task 4: `/notifications` tabs and day groups
 
 **Description:** Add All/Unread tabs (`?tab=unread`) and group rows into Today, Earlier this week and Earlier, using the popover's row anatomy (`reference/StudentNotifications.dc.html`).
 
 **Acceptance criteria:**
-- [ ] Header copy and the footer caption match plan.md. "Mark all as read" still works.
-- [ ] The page works for students, reviewers and admins.
+- [x] Header copy and the footer caption match plan.md. "Mark all as read" still works.
+- [x] The page works for students, reviewers and admins.
 
 **Verification:** Standing checks.
 
