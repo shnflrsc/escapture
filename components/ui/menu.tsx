@@ -26,6 +26,9 @@ export function Menu({
   items,
   note,
   text,
+  trigger,
+  triggerClassName,
+  header,
   className,
 }: {
   /** What the button is for, e.g. "Actions for Screenshot of the post". */
@@ -35,6 +38,11 @@ export function Menu({
   note?: string;
   /** Shows a labelled button instead of the three dots. */
   text?: string;
+  /** Or any content of your own as the button, styled by triggerClassName. */
+  trigger?: React.ReactNode;
+  triggerClassName?: string;
+  /** Shown above the items, for example who is signed in. */
+  header?: React.ReactNode;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -110,7 +118,7 @@ export function Menu({
         ref={button}
         type="button"
         aria-label={text ? undefined : label}
-        title={text ? undefined : "More actions"}
+        title={text || trigger ? undefined : "More actions"}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -122,15 +130,19 @@ export function Menu({
           }
         }}
         className={
-          text
-            ? buttonClass("secondary", "w-full")
-            : cn(
+          trigger
+            ? triggerClassName
+            : text
+              ? buttonClass("secondary", "w-full")
+              : cn(
                 "flex size-10 items-center justify-center rounded-md text-muted transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800",
                 open && "bg-brand-100 text-brand-800",
               )
         }
       >
-        {text ? (
+        {trigger ? (
+          trigger
+        ) : text ? (
           <>
             {text}
             <ChevronDown size={18} strokeWidth={1.75} aria-hidden />
@@ -152,6 +164,7 @@ export function Menu({
             text && "left-0",
           )}
         >
+          {header}
           {items.map((item) =>
             item.href && !item.disabled ? (
               <Link

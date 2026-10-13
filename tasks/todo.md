@@ -28,15 +28,15 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Small
 
-### - [ ] Task 2: Shell: sidebar and header
+### - [x] Task 2: Shell: sidebar and header
 
 **Description:** Rework `components/safetrail/app-shell.tsx` into a sidebar plus a content column with a 64px sticky header (`reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, `.sb`/`.hd` in `reference/app.css`). Move the account block into a header account menu. Add the admin nav (Reviewer accounts, Notifications). Merge the mobile top bar into the header.
 
 **Acceptance criteria:**
-- [ ] Sidebar: logo, role label, group label, nav with active state and unread dot, role help card, footer links. No account block.
-- [ ] Header: breadcrumb slot, search slot, Help, bell (with dot when anything is unread), divider, account button that opens a menu with name, email and "Sign out".
-- [ ] Below 1024px: the menu button sits in the header and opens the existing drawer, the search wraps to its own row, and there is only one bar.
-- [ ] Students get comfortable density and reviewers and admins get compact, as today.
+- [x] Sidebar: logo, role label, group label, nav with active state and unread dot, role help card, footer links. No account block.
+- [x] Header: breadcrumb slot, search slot, Help, bell (with dot when anything is unread), divider, account button that opens a menu with name, email and "Sign out".
+- [x] Below 1024px: the menu button sits in the header and opens the existing drawer, the search wraps to its own row, and there is only one bar.
+- [x] Students get comfortable density and reviewers and admins get compact, as today.
 
 **Verification:** Standing checks, plus sign out from the header menu for each role.
 

@@ -1,16 +1,33 @@
 "use client";
 
-import { Archive, Bell, Columns3, FolderOpen, Inbox, LockKeyhole, LogOut, Menu as MenuIcon, X } from "lucide-react";
+import {
+  Archive,
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  Columns3,
+  FolderOpen,
+  Inbox,
+  LockKeyhole,
+  LogOut,
+  Menu as MenuIcon,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { createContext, Suspense, useContext, useEffect, useRef, useState } from "react";
+import { Menu } from "@/components/ui/menu";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/cn";
+import { HowToCapture } from "./how-to-capture";
 import { Logo } from "./logo";
 
 type Role = "student" | "reviewer" | "admin";
+type NavItem = { href: string; label: string; Icon: typeof Bell; match: (p: string) => boolean };
 
-const NAV: Record<Role, { href: string; label: string; Icon: typeof Bell; match: (p: string) => boolean }[]> = {
+const NAV: Record<Role, NavItem[]> = {
   student: [
     { href: "/vault", label: "Vault", Icon: LockKeyhole, match: (p) => p.startsWith("/vault") },
     { href: "/cases", label: "Cases", Icon: FolderOpen, match: (p) => p.startsWith("/cases") },
@@ -20,13 +37,79 @@ const NAV: Record<Role, { href: string; label: string; Icon: typeof Bell; match:
       href: "/review",
       label: "Review Board",
       Icon: Columns3,
-      match: (p) => p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared"),
+      // Evidence opens under /vault for every role; for a reviewer it belongs to the board.
+      match: (p) =>
+        p.startsWith("/vault") ||
+        (p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared")),
     },
     { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
     { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
   ],
   admin: [],
 };
+
+const ROLE: Record<Role, { label: string; group: string; search: { action: string; label: string } }> = {
+  student: { label: "Student", group: "Your space", search: { action: "/vault", label: "Search your vault" } },
+  reviewer: {
+    label: "Case reviewer",
+    group: "Reviews",
+    search: { action: "/review", label: "Search cases and reporters" },
+  },
+  admin: {
+    label: "Administrator",
+    group: "Administration",
+    search: { action: "/admin/reviewers", label: "Search reviewer accounts" },
+  },
+};
+
+// A detail page names itself for the header's breadcrumb. The header belongs to
+// the layout, which must not fetch page data, so the page hands its title up.
+const CrumbContext = createContext<(crumb: { path: string; title: string }) => void>(() => {});
+
+/** Put this on a detail page: the header then shows "Section › {title}". */
+export function PageCrumbs({ title }: { title: string }) {
+  const set = useContext(CrumbContext);
+  const path = usePathname();
+  useEffect(() => set({ path, title }), [set, path, title]);
+  return null;
+}
+
+/** One search field for the role's main list. A plain GET form: it works without JavaScript. */
+function HeaderSearch({ role, className }: { role: Role; className?: string }) {
+  const { action, label } = ROLE[role].search;
+  const pathname = usePathname();
+  const q = useSearchParams().get("q") ?? "";
+  // Shows the current search only on the page that is being searched.
+  const current = pathname === action ? q : "";
+  return (
+    <form role="search" action={action} method="get" className={cn("relative", className)}>
+      <Search
+        size={16}
+        strokeWidth={1.75}
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
+      />
+      <input
+        key={`${pathname}?${current}`}
+        type="search"
+        name="q"
+        defaultValue={current}
+        aria-label={label}
+        placeholder={label}
+        maxLength={120}
+        className="h-10 w-full rounded-md border border-border-strong bg-card pr-3 pl-[38px] text-[15px] leading-5 text-ink placeholder:text-muted"
+      />
+    </form>
+  );
+}
+
+const initials = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return ((words[0]?.[0] ?? "") + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase() || "?";
+};
+
+const iconButton =
+  "relative grid size-11 place-items-center rounded-md text-ink transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800";
 
 export function AppShell({
   user,
@@ -38,15 +121,19 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [signingOut, setSigningOut] = useState(false);
-  const reviewer = user.role === "reviewer";
-  const items = [
+  const role = ROLE[user.role];
+  const items: NavItem[] = [
     ...NAV[user.role],
-    { href: "/notifications", label: "Notifications", Icon: Bell, match: (p: string) => p.startsWith("/notifications") },
+    { href: "/notifications", label: "Notifications", Icon: Bell, match: (p) => p.startsWith("/notifications") },
   ];
+  const home = items[0].href;
+  const section = items.find((item) => item.match(pathname)) ?? items[0];
+
+  const [crumb, setCrumb] = useState<{ path: string; title: string } | null>(null);
+  // A title only counts on the page that set it.
+  const detail = crumb && crumb.path === pathname && pathname !== section.href ? crumb.title : null;
 
   async function signOut() {
-    setSigningOut(true);
     await api("/api/auth/sign-out", { body: {} }).catch(() => {});
     // A full page load on purpose: it drops every cached page for this session.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -75,76 +162,93 @@ export function AppShell({
 
   const sidebar = (
     <>
-      <Link href={items[0].href} className="rounded-md px-2 py-2" onClick={() => setMenuOpen(false)}>
-        <Logo />
-      </Link>
-      <nav aria-label="Main" className="mt-6 flex flex-col gap-1">
-        {items.map(({ href, label, Icon, match }) => {
-          const active = match(pathname);
-          const showDot = href === "/notifications" && unread > 0;
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              onClick={() => setMenuOpen(false)}
-              className={cn(
-                "flex h-11 items-center gap-3 rounded-md px-3 text-[15px] leading-5 font-semibold transition-colors duration-150",
-                active ? "bg-brand-100 text-brand-800" : "text-ink hover:bg-brand-50",
-              )}
-            >
-              <Icon size={20} strokeWidth={1.75} aria-hidden />
-              {label}
-              {showDot && (
-                <>
-                  <span className="ml-auto size-2 rounded-full bg-brand-700" aria-hidden />
-                  <span className="sr-only">{unread} unread</span>
-                </>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="mt-auto flex flex-col gap-2 border-t border-border pt-4">
-        <div className="min-w-0 px-2">
-          <p className="truncate text-sm leading-5 font-semibold">{user.name}</p>
-          <p className="truncate text-[13px] leading-[18px] text-muted">{user.email}</p>
-        </div>
-        <button
-          type="button"
-          onClick={signOut}
-          disabled={signingOut}
-          className="flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold text-brand-700 hover:bg-brand-100"
-        >
-          <LogOut size={18} strokeWidth={1.75} aria-hidden />
-          Sign out
-        </button>
+      <div className="flex flex-col gap-1">
+        <Link href={home} className="self-start rounded-md p-2" onClick={() => setMenuOpen(false)}>
+          <Logo />
+        </Link>
+        <span className="px-2 text-[13px] leading-[18px] font-semibold text-muted">{role.label}</span>
       </div>
+      <nav aria-label="Main">
+        <p className="mb-1 px-3 text-[13px] leading-[18px] font-semibold text-muted">{role.group}</p>
+        <ul className="flex flex-col gap-1">
+          {items.map(({ href, label, Icon, match }) => {
+            const active = match(pathname);
+            const showDot = href === "/notifications" && unread > 0;
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "flex h-11 items-center gap-3 rounded-md px-3 text-[15px] leading-5 font-semibold transition-colors duration-150",
+                    active ? "bg-brand-100 text-brand-800" : "text-ink hover:bg-brand-50",
+                  )}
+                >
+                  <Icon size={20} strokeWidth={1.75} aria-hidden />
+                  {label}
+                  {showDot && (
+                    <>
+                      <span className="ml-auto size-2 rounded-full bg-brand-700" aria-hidden />
+                      <span className="sr-only">{unread} unread</span>
+                    </>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      <div className="mt-auto flex flex-col gap-2 rounded-xl bg-brand-50 p-4">
+        {user.role === "student" && (
+          <>
+            <p className="text-sm leading-5 font-semibold">Escrow Capture</p>
+            <p className="text-[13px] leading-[18px] text-muted">
+              Capture a Facebook post or conversation with the Chrome extension. It goes straight to your vault.
+            </p>
+            <HowToCapture asLink />
+          </>
+        )}
+        {user.role === "reviewer" && (
+          <>
+            <p className="text-sm leading-5 font-semibold">Reviewing cases</p>
+            <p className="text-[13px] leading-[18px] text-muted">
+              SafeTrail supplements the university&apos;s own process. Record the outcome when you close a case.
+            </p>
+          </>
+        )}
+        {user.role === "admin" && (
+          <>
+            <p className="text-sm leading-5 font-semibold">Administrator</p>
+            <p className="text-[13px] leading-[18px] text-muted">
+              You create reviewer accounts. You can&apos;t see cases or evidence.
+            </p>
+          </>
+        )}
+      </div>
+      <nav aria-label="Help and legal" className="flex gap-4 px-3 text-[13px] leading-[18px]">
+        {[
+          ["Help", "/contact"],
+          ["Privacy", "/privacy"],
+          ["Terms", "/terms"],
+        ].map(([label, href]) => (
+          <Link key={href} href={href} className="py-1 text-muted hover:text-brand-800 hover:underline">
+            {label}
+          </Link>
+        ))}
+      </nav>
     </>
   );
 
   return (
-    <div data-density={reviewer ? "compact" : "comfortable"} className="app-shell min-h-screen">
-      <aside className="fixed inset-y-0 left-0 hidden w-[248px] flex-col border-r border-border bg-card p-4 lg:flex">
+    <div data-density={user.role === "student" ? "comfortable" : "compact"} className="app-shell min-h-screen">
+      <aside
+        aria-label="Sidebar"
+        className="fixed inset-y-0 left-0 hidden w-[248px] flex-col gap-6 overflow-y-auto border-r border-border bg-card p-4 lg:flex"
+      >
         {sidebar}
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 lg:hidden">
-        <button
-          type="button"
-          aria-label="Open the menu"
-          aria-haspopup="dialog"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(true)}
-          className="relative flex size-11 items-center justify-center rounded-md text-ink hover:bg-brand-50"
-        >
-          <MenuIcon size={22} strokeWidth={1.75} aria-hidden />
-          {unread > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-brand-700" aria-hidden />}
-        </button>
-        <Link href={items[0].href} className="rounded-md px-1 py-1">
-          <Logo />
-        </Link>
-      </header>
       <dialog
         ref={drawer}
         aria-label="Menu"
@@ -154,7 +258,7 @@ export function AppShell({
         className="drawer m-0 h-full max-h-none w-[min(288px,calc(100%-48px))] max-w-none border-r border-border bg-card p-0 text-ink shadow-modal"
       >
         {menuOpen && (
-          <div className="flex h-full flex-col p-4">
+          <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
             <button
               type="button"
               aria-label="Close the menu"
@@ -168,16 +272,104 @@ export function AppShell({
         )}
       </dialog>
 
-      <main className="lg:pl-[248px]">
-        <div
-          className={cn(
-            "mx-auto flex flex-col gap-[var(--section-gap)] p-[var(--page-pad)]",
-            reviewer ? "max-w-[1440px]" : "max-w-[1040px]",
-          )}
-        >
-          {children}
-        </div>
-      </main>
+      <div className="flex min-h-screen flex-col lg:pl-[248px]">
+        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-card px-4 py-2 lg:px-8 lg:py-0">
+          <button
+            type="button"
+            aria-label="Open the menu"
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(true)}
+            className={cn(iconButton, "-ml-2 lg:hidden")}
+          >
+            <MenuIcon size={22} strokeWidth={1.75} aria-hidden />
+          </button>
+
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 flex-1 basis-0 items-center gap-2 text-sm leading-5 font-semibold"
+          >
+            {detail ? (
+              <>
+                <Link href={section.href} className="shrink-0 rounded-sm text-brand-700 hover:text-brand-800 hover:underline">
+                  {section.label}
+                </Link>
+                <ChevronRight size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-muted" />
+                <span aria-current="page" className="truncate text-ink" title={detail}>
+                  {detail}
+                </span>
+              </>
+            ) : (
+              <span aria-current="page" className="truncate text-ink">
+                {section.label}
+              </span>
+            )}
+          </nav>
+
+          <Suspense fallback={<div className="order-last h-10 w-full lg:order-none lg:w-[320px]" />}>
+            <HeaderSearch role={user.role} className="order-last w-full lg:order-none lg:w-[320px]" />
+          </Suspense>
+
+          <div className="flex items-center gap-1 lg:gap-2">
+            <Link href="/contact" aria-label="Help" title="Help" className={cn(iconButton, "hidden sm:grid")}>
+              <CircleHelp size={20} strokeWidth={1.75} aria-hidden />
+            </Link>
+            <Link
+              href="/notifications"
+              aria-label={`Notifications, ${unread} unread`}
+              title="Notifications"
+              className={iconButton}
+            >
+              <Bell size={20} strokeWidth={1.75} aria-hidden />
+              {unread > 0 && (
+                <span aria-hidden className="absolute top-2.5 right-[11px] size-2 rounded-full bg-brand-700 ring-2 ring-card" />
+              )}
+            </Link>
+            <span aria-hidden className="mx-1 hidden h-7 w-px bg-border sm:block" />
+            <Menu
+              label="Account menu"
+              triggerClassName="flex h-11 items-center gap-3 rounded-md py-0 pr-2 pl-1 text-left text-ink transition-colors duration-150 hover:bg-brand-50"
+              trigger={
+                <>
+                  <span
+                    aria-hidden
+                    className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-[13px] leading-none font-bold text-brand-800"
+                  >
+                    {initials(user.name)}
+                  </span>
+                  <span className="hidden max-w-[160px] lg:block">
+                    <span className="block truncate text-sm leading-[18px] font-semibold">{user.name}</span>
+                    <span className="block text-[13px] leading-[18px] text-muted">{role.label}</span>
+                  </span>
+                  <ChevronDown size={16} strokeWidth={1.75} aria-hidden className="text-muted" />
+                </>
+              }
+              header={
+                <div className="mb-1 min-w-0 border-b border-border px-3 pt-2 pb-3">
+                  <p className="truncate text-sm leading-5 font-semibold">{user.name}</p>
+                  <p className="truncate text-[13px] leading-[18px] text-muted">{user.email}</p>
+                </div>
+              }
+              items={[
+                { label: "Sign out", icon: <LogOut size={18} strokeWidth={1.75} aria-hidden />, onSelect: signOut },
+              ]}
+            />
+          </div>
+        </header>
+
+        <main className="flex-1">
+          <CrumbContext.Provider value={setCrumb}>
+            <div
+              className={cn(
+                "mx-auto flex flex-col gap-[var(--section-gap)] p-[var(--page-pad)]",
+                user.role === "student" ? "max-w-[1040px]" : "max-w-[1440px]",
+              )}
+            >
+              {children}
+            </div>
+          </CrumbContext.Provider>
+        </main>
+      </div>
     </div>
   );
 }

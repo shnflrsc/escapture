@@ -6,15 +6,21 @@ import { Button, type ButtonVariant } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 
 /** The capture steps, on request rather than taking up the page on every visit. */
-export function HowToCapture({ variant = "soft" }: { variant?: ButtonVariant }) {
+export function HowToCapture({ variant = "soft", asLink = false }: { variant?: ButtonVariant; asLink?: boolean }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
     <>
-      <Button variant={variant} onClick={() => setOpen(true)}>
-        <CircleHelp size={18} strokeWidth={1.75} aria-hidden />
-        How to capture
-      </Button>
+      {asLink ? (
+        <button type="button" className="link self-start rounded-sm text-sm leading-5" onClick={() => setOpen(true)}>
+          How to capture
+        </button>
+      ) : (
+        <Button variant={variant} onClick={() => setOpen(true)}>
+          <CircleHelp size={18} strokeWidth={1.75} aria-hidden />
+          How to capture
+        </Button>
+      )}
       <Dialog
         open={open}
         onClose={close}

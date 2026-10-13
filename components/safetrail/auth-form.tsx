@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/field";
 import { api, ApiError } from "@/lib/client-api";
 import { takeSignupEmail } from "@/lib/signup-email";
 
-const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+// With nowhere particular to go, /go sends each role to its own first page.
+const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/go");
 
 export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain?: string }) {
   const next = safeNext(useSearchParams().get("next"));
