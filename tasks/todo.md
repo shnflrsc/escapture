@@ -85,12 +85,12 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `server/auth.ts`, `app/(auth)/sign-up/page.tsx`, `.env.example`, `DESIGN.md`
 
-### - [ ] Task 7: Verification
+### - [x] Task 7: Verification
 
 **Acceptance criteria:**
-- [ ] Keyboard path: Home, the switch link, the fields, "Can't sign in?", the toggle, the checkbox, the submit button, then the footer. The focus ring is visible everywhere.
-- [ ] Full sign-up with a new `@ms.bulsu.edu.ph` address, then sign out, then sign in, with "Keep me signed in" both on and off.
-- [ ] A wrong domain, a short password, a missing consent and a wrong password each show the right message.
-- [ ] Reduced motion is respected. DESIGN.md's pre-merge checklist holds.
+- [x] Keyboard path: Home, the switch link, the fields, "Can't sign in?", the toggle, the checkbox, the submit button, then the footer. The focus ring is visible everywhere.
+- [x] Full sign-up with a new `@ms.bulsu.edu.ph` address, then sign out, then sign in, with "Keep me signed in" both on and off.
+- [x] A wrong domain, a short password, a missing consent and a wrong password each show the right message.
+- [x] Reduced motion is respected. DESIGN.md's pre-merge checklist holds.
 
 **Dependencies:** Tasks 1–6
