@@ -14,6 +14,7 @@ const COPY = {
   // The owner adds their own evidence to one of their draft cases.
   owner: {
     button: "Add to a case",
+    compactButton: "Add to case",
     none: "You have no draft cases to add this to.",
     title: "Add to a case",
     description:
@@ -25,6 +26,7 @@ const COPY = {
   // A reviewer attaches evidence that was shared with them to an open case.
   reviewer: {
     button: "Attach to a case",
+    compactButton: "Attach to case",
     none: "There is no open case to attach this to. Cases appear on the Review Board once a student escalates them.",
     title: "Attach to a case",
     description:
@@ -39,11 +41,14 @@ export function AttachToCase({
   evidenceId,
   cases,
   as,
+  compact = false,
 }: {
   evidenceId: string;
   /** Cases this evidence can be added to and is not in yet. */
   cases: { id: string; title: string; reporterName?: string }[];
   as: keyof typeof COPY;
+  /** For a table cell: a small secondary button, with the reason it is disabled as a tooltip. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -78,11 +83,25 @@ export function AttachToCase({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} disabled={cases.length === 0}>
-        <Paperclip size={18} strokeWidth={1.75} aria-hidden />
-        {copy.button}
-      </Button>
-      {cases.length === 0 && <p className="text-[13px] leading-[18px] text-muted">{copy.none}</p>}
+      {compact ? (
+        <Button
+          variant="secondary"
+          className="h-9 px-3 text-sm"
+          onClick={() => setOpen(true)}
+          disabled={cases.length === 0}
+          title={cases.length === 0 ? copy.none : undefined}
+        >
+          {copy.compactButton}
+        </Button>
+      ) : (
+        <>
+          <Button onClick={() => setOpen(true)} disabled={cases.length === 0}>
+            <Paperclip size={18} strokeWidth={1.75} aria-hidden />
+            {copy.button}
+          </Button>
+          {cases.length === 0 && <p className="text-[13px] leading-[18px] text-muted">{copy.none}</p>}
+        </>
+      )}
       <Dialog open={open} onClose={close} title={copy.title} description={copy.description}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           {error && <Banner tone="attention">{error}</Banner>}

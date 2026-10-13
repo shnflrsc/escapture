@@ -323,11 +323,54 @@ export async function casesWithEvidence(actor: Actor, evidenceId: string) {
     .orderBy(desc(caseEvidence.createdAt));
 }
 
+/**
+ * Evidence shared with this reviewer, each with the case (never a draft) it is
+ * attached to, if any. The newest share comes first.
+ */
+export async function listSharedForReview(actor: Actor) {
+  assertRole(actor, "reviewer");
+  const rows = await db
+    .select({
+      id: evidence.id,
+      label: evidence.label,
+      kind: evidence.kind,
+      capturedAt: evidence.capturedAt,
+      ownerName: user.name,
+      ownerEmail: user.email,
+      sharedAt: evidenceShares.createdAt,
+    })
+    .from(evidenceShares)
+    .innerJoin(evidence, eq(evidence.id, evidenceShares.evidenceId))
+    .innerJoin(user, eq(user.id, evidence.ownerId))
+    .where(and(eq(evidenceShares.userId, actor.id), ne(evidence.ownerId, actor.id)))
+    .orderBy(desc(evidenceShares.createdAt));
+  if (rows.length === 0) return [];
+  const attached = await db
+    .select({ evidenceId: caseEvidence.evidenceId, caseId: cases.id, title: cases.title, status: cases.status })
+    .from(caseEvidence)
+    .innerJoin(cases, eq(cases.id, caseEvidence.caseId))
+    .where(
+      and(
+        inArray(
+          caseEvidence.evidenceId,
+          rows.map((r) => r.id),
+        ),
+        inArray(cases.status, ["escalated", "under_review", "closed"]),
+      ),
+    )
+    .orderBy(desc(caseEvidence.createdAt));
+  return rows.map((r) => ({
+    ...r,
+    cases: attached.filter((a) => a.evidenceId === r.id).map(({ caseId, title, status }) => ({ id: caseId, title, status })),
+  }));
+}
+
+/** Closed cases, newest first. The search covers the title, reporter, description and closing note. */
 export async function listArchives(actor: Actor, q?: string) {
   assertRole(actor, "reviewer");
   const term = q?.trim();
-  const like = term ? `%${term.replace(/[\\%_]/g, (m) => `\\${m}`)}%` : null;
-  return db
+  const like = term ? likeTerm(term) : null;
+  const rows = await db
     .select({
       id: cases.id,
       title: cases.title,
@@ -342,10 +385,31 @@ export async function listArchives(actor: Actor, q?: string) {
       and(
         eq(cases.status, "closed"),
         like
-          ? or(ilike(cases.title, like), ilike(cases.description, like), ilike(cases.closingNote, like))
+          ? or(
+              ilike(cases.title, like),
+              ilike(cases.description, like),
+              ilike(cases.closingNote, like),
+              ilike(user.name, like),
+            )
           : undefined,
       ),
     )
     .orderBy(desc(cases.closedAt))
     .limit(200);
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const [c, closers] = await Promise.all([
+    counts(ids),
+    db
+      .select({ caseId: caseEvents.caseId, name: user.name })
+      .from(caseEvents)
+      .innerJoin(user, eq(user.id, caseEvents.actorId))
+      .where(and(inArray(caseEvents.caseId, ids), eq(caseEvents.type, "closed"))),
+  ]);
+  const closedBy = new Map(closers.map((r) => [r.caseId, r.name]));
+  return rows.map((r) => ({
+    ...r,
+    closedBy: closedBy.get(r.id) ?? null,
+    evidenceCount: c.evidence.get(r.id) ?? 0,
+  }));
 }

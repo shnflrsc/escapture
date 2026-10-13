@@ -332,6 +332,10 @@ async function main() {
   check("the closed case is in the searchable archives", archives.body.items?.some((c: { id: string }) => c.id === caseId));
   check("closed cases leave the board", !(await call(R, "GET", "/api/review/cases")).body.items.some((c: { id: string }) => c.id === caseId));
 
+  const archive = await call(R, "GET", `/api/review/archives?q=${encodeURIComponent("maya smoke")}`);
+  const archived = archive.body.items?.find((c: { id: string }) => c.id === caseId);
+  check("the archives find a closed case by its reporter, with who closed it and its evidence count", archive.status === 200 && archived?.closedBy === "Reviewer Smoke" && archived.evidenceCount === 2, archived);
+
   step("10. Notifications and outcome");
   for (const [name, t] of [["Maya", M], ["Jules", J]] as const) {
     const n = await call(t, "GET", "/api/notifications");

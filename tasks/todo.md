@@ -155,13 +155,13 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium
 
-### - [ ] Task 9: Shared with me and Case Archives columns
+### - [x] Task 9: Shared with me and Case Archives columns
 
 **Description:** Align both tables and their copy with `reference/SharedWithMe.dc.html` and `reference/Archives.dc.html`.
 
 **Acceptance criteria:**
-- [ ] Shared with me: the info banner, Not attached/All tabs, and the columns Evidence, Shared by, Captured, Tamper checks, Attached to, and action (Attach to case, or Open case). Via is P1 if the data isn't stored.
-- [ ] Archives: the columns Case, Reporter, Escalated, Closed (newest first), Closed by, Closing note (clamped to one line) and Evidence. Search also matches closing notes.
+- [x] Shared with me: the info banner, Not attached/All tabs, and the columns Evidence, Shared by, Captured, Tamper checks, Attached to, and action (Attach to case, or Open case). Via is P1 if the data isn't stored.
+- [x] Archives: the columns Case, Reporter, Escalated, Closed (newest first), Closed by, Closing note (clamped to one line) and Evidence. Search also matches closing notes.
 
 **Verification:** Standing checks.
 
