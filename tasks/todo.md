@@ -45,15 +45,15 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `components/ui/field.tsx`
 
-### - [ ] Task 4: Sign-in form
+### - [x] Task 4: Sign-in form
 
 **Description:** Update `auth-form.tsx` (sign-in mode) to match plan.md.
 
 **Acceptance criteria:**
-- [ ] H1 only. The email placeholder uses the domain. "Can't sign in?" sits in the password label row and links to `/contact`.
-- [ ] Empty fields on submit show "Enter the email you signed up with." and "Enter your password." Wrong credentials show the attention banner (existing copy).
-- [ ] "Keep me signed in on this device" is checked by default and sent as `rememberMe`.
-- [ ] `next`, `method="post"` and the error mapping are unchanged.
+- [x] H1 only. The email placeholder uses the domain. "Can't sign in?" sits in the password label row and links to `/contact`.
+- [x] Empty fields on submit show "Enter the email you signed up with." and "Enter your password." Wrong credentials show the attention banner (existing copy).
+- [x] "Keep me signed in on this device" is checked by default and sent as `rememberMe`.
+- [x] `next`, `method="post"` and the error mapping are unchanged.
 
 **Dependencies:** Tasks 1 and 3
 

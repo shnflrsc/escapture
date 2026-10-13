@@ -8,6 +8,15 @@ export function keepSignupEmail(email: string) {
   } catch {}
 }
 
+/** Reads it and leaves it there, so the form can show it on every render until it is taken. */
+export function peekSignupEmail(): string | null {
+  try {
+    return sessionStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+
 /** Reads it once and forgets it. */
 export function takeSignupEmail(): string | null {
   try {

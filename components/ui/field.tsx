@@ -72,15 +72,19 @@ export function Input({
   );
 }
 
-/** A password field with a show/hide button inside it. `labelEnd` sits at the right of the label row. */
+/**
+ * A password field with a show/hide button inside it. `labelEnd` sits at the right of the label row;
+ * `invalid` marks the field when the message is shown somewhere else.
+ */
 export function PasswordInput({
   label,
   hint,
   error,
   labelEnd,
+  invalid,
   className,
   ...rest
-}: Common & { labelEnd?: React.ReactNode } & Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+}: Common & { labelEnd?: React.ReactNode; invalid?: boolean } & Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
   const id = useId();
   const [shown, setShown] = useState(false);
   const Icon = shown ? EyeOff : Eye;
@@ -90,12 +94,12 @@ export function PasswordInput({
         <input
           id={id}
           type={shown ? "text" : "password"}
-          aria-invalid={error ? true : undefined}
+          aria-invalid={error || invalid ? true : undefined}
           aria-describedby={describedBy(id, hint, error)}
           className={cn(
             control,
             "h-[var(--control-h)] pr-[52px]",
-            error ? "border-danger-fg" : "border-border-strong",
+            error || invalid ? "border-danger-fg" : "border-border-strong",
             className,
           )}
           {...rest}
