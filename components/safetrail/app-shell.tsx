@@ -23,6 +23,7 @@ import { api } from "@/lib/client-api";
 import { cn } from "@/lib/cn";
 import { HowToCapture } from "./how-to-capture";
 import { Logo } from "./logo";
+import { NotificationPopover } from "./notification-popover";
 
 type Role = "student" | "reviewer" | "admin";
 type NavItem = { href: string; label: string; Icon: typeof Bell; match: (p: string) => boolean };
@@ -314,17 +315,7 @@ export function AppShell({
             <Link href="/contact" aria-label="Help" title="Help" className={cn(iconButton, "hidden sm:grid")}>
               <CircleHelp size={20} strokeWidth={1.75} aria-hidden />
             </Link>
-            <Link
-              href="/notifications"
-              aria-label={`Notifications, ${unread} unread`}
-              title="Notifications"
-              className={iconButton}
-            >
-              <Bell size={20} strokeWidth={1.75} aria-hidden />
-              {unread > 0 && (
-                <span aria-hidden className="absolute top-2.5 right-[11px] size-2 rounded-full bg-brand-700 ring-2 ring-card" />
-              )}
-            </Link>
+            <NotificationPopover unread={unread} role={user.role} />
             <span aria-hidden className="mx-1 hidden h-7 w-px bg-border sm:block" />
             <Menu
               label="Account menu"

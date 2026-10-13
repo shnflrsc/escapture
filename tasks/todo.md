@@ -46,16 +46,16 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium
 
-### - [ ] Task 3: Notification popover
+### - [x] Task 3: Notification popover
 
 **Description:** The bell opens a popover with the latest 6 notifications (fetched on open from `GET /api/notifications`), "Mark all as read" (`POST /api/notifications/read`) and "View all notifications".
 
 **Acceptance criteria:**
-- [ ] Row anatomy follows plan.md: icon circle by type, title, relative time, unread dot, and a `brand-50` background on unread rows. Each row links to its case or evidence.
-- [ ] The empty state reads "You're all caught up."
-- [ ] `aria-expanded` and an accessible name with the unread count are set. Escape and an outside click close it, focus returns to the bell, and it never opens together with the drawer.
-- [ ] After "Mark all as read" the dot disappears (via `router.refresh()`).
-- [ ] No red badge or count bubble.
+- [x] Row anatomy follows plan.md: icon circle by type, title, relative time, unread dot, and a `brand-50` background on unread rows. Each row links to its case or evidence.
+- [x] The empty state reads "You're all caught up."
+- [x] `aria-expanded` and an accessible name with the unread count are set. Escape and an outside click close it, focus returns to the bell, and it never opens together with the drawer.
+- [x] After "Mark all as read" the dot disappears (via `router.refresh()`).
+- [x] No red badge or count bubble.
 
 **Verification:** Standing checks, plus escalating a case as a student and then seeing the notification in a reviewer's popover.
 
