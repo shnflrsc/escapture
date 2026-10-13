@@ -10,6 +10,9 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: userRole("role").notNull().default("student"),
+  // Reviewer accounts only: the office they review for, and when an administrator deactivated them.
+  office: text("office"),
+  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -4,6 +4,7 @@ import { APIError } from "better-auth/api";
 import { bearer } from "better-auth/plugins";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
 import { isAllowedSignupEmail } from "@/lib/email-gate";
 import { db, schema } from "./db";
 import { forbidden, unauthorized } from "./errors";
@@ -44,6 +45,25 @@ export const auth = betterAuth({
   },
   advanced: { defaultCookieAttributes: { httpOnly: true, sameSite: "lax" } },
   databaseHooks: {
+    session: {
+      create: {
+        // An administrator can deactivate a reviewer: no new sessions for that account.
+        before: async (newSession) => {
+          const [owner] = await db
+            .select({ deactivatedAt: schema.user.deactivatedAt })
+            .from(schema.user)
+            .where(eq(schema.user.id, newSession.userId))
+            .limit(1);
+          if (owner?.deactivatedAt) {
+            throw new APIError("FORBIDDEN", {
+              code: "ACCOUNT_DEACTIVATED",
+              message: "This account has been deactivated. Ask your administrator if you think this is a mistake.",
+            });
+          }
+          return { data: newSession };
+        },
+      },
+    },
     user: {
       create: {
         before: async (newUser) => {

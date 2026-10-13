@@ -1,24 +1,54 @@
 "use client";
 
-import { CircleAlert, Eye, EyeOff } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
+import { Dialog } from "@/components/ui/dialog";
 import { Banner } from "@/components/ui/feedback";
-import { Input } from "@/components/ui/field";
+import { Input, Select } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
 import { api, ApiError, errorMessage } from "@/lib/client-api";
+import { REVIEWER_OFFICES } from "@/lib/validators";
 
-type Errors = { name?: string; email?: string; password?: string; form?: string };
+/** The one-time setup link, shown once to the administrator so they can pass it on. */
+export function SetupLinkDialog({ link, onClose }: { link: { name: string; url: string } | null; onClose: () => void }) {
+  return (
+    <Dialog
+      open={link !== null}
+      onClose={onClose}
+      title={link ? `Setup link for ${link.name}` : "Setup link"}
+      description="Send this link to the reviewer through your office's usual channel. They use it to choose their own password. It works once and stops working after 7 days."
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
+      {link && (
+        <>
+          <Banner tone="info">Copy this link now. For safety we can&apos;t show it again, but you can make a new one.</Banner>
+          <div className="flex items-center gap-2 rounded-md bg-subtle px-3 py-2">
+            <Lock size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-muted" />
+            <code className="mono min-w-0 flex-1 break-all">{link.url}</code>
+            <CopyButton value={link.url} label="Copy link" />
+          </div>
+        </>
+      )}
+    </Dialog>
+  );
+}
+
+type Errors = { name?: string; email?: string; form?: string };
 
 /** The administrator's "Create a reviewer account" panel. */
 export function ReviewerForm() {
   const router = useRouter();
   const toast = useToast();
-  const id = useId();
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
-  const [show, setShow] = useState(false);
+  const [link, setLink] = useState<{ name: string; url: string } | null>(null);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,21 +57,20 @@ export function ReviewerForm() {
     const body = {
       name: String(data.get("name") ?? "").trim(),
       email: String(data.get("email") ?? "").trim(),
-      password: String(data.get("password") ?? ""),
+      office: String(data.get("office") ?? "") || undefined,
     };
-    if (body.password.length < 8) return setErrors({ password: "Use at least 8 characters." });
     setLoading(true);
     setErrors({});
     try {
-      await api("/api/admin/reviewers", { body });
+      const made = await api<{ name: string; setupUrl: string }>("/api/admin/reviewers", { body });
       form.reset();
-      setShow(false);
       toast("Reviewer account created");
+      setLink({ name: made.name, url: made.setupUrl });
       router.refresh();
     } catch (err) {
       const message = errorMessage(err);
       // The server says which field is wrong; put the sentence under it.
-      const field = /^(name|email|password): /.exec(message)?.[1] as keyof Errors | undefined;
+      const field = /^(name|email): /.exec(message)?.[1] as keyof Errors | undefined;
       if (err instanceof ApiError && err.status === 409) setErrors({ email: message });
       else if (field) setErrors({ [field]: message.replace(/^\w+: /, "") });
       else setErrors({ form: message });
@@ -50,64 +79,121 @@ export function ReviewerForm() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-      {errors.form && <Banner tone="attention">{errors.form}</Banner>}
-      <Input label="Full name" name="name" autoComplete="off" required maxLength={80} error={errors.name} />
-      <Input
-        label="University email"
-        name="email"
-        type="email"
-        autoComplete="off"
-        required
-        error={errors.email}
-        hint="Use the reviewer's bulsu.edu.ph address."
+    <>
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {errors.form && <Banner tone="attention">{errors.form}</Banner>}
+        <Input label="Full name" name="name" autoComplete="off" required maxLength={80} error={errors.name} />
+        <Input
+          label="University email"
+          name="email"
+          type="email"
+          autoComplete="off"
+          required
+          error={errors.email}
+          hint="Use the reviewer's bulsu.edu.ph address."
+        />
+        <Select label="Office" name="office" defaultValue="">
+          <option value="">Not specified</option>
+          {REVIEWER_OFFICES.map((office) => (
+            <option key={office} value={office}>
+              {office}
+            </option>
+          ))}
+        </Select>
+        <p className="rounded-xl bg-brand-50 p-4 text-sm leading-[22px]">
+          Reviewers can see every escalated case on the shared Review Board, including who reported it and every
+          collaborator.
+        </p>
+        <Button type="submit" loading={loading}>
+          Create account and get setup link
+        </Button>
+        <p className="text-[13px] leading-[18px] text-muted">
+          SafeTrail doesn&apos;t send email. You get a one-time link to pass on, and the reviewer chooses their own
+          password with it.
+        </p>
+      </form>
+      <SetupLinkDialog link={link} onClose={() => setLink(null)} />
+    </>
+  );
+}
+
+/** What an administrator can do to one reviewer account, by its status. */
+export function ReviewerRowActions({
+  id,
+  name,
+  status,
+}: {
+  id: string;
+  name: string;
+  status: "active" | "pending" | "expired" | "deactivated";
+}) {
+  const router = useRouter();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [link, setLink] = useState<{ name: string; url: string } | null>(null);
+  const small = "h-9 px-3 text-sm";
+
+  async function run(work: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await work();
+      router.refresh();
+    } catch (err) {
+      toast(errorMessage(err));
+    }
+    setBusy(false);
+  }
+  const setActive = (active: boolean) =>
+    run(async () => {
+      await api(`/api/admin/reviewers/${id}`, { method: "PATCH", body: { active } });
+      setConfirming(false);
+      toast(active ? `${name} can sign in again.` : `${name} has been deactivated and signed out.`);
+    });
+
+  return (
+    <>
+      {(status === "pending" || status === "expired") && (
+        <Button
+          variant="ghost"
+          className={small}
+          loading={busy}
+          onClick={() =>
+            run(async () => {
+              const made = await api<{ setupUrl: string }>(`/api/admin/reviewers/${id}/setup-link`, { body: {} });
+              setLink({ name, url: made.setupUrl });
+            })
+          }
+        >
+          New setup link
+        </Button>
+      )}
+      {status === "deactivated" ? (
+        <Button variant="ghost" className={small} loading={busy} onClick={() => setActive(true)}>
+          Reactivate
+        </Button>
+      ) : (
+        <Button variant="ghost" className={small} onClick={() => setConfirming(true)}>
+          Deactivate
+        </Button>
+      )}
+      <Dialog
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title={`Deactivate ${name}?`}
+        description="They will be signed out and won't be able to sign in. Cases and closing notes they wrote stay on record. You can reactivate the account later."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              Go back
+            </Button>
+            <Button loading={busy} onClick={() => setActive(false)}>
+              Deactivate account
+            </Button>
+          </>
+        }
       />
-      <div className="flex flex-col gap-1">
-        <label htmlFor={id} className="text-sm leading-5 font-semibold text-ink">
-          Temporary password
-        </label>
-        <div className="relative">
-          <input
-            id={id}
-            name="password"
-            type={show ? "text" : "password"}
-            autoComplete="new-password"
-            required
-            minLength={8}
-            maxLength={200}
-            aria-invalid={errors.password ? true : undefined}
-            aria-describedby={`${id}-note`}
-            className={`h-[var(--control-h)] w-full rounded-md border bg-card pr-12 pl-3 text-base text-ink ${errors.password ? "border-danger-fg" : "border-border-strong"}`}
-          />
-          <button
-            type="button"
-            aria-label={show ? "Hide the password" : "Show the password"}
-            aria-pressed={show}
-            onClick={() => setShow((s) => !s)}
-            className="absolute top-1/2 right-1 grid size-9 -translate-y-1/2 place-items-center rounded-md text-muted hover:bg-brand-50 hover:text-brand-800"
-          >
-            {show ? <EyeOff size={18} strokeWidth={1.75} aria-hidden /> : <Eye size={18} strokeWidth={1.75} aria-hidden />}
-          </button>
-        </div>
-        {errors.password ? (
-          <p id={`${id}-note`} role="alert" className="flex items-start gap-1 text-[13px] leading-[18px] text-danger-fg">
-            <CircleAlert size={16} strokeWidth={1.75} aria-hidden className="mt-px shrink-0" />
-            {errors.password}
-          </p>
-        ) : (
-          <p id={`${id}-note`} className="text-[13px] leading-[18px] text-muted">
-            At least 8 characters. Share the temporary password with the reviewer in person or through your
-            office&apos;s usual channel.
-          </p>
-        )}
-      </div>
-      <p className="rounded-xl bg-brand-50 p-4 text-sm leading-[22px]">
-        Reviewers can see every escalated case on the shared Review Board, including who reported it and every
-        collaborator.
-      </p>
-      <Button type="submit" loading={loading}>
-        Create reviewer account
-      </Button>
-    </form>
+      <SetupLinkDialog link={link} onClose={() => setLink(null)} />
+    </>
   );
 }

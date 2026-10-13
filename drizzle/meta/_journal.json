@@ -8,6 +8,13 @@
       "when": 1791743571265,
       "tag": "0000_windy_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791873746400,
+      "tag": "0001_broad_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

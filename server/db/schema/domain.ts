@@ -72,6 +72,8 @@ export const evidenceShares = pgTable(
       .notNull()
       .references(() => user.id),
     acknowledgedAt: ts("acknowledged_at").notNull(),
+    // How it reached them: shared to their email, or through a password link they opened.
+    via: collaboratorVia("via").notNull().default("email"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.evidenceId, t.userId] })],

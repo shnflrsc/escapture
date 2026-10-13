@@ -92,6 +92,7 @@ export async function redeemLink(actor: Actor, token: string, password: string) 
           userId: actor.id,
           sharedBy: link.createdBy,
           acknowledgedAt: link.acknowledgedAt,
+          via: "link",
         })
         .onConflictDoNothing();
     }

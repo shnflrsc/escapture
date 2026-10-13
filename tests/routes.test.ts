@@ -30,12 +30,12 @@ describe("route guards (security checklist)", () => {
     },
   );
 
-  it("only auth and link metadata are public", () => {
+  it("only auth, link metadata and the reviewer setup link are public", () => {
     const publicRoutes = files
       .filter((f) => readFileSync(f, "utf8").includes("// public-route"))
       .map((f) => path.relative(api, f).replace(/\\/g, "/"))
       .sort();
-    expect(publicRoutes).toEqual(["auth/[...all]/route.ts", "links/[token]/route.ts"]);
+    expect(publicRoutes).toEqual(["auth/[...all]/route.ts", "links/[token]/route.ts", "setup/[token]/route.ts"]);
   });
 
   it("review routes are reviewer-only", () => {
