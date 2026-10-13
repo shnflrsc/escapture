@@ -1,9 +1,10 @@
 import { Suspense } from "react";
 import { AuthForm } from "@/components/safetrail/auth-form";
 import { AuthShell } from "@/components/safetrail/auth-shell";
+import { allowedEmailDomain } from "@/lib/email-domain";
 
 export default function SignUpPage() {
-  const domain = process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
+  const domain = allowedEmailDomain();
   return (
     <AuthShell illustration="register">
       <h1>Create your account</h1>

@@ -1,6 +1,7 @@
 // pnpm db:seed — idempotent demo data (INSTRUCTIONS.md section 12).
 import { eq } from "drizzle-orm";
 import { readFile } from "node:fs/promises";
+import { allowedEmailDomain } from "@/lib/email-domain";
 import { sha256Hex } from "@/lib/hash";
 import type { Actor } from "@/server/auth";
 import { db, pg } from "@/server/db";
@@ -11,7 +12,7 @@ import { ensureBucket, storageDriver } from "@/server/storage";
 import { ensureUser } from "./lib/users";
 
 const PASSWORD = process.env.SEED_PASSWORD ?? "SafeTrail-demo-2026";
-const DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
+const DOMAIN = allowedEmailDomain();
 
 const report = {
   checks: [

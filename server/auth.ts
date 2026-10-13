@@ -5,6 +5,7 @@ import { bearer } from "better-auth/plugins";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
+import { allowedEmailDomain } from "@/lib/email-domain";
 import { isAllowedSignupEmail } from "@/lib/email-gate";
 import { db, schema } from "./db";
 import { forbidden, unauthorized } from "./errors";
@@ -68,7 +69,7 @@ export const auth = betterAuth({
       create: {
         before: async (newUser) => {
           if (signupBypass.getStore()) return { data: newUser };
-          const domain = process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
+          const domain = allowedEmailDomain();
           if (!isAllowedSignupEmail(newUser.email, domain, process.env.DEV_ALLOWED_EMAILS)) {
             throw new APIError("FORBIDDEN", {
               code: "EMAIL_DOMAIN_NOT_ALLOWED",

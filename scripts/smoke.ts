@@ -5,12 +5,13 @@
 //   pnpm smoke
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
+import { allowedEmailDomain } from "@/lib/email-domain";
 import { sha256Hex } from "@/lib/hash";
 import { pg } from "@/server/db";
 import { ensureUser } from "./lib/users";
 
 const BASE = process.env.SMOKE_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
+const DOMAIN = allowedEmailDomain();
 const run = Date.now().toString(36);
 const PASSWORD = "smoke-test-password";
 

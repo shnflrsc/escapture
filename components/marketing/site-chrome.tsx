@@ -2,10 +2,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/safetrail/logo";
 import { buttonClass } from "@/components/ui/button";
+import { allowedEmailDomain } from "@/lib/email-domain";
 import { getUser, homeFor } from "@/server/auth";
 
 /** The address new accounts must use; the same setting the sign-up gate reads. */
-export const emailDomain = () => process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
+export const emailDomain = allowedEmailDomain;
 
 const ghost = buttonClass("ghost", "mk-nav-signin");
 

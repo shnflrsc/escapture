@@ -74,14 +74,14 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `components/safetrail/auth-form.tsx`, `app/(auth)/sign-up/page.tsx`
 
-### - [ ] Task 6: Email domain default (Ask first if `.env.local` differs)
+### - [x] Task 6: Email domain default (Ask first if `.env.local` differs)
 
 **Description:** Make `ms.bulsu.edu.ph` the default allowed domain, and read it from `ALLOWED_EMAIL_DOMAIN` everywhere it's shown or checked.
 
 **Acceptance criteria:**
-- [ ] The defaults in `server/auth.ts`, the sign-up page and `.env.example` are `ms.bulsu.edu.ph`. The DESIGN.md §11 example says "ms.bulsu.edu.ph".
-- [ ] No hard-coded domain is left in the auth UI (check with `grep -rn "bulsu.edu.ph" app components lib server`).
-- [ ] `pnpm db:seed` accounts can still sign in. If the seed uses the old domain, note this for the user rather than changing their data.
+- [x] The defaults in `server/auth.ts`, the sign-up page and `.env.example` are `ms.bulsu.edu.ph`. The DESIGN.md §11 example says "ms.bulsu.edu.ph".
+- [x] No hard-coded domain is left in the auth UI (check with `grep -rn "bulsu.edu.ph" app components lib server`).
+- [x] `pnpm db:seed` accounts can still sign in. If the seed uses the old domain, note this for the user rather than changing their data.
 
 **Files:** `server/auth.ts`, `app/(auth)/sign-up/page.tsx`, `.env.example`, `DESIGN.md`
 

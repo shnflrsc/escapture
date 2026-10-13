@@ -53,7 +53,7 @@ Keep the `pnpm db:local` terminal open while you work, and stop it with Ctrl+C o
 | `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | The app's origin. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase Storage. Server only; the browser never talks to Supabase. Required in production. |
 | `SUPABASE_STORAGE_BUCKET` | Private bucket name (default `evidence`). The seed creates it if missing. |
-| `ALLOWED_EMAIL_DOMAIN` | Students must sign up with this domain (default `bulsu.edu.ph`). |
+| `ALLOWED_EMAIL_DOMAIN` | Students must sign up with this domain (default `ms.bulsu.edu.ph`). |
 | `DEV_ALLOWED_EMAILS` | Optional comma list of exact addresses that bypass the domain check. |
 | `EXTENSION_ORIGIN` | `chrome-extension://<id>`, trusted by Better Auth. `pnpm ext:build` prints it; the ID is pinned by `extension/key.json`. |
 

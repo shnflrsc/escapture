@@ -324,7 +324,7 @@ The student may be distressed. Write like a calm, kind, competent person.
 | "Are you sure you want to delete?" | "Delete this evidence? You won't be able to get it back." |
 | "Victim report submitted" | "Your case has been escalated to reviewers." |
 | "Verified authentic" | "Captured with tamper checks" |
-| "Invalid input" | "Please enter an email that ends in bulsu.edu.ph" (use the real domain) |
+| "Invalid input" | "Please enter an email that ends in @ms.bulsu.edu.ph." (use the real domain) |
 
 ## 12. Motion
 
