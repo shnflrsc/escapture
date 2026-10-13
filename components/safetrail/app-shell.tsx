@@ -4,11 +4,11 @@ import {
   Archive,
   Bell,
   ChevronDown,
-  ChevronRight,
   CircleHelp,
   Columns3,
   FolderOpen,
   Inbox,
+  LayoutDashboard,
   LockKeyhole,
   LogOut,
   Menu as MenuIcon,
@@ -23,7 +23,6 @@ import { Menu } from "@/components/ui/menu";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/cn";
 import { initials } from "@/lib/format";
-import { HowToCapture } from "./how-to-capture";
 import { Logo } from "./logo";
 import { NotificationPopover } from "./notification-popover";
 
@@ -31,14 +30,15 @@ type Role = "student" | "reviewer" | "admin";
 type NavItem = { href: string; label: string; Icon: typeof Bell; match: (p: string) => boolean };
 
 const REVIEW_NAV: NavItem[] = [
+  { href: "/review", label: "Dashboard", Icon: LayoutDashboard, match: (p) => p === "/review" },
   {
-    href: "/review",
+    href: "/review/board",
     label: "Review Board",
     Icon: Columns3,
-    // Evidence opens under /vault for every role; on the review side it belongs to the board.
+    // A case, and the evidence opened from one (under /vault for every role), belong to the board.
     match: (p) =>
       p.startsWith("/vault") ||
-      (p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared")),
+      (p.startsWith("/review/") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared")),
   },
   { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
   { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
@@ -62,24 +62,24 @@ const ROLE: Record<Role, { label: string; group: string; search: { action: strin
   reviewer: {
     label: "Case reviewer",
     group: "Reviews",
-    search: { action: "/review", label: "Search cases and reporters" },
+    search: { action: "/review/board", label: "Search cases and reporters" },
   },
   admin: {
     label: "Administrator",
     group: "Administration",
-    search: { action: "/review", label: "Search cases and reporters" },
+    search: { action: "/review/board", label: "Search cases and reporters" },
   },
 };
 
-// A detail page names itself for the header's breadcrumb. The header belongs to
-// the layout, which must not fetch page data, so the page hands its title up.
+// A detail page can say which sidebar page it belongs to. The sidebar is part of
+// the layout, which must not fetch page data, so the page hands that up.
 type Crumb = { path: string; title: string; section?: string };
 const CrumbContext = createContext<(crumb: Crumb) => void>(() => {});
 
 /**
- * Put this on a detail page: the header then shows "Section › {title}". `section`
- * is the address of a different sidebar page to file it under, when the address
- * alone would pick the wrong one (a closed case belongs to the archives).
+ * Put this on a detail page. `section` is the address of a different sidebar page
+ * to mark as current, when the address alone would pick the wrong one (a closed
+ * case belongs to the archives).
  */
 export function PageCrumbs({ title, section }: { title: string; section?: string }) {
   const set = useContext(CrumbContext);
@@ -144,7 +144,6 @@ export function AppShell({
   const mine = crumb && crumb.path === pathname ? crumb : null;
   const section =
     items.find((item) => item.href === mine?.section) ?? items.find((item) => item.match(pathname)) ?? items[0];
-  const detail = mine && pathname !== section.href ? mine.title : null;
 
   async function signOut() {
     await api("/api/auth/sign-out", { body: {} }).catch(() => {});
@@ -175,12 +174,9 @@ export function AppShell({
 
   const sidebar = (
     <>
-      <div className="flex flex-col gap-1">
-        <Link href={home} className="self-start rounded-md p-2" onClick={() => setMenuOpen(false)}>
-          <Logo />
-        </Link>
-        <span className="px-2 text-[13px] leading-[18px] font-semibold text-muted">{role.label}</span>
-      </div>
+      <Link href={home} className="self-start rounded-md p-2" onClick={() => setMenuOpen(false)}>
+        <Logo />
+      </Link>
       <nav aria-label="Main">
         <p className="mb-1 px-3 text-[13px] leading-[18px] font-semibold text-muted">{role.group}</p>
         <ul className="flex flex-col gap-1">
@@ -218,34 +214,7 @@ export function AppShell({
           })}
         </ul>
       </nav>
-      <div className="mt-auto flex flex-col gap-2 rounded-xl bg-brand-50 p-4">
-        {user.role === "student" && (
-          <>
-            <p className="text-sm leading-5 font-semibold">Escrow Capture</p>
-            <p className="text-[13px] leading-[18px] text-muted">
-              Capture a Facebook post or conversation with the Chrome extension. It goes straight to your vault.
-            </p>
-            <HowToCapture asLink />
-          </>
-        )}
-        {user.role === "reviewer" && (
-          <>
-            <p className="text-sm leading-5 font-semibold">Reviewing cases</p>
-            <p className="text-[13px] leading-[18px] text-muted">
-              SafeTrail supplements the university&apos;s own process. Record the outcome when you close a case.
-            </p>
-          </>
-        )}
-        {user.role === "admin" && (
-          <>
-            <p className="text-sm leading-5 font-semibold">Administrator</p>
-            <p className="text-[13px] leading-[18px] text-muted">
-              You can review cases like any reviewer, assign reviewers to a case, and manage reviewer accounts.
-            </p>
-          </>
-        )}
-      </div>
-      <nav aria-label="Help and legal" className="flex gap-4 px-3 text-[13px] leading-[18px]">
+      <nav aria-label="Help and legal" className="mt-auto flex gap-4 px-3 text-[13px] leading-[18px]">
         {[
           ["Help", "/contact"],
           ["Privacy", "/privacy"],
@@ -304,32 +273,11 @@ export function AppShell({
             <MenuIcon size={22} strokeWidth={1.75} aria-hidden />
           </button>
 
-          <nav
-            aria-label="Breadcrumb"
-            className="flex min-w-0 flex-1 basis-0 items-center gap-2 text-sm leading-5 font-semibold"
-          >
-            {detail ? (
-              <>
-                <Link href={section.href} className="shrink-0 rounded-sm text-brand-700 hover:text-brand-800 hover:underline">
-                  {section.label}
-                </Link>
-                <ChevronRight size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-muted" />
-                <span aria-current="page" className="truncate text-ink" title={detail}>
-                  {detail}
-                </span>
-              </>
-            ) : (
-              <span aria-current="page" className="truncate text-ink">
-                {section.label}
-              </span>
-            )}
-          </nav>
-
           <Suspense fallback={<div className="order-last h-10 w-full lg:order-none lg:w-[320px]" />}>
             <HeaderSearch role={user.role} className="order-last w-full lg:order-none lg:w-[320px]" />
           </Suspense>
 
-          <div className="flex items-center gap-1 lg:gap-2">
+          <div className="ml-auto flex items-center gap-1 lg:gap-2">
             <Link href="/contact" aria-label="Help" title="Help" className={cn(iconButton, "hidden sm:grid")}>
               <CircleHelp size={20} strokeWidth={1.75} aria-hidden />
             </Link>

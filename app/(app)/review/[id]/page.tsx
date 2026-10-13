@@ -38,7 +38,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
     <>
       <PageCrumbs title={c.title} section={closed ? "/review/archives" : undefined} />
       <div>
-        <Link href={closed ? "/review/archives" : "/review"} className="link inline-flex items-center gap-1 text-sm">
+        <Link href={closed ? "/review/archives" : "/review/board"} className="link inline-flex items-center gap-1 text-sm">
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
           {closed ? "Back to the Case Archives" : "Back to the Review Board"}
         </Link>
@@ -94,7 +94,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                 {c.reporterEvidence.map((e) => (
                   <tr key={e.id} className={bodyRow}>
                     <td className={`${td} max-w-[280px]`}>
-                      <Link href={`/vault/${e.id}`} className={`${rowLink} block truncate`} title={e.label}>
+                      <Link href={`/vault/${e.id}?from=${c.id}`} className={`${rowLink} block truncate`} title={e.label}>
                         {e.label}
                       </Link>
                       <span className="block text-[13px] leading-[18px] text-muted">{kindLabel(e.kind)}</span>
@@ -137,7 +137,11 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                     className="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3 last:border-b-0 focus-within:bg-brand-50 hover:bg-brand-50"
                   >
                     <div className="min-w-0">
-                      <Link href={`/vault/${e.id}`} className={`${rowLink} block truncate text-sm`} title={e.label}>
+                      <Link
+                        href={`/vault/${e.id}?from=${c.id}`}
+                        className={`${rowLink} block truncate text-sm`}
+                        title={e.label}
+                      >
                         {e.label}
                       </Link>
                       <span className="block text-[13px] leading-[18px] text-muted">

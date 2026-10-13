@@ -22,5 +22,5 @@ export async function navCounts(actor: Actor): Promise<Record<string, number>> {
     return { "/vault": evidence.mine, "/cases": caseCount?.n ?? 0 };
   }
   const s = await boardSummary(actor);
-  return { "/review": s.escalated + s.underReview, "/review/shared": s.sharedUnattached };
+  return { "/review/board": s.escalated + s.underReview, "/review/shared": s.sharedUnattached };
 }

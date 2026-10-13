@@ -43,7 +43,6 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
     <>
       <PageHeader
         title="Notifications"
-        description="Updates about your cases and evidence people share with you. Notifications never show the contents of your evidence."
         action={unreadCount > 0 ? <MarkAllRead /> : undefined}
       />
       <div className="flex flex-col gap-4">
@@ -68,9 +67,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
         </nav>
 
         {items.length === 0 ? (
-          <EmptyState icon={<Bell size={24} strokeWidth={1.75} />} title="No notifications yet">
-            When something is shared with you or a case changes status, you will see it here.
-          </EmptyState>
+          <EmptyState icon={<Bell size={24} strokeWidth={1.75} />} title="No notifications yet" />
         ) : shown.length === 0 ? (
           <EmptyState icon={<Bell size={24} strokeWidth={1.75} />} title="You're all caught up">
             There is nothing unread. Everything you have been sent is under All.
@@ -89,10 +86,6 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
             </section>
           ))
         )}
-
-        <p className="text-[13px] leading-[18px] text-muted">
-          SafeTrail sends notifications in the app only. Nothing is sent by email or text.
-        </p>
       </div>
     </>
   );

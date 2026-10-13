@@ -47,7 +47,7 @@ const CSS = `
 .panel p { margin: 0; }
 .note { border-radius: 10px; padding: 10px 12px; }
 .note.attention { background: #FDF3E1; color: #8A5A12; }
-.note.success { background: #E2F3F0; color: #1D6359; font-weight: 600; }
+.chip { display: inline-flex; align-self: flex-start; border-radius: 999px; padding: 2px 10px; font-size: 13px; line-height: 20px; font-weight: 600; background: #E2F3F0; color: #1D6359; }
 ul { margin: 0; padding-left: 18px; }
 .row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 button, a.btn { height: 36px; padding: 0 14px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
@@ -144,8 +144,7 @@ function orderKey(el: Element): number {
 
 function mergeReports(reports: TamperReport[]): TamperReport {
   const checks = reports[0].checks.map((first, i) => reports.map((r) => r.checks[i]).find((c) => c && !c.passed) ?? first);
-  const warnings = [...new Set(reports.flatMap((r) => r.warnings ?? []))];
-  return { checks, allPassed: checks.every((c) => c.passed), warnings: warnings.length ? warnings : undefined };
+  return { checks, allPassed: checks.every((c) => c.passed) };
 }
 
 const inDocumentOrder = (a: Element, b: Element) =>
@@ -590,7 +589,6 @@ class Session {
     const live = chosen.filter((i) => i.el.isConnected);
     // Selected earlier, since unloaded by the page: use the copy taken when they were selected.
     const gone = chosen.filter((i) => !i.el.isConnected && i.frozen);
-    const lost = chosen.length - live.length - gone.length;
     // Still-attached items only, outermost only, in page order.
     const liveEls = live.map((i) => i.el);
     const targets = liveEls.filter((el, i) => liveEls.indexOf(el) === i && !liveEls.some((o) => o !== el && o.contains(el))).sort(inDocumentOrder);
@@ -618,15 +616,7 @@ class Session {
           ...(fresh?.snap ? [{ snap: fresh.snap, units: targets.map((el) => ({ el, order: orderKey(el) })) }] : []),
           ...batches.map((b) => ({ snap: b.snap!, units: gone.filter((i) => i.frozen === b).map((i) => ({ el: i.frozenEl!, order: i.order! })) })),
         ]);
-        snap.warnings.push(
-          `${gone.length} of the ${targets.length + gone.length} selected items had been unloaded by the page before capture, as long conversations do when you scroll. They were copied and checked when you selected them.`,
-        );
       }
-    }
-    if (snap && lost > 0) {
-      snap.warnings.push(
-        `${lost} selected item${lost === 1 ? " was" : "s were"} unloaded by the page before ${lost === 1 ? "it" : "they"} could be copied, so ${lost === 1 ? "it is" : "they are"} missing from this capture.`,
-      );
     }
     document.documentElement.appendChild(this.host);
 
@@ -652,10 +642,8 @@ class Session {
         () => null,
       ),
     );
-    const warnings = [...(report.warnings ?? []), ...snap.warnings];
     const tamperReport: TamperReport = {
       ...report,
-      warnings: warnings.length ? warnings : undefined,
       size: { width: Math.max(1, Math.round(snap.width)), height: Math.max(1, Math.round(snap.height)) },
     };
 
@@ -742,7 +730,7 @@ class Session {
       const open = h("a", { class: "btn primary", href: result.url, target: "_blank", rel: "noopener" }, "Open in vault");
       const { panel, closeBtn } = this.panel(
         "Saved to your vault",
-        h("p", { class: "note success" }, "Captured with tamper checks"),
+        h("span", { class: "chip" }, "Tamper checked"),
         h("p", {}, result.label),
       );
       panel.append(h("div", { class: "row" }, closeBtn, open));

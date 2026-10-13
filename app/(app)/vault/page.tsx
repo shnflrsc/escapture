@@ -48,7 +48,6 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
     <>
       <PageHeader
         title="Vault"
-        description="Evidence you capture is saved here. Only you can see your vault unless you choose to share something."
         action={total > 0 || view.tab === "shared" ? <HowToCapture label="Capture evidence" /> : undefined}
       />
       <div className="flex flex-col gap-4">
@@ -100,11 +99,6 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
           unit={items.length === 1 ? "item" : "items"}
           hrefFor={(to) => vaultHref({ ...view, page: to })}
         />
-        {view.tab === "mine" && total > 0 && (
-          <p className="text-[13px] leading-[18px] text-muted">
-            Only you can see your vault. Nothing reaches reviewers until you escalate a case.
-          </p>
-        )}
       </div>
     </>
   );

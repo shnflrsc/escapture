@@ -7,7 +7,7 @@ import { TamperBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Banner, Skeleton } from "@/components/ui/feedback";
-import { Input, Textarea } from "@/components/ui/field";
+import { Input } from "@/components/ui/field";
 import { Menu } from "@/components/ui/menu";
 import { useToast } from "@/components/ui/toast";
 import { api, ApiError, errorMessage } from "@/lib/client-api";
@@ -32,7 +32,7 @@ export function NewCaseButton() {
     setError(null);
     try {
       const c = await api<{ id: string }>("/api/cases", {
-        body: { title: form.get("title"), description: form.get("description") },
+        body: { title: form.get("title") },
       });
       close(); // the dialog must not stay open behind the next page
       router.push(`/cases/${c.id}`);
@@ -52,17 +52,10 @@ export function NewCaseButton() {
         open={open}
         onClose={close}
         title="Start a new case"
-        description="This creates a private draft. Nothing reaches reviewers until you escalate, and you can change everything until then."
       >
         <form onSubmit={submit} className="flex flex-col gap-4">
           {error && <Banner tone="attention">{error}</Banner>}
-          <Input label="Title" name="title" required maxLength={160} hint="A short name so you can find it later." />
-          <Textarea
-            label="What happened"
-            name="description"
-            maxLength={10000}
-            hint="Optional for now. Write as much or as little as you want."
-          />
+          <Input label="Title" name="title" required maxLength={160} />
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={close}>
               Go back
@@ -275,7 +268,7 @@ type Preview = {
 };
 
 /**
- * The one irreversible step: preview exactly what reviewers will see, then confirm (I4).
+ * The one irreversible step: preview the case as it will be sent, then confirm (I4).
  * Before the preview it says what is still missing: no evidence stops it, no description
  * is only pointed out.
  */
@@ -350,8 +343,7 @@ export function EscalateButton({ caseId, hasEvidence }: { caseId: string; hasEvi
         open={open && hasEvidence}
         onClose={close}
         wide
-        title="Review what reviewers will see"
-        description="This is exactly what will be sent. Reviewers and the administrators who assign them will be able to see it. Take your time."
+        title="Review your case"
         footer={
           <>
             <Button variant="ghost" onClick={close}>

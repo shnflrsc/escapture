@@ -1,18 +1,10 @@
 import Link from "next/link";
-import { StatusBadge, TamperBadge, type CaseStatus } from "@/components/ui/badge";
+import { StatusBadge, type CaseStatus } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { formatDateTime } from "@/lib/format";
 import { AttachToCase } from "./attach-to-case";
 import { VerifyNow } from "./evidence-actions";
-
-const CHECK_LABELS: Record<string, string> = {
-  "design-mode": "Page editing mode was off",
-  contenteditable: "No editable content in the captured area",
-  "userscript-markers": "No userscript manager detected",
-  "injected-elements": "No injected scripts or styles in the captured area",
-  "dom-provenance": "No changes to the captured area from outside the page's own scripts",
-};
 
 type AttachedCase = { id: string; title: string; status: CaseStatus; side?: "reporter" | "reviewer" };
 
@@ -68,30 +60,7 @@ export function CasesCard({
   );
 }
 
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-/**
- * Notes are written by the extension and stored with the capture. Two of the older
- * wordings could be read as a sign of tampering, so they are shown as the current
- * extension would word them. Anything else is shown as stored.
- */
-function clearNote(note: string): string {
-  const elsewhere = /^(\d+) changes? elsewhere on this page did not come from the page's own scripts\./.exec(note);
-  if (elsewhere) {
-    const n = Number(elsewhere[1]);
-    return `${count(n, "change", "changes")} outside the captured area ${n === 1 ? "was" : "were"} made by something other than the page, such as a browser extension. The captured area was not affected.`;
-  }
-  const replaced = /^Some of the browser's functions for changing content had been replaced on this page \((.*)\)\./.exec(note);
-  if (replaced) {
-    return `The page or a browser extension had replaced built-in browser functions (${replaced[1]}). The captured area was still checked.`;
-  }
-  return note;
-}
-
-/**
- * What stands behind the capture. The badge, a one-line summary and the
- * re-check stay in view; the hash, source, checks and notes open on request.
- */
+/** What stands behind the capture: a one-line summary and the re-check in view, the record on request. */
 export function IntegrityCard({
   evidenceId,
   reviewer,
@@ -99,27 +68,21 @@ export function IntegrityCard({
   sourceUrl,
   sha256,
   checks,
-  notes,
 }: {
   evidenceId: string;
   reviewer: boolean;
   capturedAt: Date | string;
   sourceUrl: string;
   sha256: string;
-  checks: { id: string }[];
-  notes: string[];
+  /** How many checks passed when it was captured. */
+  checks: number;
 }) {
-  const unique = [...new Set(notes.map(clearNote))];
   return (
     <Card className="flex flex-col gap-4">
       <h3>Integrity</h3>
-      <div className="flex flex-col items-start gap-2">
-        <TamperBadge reviewer={reviewer} />
-        <p className="text-sm leading-[22px] text-muted">
-          {count(checks.length, "check", "checks")} passed at capture
-          {unique.length > 0 && <> · {count(unique.length, "note", "notes")}</>}
-        </p>
-      </div>
+      <p className="text-sm leading-[22px] text-muted">
+        {checks} {checks === 1 ? "check" : "checks"} passed at capture
+      </p>
       <VerifyNow evidenceId={evidenceId} />
       {/* Open from the start for reviewers, who assess the evidence; one click away for students. */}
       <details open={reviewer} className="border-t border-border pt-3 text-sm leading-[22px]">
@@ -148,30 +111,6 @@ export function IntegrityCard({
               <CopyButton value={sha256} label="Copy hash" />
             </dd>
           </div>
-          <div>
-            <dt className="font-semibold">Checks run at capture</dt>
-            <dd>
-              <ul className="list-disc pl-5 text-muted">
-                {checks.map((c) => (
-                  <li key={c.id}>{CHECK_LABELS[c.id] ?? c.id}</li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-          {unique.length > 0 && (
-            <div>
-              <dt className="font-semibold">Notes from the capture</dt>
-              <dd>
-                <ul className="list-disc pl-5 text-muted">
-                  {unique.map((note) => (
-                    <li key={note} className="break-words">
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )}
         </dl>
       </details>
     </Card>

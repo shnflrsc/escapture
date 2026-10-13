@@ -35,36 +35,32 @@ export default async function ArchivesPage({ searchParams }: PageProps<"/review/
 
   return (
     <>
-      <PageHeader
-        title="Case Archives"
-        description="Closed cases, so you can look up how earlier cases were handled. Archived cases can't be changed."
-        action={
-          <ParamSelect
-            label="Closed"
-            value={days ? String(days) : "all"}
-            options={[
-              { value: "all", label: "Any time" },
-              { value: "30", label: "Last 30 days" },
-              { value: "90", label: "Last 90 days" },
-            ]}
-            hrefs={{ all: href({ days: null }), "30": href({ days: 30 }), "90": href({ days: 90 }) }}
-          />
-        }
-      />
+      <PageHeader title="Case Archives" />
       <section aria-label="Closed cases" className="flex min-w-0 flex-col gap-4 [&>*]:min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="tnum text-sm leading-5 text-muted">
-            {items.length} closed {items.length === 1 ? "case" : "cases"}
-            {q && <> matching “{q}”</>}
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-center gap-2">
             <FilterChip label="Closed by me" href={href({ mine: !mine })} on={mine} />
             <FilterChip label="Has reviewer attachments" href={href({ rev: !rev })} on={rev} />
+            <ParamSelect
+              label="Closed"
+              value={days ? String(days) : "all"}
+              options={[
+                { value: "all", label: "Any time" },
+                { value: "30", label: "Last 30 days" },
+                { value: "90", label: "Last 90 days" },
+              ]}
+              hrefs={{ all: href({ days: null }), "30": href({ days: 30 }), "90": href({ days: 90 }) }}
+            />
             {filtered && (
-              <Link href="/review/archives" className={buttonClass("ghost", "h-10 px-3")}>
+              <Link href="/review/archives" className={buttonClass("ghost", "h-10 px-3 text-sm")}>
                 Clear filters
               </Link>
             )}
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <p aria-live="polite" className="tnum text-sm leading-5 text-muted">
+              {items.length} {items.length === 1 ? "case" : "cases"}
+            </p>
             <TableSearch
               action="/review/archives"
               label="Search cases, reporters or closing notes"

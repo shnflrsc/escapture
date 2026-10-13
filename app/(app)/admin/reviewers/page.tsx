@@ -48,10 +48,7 @@ export default async function ReviewerAccountsPage({ searchParams }: PageProps<"
 
   return (
     <>
-      <PageHeader
-        title="Reviewer accounts"
-        description="Create accounts for the university's designated case reviewers. Students sign up on their own with a BulSU email."
-      />
+      <PageHeader title="Reviewer accounts" />
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <section aria-label="Reviewers" className="flex min-w-0 flex-col gap-4 [&>*]:min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -162,9 +159,6 @@ export default async function ReviewerAccountsPage({ searchParams }: PageProps<"
               </tbody>
             </TableBox>
           )}
-          <p className="text-[13px] leading-[18px] text-muted">
-            Deactivating an account signs the reviewer out. Cases and closing notes they wrote stay on record.
-          </p>
         </section>
 
         <Card className="flex flex-col gap-4">

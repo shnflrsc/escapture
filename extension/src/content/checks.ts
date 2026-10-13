@@ -71,7 +71,6 @@ function provenance(guard: GuardState | null, expectedTargets: number): TamperCh
  */
 export function runChecks(target: Element, guard: GuardState | null, expectedTargets = 1): TamperReport {
   const checks: TamperCheck[] = [];
-  const warnings: string[] = [];
 
   // 1. Page editing mode.
   const designOn = document.designMode.toLowerCase() === "on";
@@ -127,21 +126,11 @@ export function runChecks(target: Element, guard: GuardState | null, expectedTar
 
   // 5. Changes that did not come from the page's own scripts.
   checks.push(provenance(guard, expectedTargets));
-  if (guard && guard.replaced?.length) {
-    // Sites and other extensions wrap these routinely. Changes are still checked either way: a
-    // wrapper that is not the page's own fails the check above, and one that skips the guard
-    // leaves changes unexplained, which also fails it.
-    warnings.push(
-      `The page or a browser extension had replaced built-in browser functions (${guard.replaced.join(", ")}). The captured area was still checked.`,
-    );
-  }
-  if (guard && guard.elsewhere > 0) {
-    warnings.push(
-      `${guard.elsewhere} change${guard.elsewhere === 1 ? "" : "s"} outside the captured area ${guard.elsewhere === 1 ? "was" : "were"} made by something other than the page, such as a browser extension. The captured area was not affected.`,
-    );
-  }
+  // Sites and other extensions routinely wrap built-in functions, and change other parts of the
+  // page. Neither is reported: a wrapper that is not the page's own fails the check above, and
+  // one that skips the guard leaves changes unexplained, which also fails it.
 
-  return { checks, allPassed: checks.every((c) => c.passed), warnings: warnings.length ? warnings : undefined };
+  return { checks, allPassed: checks.every((c) => c.passed) };
 }
 
 /** Runs the checks for every selected item. Capture is refused if any item fails any check. */
@@ -151,5 +140,5 @@ export function runChecksAll(targets: Element[], guard: GuardState | null): Tamp
     const failed = reports.map((r) => r.checks[i]).find((c) => !c.passed);
     return failed ?? first;
   });
-  return { checks, allPassed: checks.every((c) => c.passed), warnings: reports[0].warnings };
+  return { checks, allPassed: checks.every((c) => c.passed) };
 }

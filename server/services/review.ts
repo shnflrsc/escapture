@@ -102,6 +102,8 @@ export type BoardQuery = {
   mine?: boolean;
   /** Only cases nobody is assigned to. */
   unassigned?: boolean;
+  /** Only cases escalated within this many days. */
+  days?: number;
 };
 
 const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -127,6 +129,7 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
     query.unassigned
       ? sql`not exists (select 1 from ${caseAssignments} where ${caseAssignments.caseId} = ${cases.id})`
       : undefined,
+    query.days ? gte(cases.escalatedAt, new Date(Date.now() - query.days * 24 * 60 * 60 * 1000)) : undefined,
   );
   const open = inArray(cases.status, ["escalated", "under_review"]);
   const where = and(open, query.status ? eq(cases.status, query.status) : undefined, search);
@@ -198,7 +201,7 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export type BoardRange = "30d" | "90d" | "all";
-const rangeDays: Record<BoardRange, number | null> = { "30d": 30, "90d": 90, all: null };
+export const RANGE_DAYS: Record<BoardRange, number | null> = { "30d": 30, "90d": 90, all: null };
 
 /**
  * What sits around the board's table: escalations per week for the last seven
@@ -212,7 +215,7 @@ export async function boardInsights(actor: Actor, range: BoardRange = "90d", now
   const sinceMonday = (new Date(`${dayKey(now)}T12:00:00+08:00`).getUTCDay() + 6) % 7;
   const thisMonday = new Date(today.getTime() - sinceMonday * DAY_MS);
   const firstWeek = new Date(thisMonday.getTime() - 6 * 7 * DAY_MS);
-  const days = rangeDays[range];
+  const days = RANGE_DAYS[range];
   const since = days === null ? null : new Date(now.getTime() - days * DAY_MS);
 
   const [escalations, statuses, events] = await Promise.all([

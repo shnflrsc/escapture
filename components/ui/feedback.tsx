@@ -37,7 +37,7 @@ export function EmptyState({
 }: {
   icon: React.ReactNode;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   return (
@@ -46,7 +46,7 @@ export function EmptyState({
         {icon}
       </div>
       <h3>{title}</h3>
-      <p className="max-w-md text-sm leading-[22px] text-muted">{children}</p>
+      {children && <p className="max-w-md text-sm leading-[22px] text-muted">{children}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );

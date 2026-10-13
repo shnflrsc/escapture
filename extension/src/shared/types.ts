@@ -9,7 +9,6 @@ export type TamperCheck = { id: string; passed: boolean; detail?: string };
 export type TamperReport = {
   checks: TamperCheck[];
   allPassed: boolean;
-  warnings?: string[];
   extensionVersion?: string;
   /**
    * Size of the captured area on the original page, in CSS pixels, and `fit`: how tall the
@@ -24,6 +23,20 @@ export const FIT_WIDTHS = [360, 480, 600];
 export type LastCapture =
   | { ok: true; id: string; label: string; url: string; at: string }
   | { ok: false; refused: boolean; message: string; at: string };
+
+/** One saved capture, remembered in this browser for the popup's list. */
+export type CaptureRecord = { id: string; label: string; url: string; at: string };
+/** How many captures the popup remembers. */
+export const HISTORY_SIZE = 10;
+
+/** The checks every capture must pass, in the words the popup shows. */
+export const CHECKS = [
+  "Page editing mode was off",
+  "No editable content in the captured area",
+  "No userscript manager detected",
+  "No injected scripts or styles in the captured area",
+  "No changes to the captured area from outside the page's own scripts",
+];
 
 export type AuthState = { signedIn: false } | { signedIn: true; name: string; email: string };
 

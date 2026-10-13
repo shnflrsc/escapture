@@ -12,7 +12,7 @@ export function FilterChip({ label, href, on }: { label: string; href: string; o
       href={href}
       aria-current={on ? "true" : undefined}
       className={cn(
-        "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm leading-5 font-semibold whitespace-nowrap transition-colors duration-150",
+        "inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm leading-5 font-semibold whitespace-nowrap transition-colors duration-150",
         on ? "border-transparent bg-brand-100 text-brand-800" : "border-border-strong bg-card text-ink hover:bg-brand-50",
       )}
     >

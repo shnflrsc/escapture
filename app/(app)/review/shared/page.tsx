@@ -2,7 +2,6 @@ import { Inbox, Lock } from "lucide-react";
 import Link from "next/link";
 import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashboard/data-table";
 import { AttachToCase } from "@/components/safetrail/attach-to-case";
-import { OpenLinkButton } from "@/components/safetrail/open-link";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { buttonClass } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/card";
@@ -25,14 +24,10 @@ export default async function SharedWithReviewerPage({ searchParams }: PageProps
 
   return (
     <>
-      <PageHeader
-        title="Shared with me"
-        description="Evidence other SafeTrail users shared with you by email or password link. Attach it to a case to keep it with the review."
-        action={<OpenLinkButton />}
-      />
+      <PageHeader title="Shared with me" />
       {all.length === 0 ? (
         <EmptyState icon={<Inbox size={24} strokeWidth={1.75} />} title="Nothing has been shared with you">
-          When someone shares evidence with your email, or you open a password link they sent you, it appears here.
+          Evidence people share with you appears here.
         </EmptyState>
       ) : (
         <section aria-label="Shared evidence" className="flex min-w-0 flex-col gap-4 [&>*]:min-w-0">

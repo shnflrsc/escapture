@@ -158,19 +158,19 @@ Load both through `next/font/google` (self-hosted at build time). Do not add any
 - **Spacing scale (4px base):** 4, 8, 12, 16, 24, 32, 48, 64. Use only these values.
 - **App shell:** a left sidebar (248px, `card` background, 1px right `border`) and a content column on `canvas`. The content column starts with a **header** (64px, `card`, 1px bottom `border`, sticky). The account menu sits at the right of the header, not in the sidebar.
 - **Sidebar**
-  - Logo, then the role label in 13px `muted` ("Student", "Case reviewer", "Administrator").
+  - Logo. The role is shown once, under the person's name in the header.
   - A sentence-case group label above the nav ("Your space", "Reviews", "Administration"), 13px 600 `muted`.
   - Students: Vault, Cases, Notifications.
-  - Reviewers: Review Board, Shared with me, Case Archives, Notifications.
-  - Administrators: Review Board, Shared with me, Case Archives, Reviewer accounts, Notifications.
+  - Reviewers: Dashboard, Review Board, Shared with me, Case Archives, Notifications.
+  - Administrators: Dashboard, Review Board, Shared with me, Case Archives, Reviewer accounts, Notifications.
   - Active item: `brand-100` background, `brand-800` text, 10px radius, 44px tall. Unread notifications show a small `brand-700` dot, not a red count badge.
-  - A small `brand-50` help card at the bottom (one heading, one sentence, at most one link), then Help, Privacy and Terms links.
+  - Help, Privacy and Terms links at the bottom. No help card.
 - **Header**
-  - Left: breadcrumbs. A top-level page shows its name. A detail page shows `Section › Title`, with the section as a `brand-700` link.
+  - No page title or breadcrumb: every page has its own H1, and a detail page has a back link above it.
   - Middle: one search field (320px, 40px tall) that searches the role's main list.
   - Right: Help, the notification bell, a divider, then the account button (avatar initials, name, role) that opens the account menu with Sign out.
   - Below 1024px the menu button that opens the sidebar drawer joins the header at the far left and the search wraps to its own row. There is never a second bar.
-- **Page structure:** H1 and one short sentence of context on the left, at most one primary button on the right, then content. Do not stack banners above the header. The page H1 is the page's own title; the header breadcrumb doesn't replace it.
+- **Page structure:** H1 on the left (add a sentence under it only when the page can't be understood without one), at most one primary button on the right, then content. Do not stack banners above the header. The page H1 is the page's own title; the header breadcrumb doesn't replace it.
 - **Content width:** students max 1040px, centered. Reviewers use the full width up to 1440px.
 - **Designed for 1024px and wider.** Below 1024px the sidebar collapses into a drawer opened from the header's menu button, page padding tightens, and the Vault table stacks into a list. Other pages need not look designed there, but must not break, overlap or scroll sideways.
 
@@ -489,4 +489,4 @@ Rules for code:
 - [ ] Private versus shared, and anything irreversible, is clearly stated before the user acts.
 - [ ] Looks right at 1280px and does not break at 1024px.
 - [ ] Reduced motion respected.
-- [ ] Header breadcrumb and search work on the page; the bell popover opens, closes on Escape and returns focus.
+- [ ] Header search works on the page; the bell popover opens, closes on Escape and returns focus.

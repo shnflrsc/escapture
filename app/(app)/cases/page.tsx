@@ -32,7 +32,6 @@ export default async function CasesPage({ searchParams }: PageProps<"/cases">) {
     <>
       <PageHeader
         title="Cases"
-        description="A case gathers your evidence in one place. Nothing reaches reviewers until you escalate."
         action={<NewCaseButton />}
       />
       {all.length === 0 ? (

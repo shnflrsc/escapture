@@ -109,7 +109,6 @@ export function AssignReviewers({
               label="Assign a reviewer"
               value={choice}
               onChange={(e) => setChoice(e.target.value)}
-              hint="Other reviewers can still open and work on this case."
             >
               <option value="">Choose a reviewer</option>
               {reviewers.map((r) => (

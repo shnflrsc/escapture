@@ -80,7 +80,6 @@ export function CloseCasePanel({ caseId }: { caseId: string }) {
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="What the university did, and any next steps for the student"
-        hint="The student who reported and collaborators will see this note. The case then moves to Case Archives."
       />
       <Button type="submit" disabled={!note.trim()} className="self-start">
         <CircleCheck size={18} strokeWidth={1.75} aria-hidden />

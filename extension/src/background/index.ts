@@ -7,6 +7,8 @@ import {
   MAX_BYTES,
   MAX_UPLOAD_BYTES,
   type AuthState,
+  HISTORY_SIZE,
+  type CaptureRecord,
   type LastCapture,
   type Message,
   type Reply,
@@ -14,12 +16,12 @@ import {
 
 const APP_URL = __APP_URL__;
 
-type Stored = { token?: string; name?: string; email?: string; lastCapture?: LastCapture };
+type Stored = { token?: string; name?: string; email?: string; lastCapture?: LastCapture; history?: CaptureRecord[] };
 
 const store = {
-  get: () => chrome.storage.local.get(["token", "name", "email", "lastCapture"]) as Promise<Stored>,
+  get: () => chrome.storage.local.get(["token", "name", "email", "lastCapture", "history"]) as Promise<Stored>,
   set: (v: Partial<Stored>) => chrome.storage.local.set(v),
-  clearAuth: () => chrome.storage.local.remove(["token", "name", "email"]),
+  clearAuth: () => chrome.storage.local.remove(["token", "name", "email", "lastCapture", "history"]),
 };
 
 async function appFetch(path: string, init: RequestInit = {}, token?: string) {
@@ -225,14 +227,20 @@ async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promis
   if (!res.ok) return fail(await errorText(res, "We couldn't save this capture. Please try again."));
   const saved = await res.json();
   const result: LastCapture = { ok: true, id: saved.id, label: saved.label, url: `${APP_URL}/vault/${saved.id}`, at };
-  await store.set({ lastCapture: result });
+  const history = [{ id: saved.id, label: saved.label, url: result.url, at }, ...((await store.get()).history ?? [])];
+  await store.set({ lastCapture: result, history: history.slice(0, HISTORY_SIZE) });
   return { ok: true, result };
 }
 
 async function handle(msg: Message): Promise<unknown> {
   switch (msg.type) {
     case "auth:status":
-      return { ok: true, auth: await authStatus(), lastCapture: (await store.get()).lastCapture ?? null };
+      return {
+        ok: true,
+        auth: await authStatus(),
+        lastCapture: (await store.get()).lastCapture ?? null,
+        history: (await store.get()).history ?? [],
+      };
     case "auth:signIn":
       return signIn(msg.email, msg.password);
     case "auth:signOut":

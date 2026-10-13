@@ -137,7 +137,6 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
             setServerEmailError(null);
           }}
           error={emailError}
-          hint={signUp ? `Must end in @${domain}` : undefined}
         />
         {signUp ? (
           <div className="flex flex-col gap-1">
@@ -178,11 +177,6 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={passwordMissing ? "Enter your password." : null}
-            labelEnd={
-              <Link href="/contact" className="link -my-2.5 inline-flex min-h-10 items-center rounded-sm text-sm leading-5">
-                Can&apos;t sign in?
-              </Link>
-            }
           />
         )}
         {signUp ? (

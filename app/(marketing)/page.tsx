@@ -110,10 +110,6 @@ export default function LandingPage() {
                   See how it works
                 </ButtonLink>
               </div>
-              <p className="mk-note">
-                <EyeOff size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
-                Only you can see your vault. Nothing reaches reviewers until you escalate.
-              </p>
             </div>
             <VaultVisual />
           </div>

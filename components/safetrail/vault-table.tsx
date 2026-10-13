@@ -20,14 +20,14 @@ export type VaultItem = {
 
 const th = "px-4 py-3 text-left text-[13px] leading-[18px] font-semibold text-muted";
 const cell = "md:px-4 md:py-3 md:align-middle";
-const quiet = "inline-flex items-center gap-1.5 text-sm leading-5 text-muted";
+const quiet = "flex items-center gap-1.5 text-sm leading-5 text-muted";
 
 /** Which cases an item is in: the first one's name, how many more, and whether it is locked there. */
 function InCases({ item }: { item: VaultItem }) {
   if (!item.caseCount) return <span className={quiet}>Not in a case</span>;
   const more = item.caseCount - 1;
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 text-sm leading-5" title={item.caseTitle ?? undefined}>
+    <span className="flex max-w-full items-center gap-1.5 text-sm leading-5" title={item.caseTitle ?? undefined}>
       {item.locked && (
         <>
           <Lock size={14} strokeWidth={1.75} aria-hidden className="shrink-0 text-muted" />
@@ -139,7 +139,9 @@ export function VaultTable({ items, shared }: { items: VaultItem[]; shared: bool
                 </td>
                 <td className={`${cell} mono tnum hidden whitespace-nowrap text-muted md:table-cell`}>{captured}</td>
                 <td className={`${cell} order-3 basis-full md:whitespace-nowrap`}>
-                  <TamperBadge />
+                  <span className="flex">
+                    <TamperBadge />
+                  </span>
                 </td>
                 {shared ? (
                   <td className={`${cell} order-4 basis-full truncate text-sm text-muted md:basis-auto`}>

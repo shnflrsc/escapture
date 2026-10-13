@@ -90,7 +90,6 @@ export function ReviewerForm() {
           autoComplete="off"
           required
           error={errors.email}
-          hint="Use the reviewer's bulsu.edu.ph address."
         />
         <Select label="Office" name="office" defaultValue="">
           <option value="">Not specified</option>
@@ -100,17 +99,9 @@ export function ReviewerForm() {
             </option>
           ))}
         </Select>
-        <p className="rounded-xl bg-brand-50 p-4 text-sm leading-[22px]">
-          Reviewers can see every escalated case on the shared Review Board, including who reported it and every
-          collaborator.
-        </p>
         <Button type="submit" loading={loading}>
           Create account and get setup link
         </Button>
-        <p className="text-[13px] leading-[18px] text-muted">
-          SafeTrail doesn&apos;t send email. You get a one-time link to pass on, and the reviewer chooses their own
-          password with it.
-        </p>
       </form>
       <SetupLinkDialog link={link} onClose={() => setLink(null)} />
     </>
