@@ -52,7 +52,7 @@ export function SiteNav() {
           <Suspense fallback={<SignIn />}>
             <Account />
           </Suspense>
-          <Link href="/#start" className={buttonClass("primary")}>
+          <Link href="/sign-up" className={buttonClass("primary")}>
             Start your vault
           </Link>
         </div>

@@ -103,7 +103,7 @@ export default function LandingPage() {
                 university reviewers only when you&apos;re ready.
               </p>
               <div className="mk-actions">
-                <ButtonLink href="#start" lg>
+                <ButtonLink href="/sign-up" lg>
                   Start your vault
                 </ButtonLink>
                 <ButtonLink href="#how" variant="secondary" lg>
@@ -270,7 +270,7 @@ export default function LandingPage() {
         title="Start your vault today"
         lead="Capture what happened now, and decide what to do with it later. It's private until you choose to share."
       >
-        <ButtonLink href="#start" variant="on-dark" lg>
+        <ButtonLink href="/sign-up" variant="on-dark" lg>
           Start your vault
         </ButtonLink>
         <ButtonLink href="#how" variant="ghost-on-dark" lg>
