@@ -162,6 +162,14 @@ describe("review", () => {
   });
 });
 
+describe("administration", () => {
+  it("only an administrator provisions reviewer accounts", () => {
+    expect(authz.canProvisionReviewer(admin)).toBe("ok");
+    expect(authz.canProvisionReviewer(reviewer)).toBe("forbidden");
+    expect(authz.canProvisionReviewer(maya)).toBe("forbidden");
+  });
+});
+
 describe("enforce", () => {
   it("maps decisions to HTTP errors", () => {
     expect(() => authz.enforce("ok")).not.toThrow();

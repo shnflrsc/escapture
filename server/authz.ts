@@ -116,6 +116,13 @@ export function canEscalate(u: U, c: CaseFacts): Decision {
   return ownerOnlyWhileDraft(u, c);
 }
 
+// ---- Administration ----
+
+/** Only an administrator creates reviewer accounts. Administrators never see cases or evidence. */
+export function canProvisionReviewer(u: U): Decision {
+  return u.role === "admin" ? "ok" : "forbidden";
+}
+
 // ---- Review (reviewer role only) ----
 
 /** Reviewers never see drafts (I1). */

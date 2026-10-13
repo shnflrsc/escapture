@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu as MenuIcon,
   Search,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +22,7 @@ import { createContext, Suspense, useContext, useEffect, useRef, useState } from
 import { Menu } from "@/components/ui/menu";
 import { api } from "@/lib/client-api";
 import { cn } from "@/lib/cn";
+import { initials } from "@/lib/format";
 import { HowToCapture } from "./how-to-capture";
 import { Logo } from "./logo";
 import { NotificationPopover } from "./notification-popover";
@@ -46,7 +48,9 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
     { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
   ],
-  admin: [],
+  admin: [
+    { href: "/admin/reviewers", label: "Reviewer accounts", Icon: Users, match: (p) => p.startsWith("/admin") },
+  ],
 };
 
 const ROLE: Record<Role, { label: string; group: string; search: { action: string; label: string } }> = {
@@ -103,11 +107,6 @@ function HeaderSearch({ role, className }: { role: Role; className?: string }) {
     </form>
   );
 }
-
-const initials = (name: string) => {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  return ((words[0]?.[0] ?? "") + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase() || "?";
-};
 
 const iconButton =
   "relative grid size-11 place-items-center rounded-md text-ink transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800";

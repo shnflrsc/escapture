@@ -119,16 +119,16 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium to large
 
-### - [ ] Task 7: Admin: reviewer accounts
+### - [x] Task 7: Admin: reviewer accounts
 
 **Description:** New `/admin/reviewers` with a reviewer table and a "Create a reviewer account" form (`reference/AdminReviewers.dc.html`, adapted as plan.md says: temporary password, no Office, no Deactivate in P0).
 
 **Acceptance criteria:**
-- [ ] Only admins can open it; other roles are redirected home. `homeFor("admin")` returns `/admin/reviewers`.
-- [ ] `POST /api/admin/reviewers` (zod: name, email, password of 8+ characters) creates a reviewer using shared logic moved from `scripts/lib/users.ts` into `server/services/admin.ts`. The CLI still works.
-- [ ] An email that already belongs to a student returns 409 with "That email already belongs to a student account." Errors show as plain sentences under the fields.
-- [ ] The table lists reviewers with Created and Last sign-in ("Not yet" when they have never signed in). Optional `?q=` search.
-- [ ] On success: the toast "Reviewer account created", the form clears, and the table refreshes.
+- [x] Only admins can open it; other roles are redirected home. `homeFor("admin")` returns `/admin/reviewers`.
+- [x] `POST /api/admin/reviewers` (zod: name, email, password of 8+ characters) creates a reviewer using shared logic moved from `scripts/lib/users.ts` into `server/services/admin.ts`. The CLI still works.
+- [x] An email that already belongs to a student returns 409 with "That email already belongs to a student account." Errors show as plain sentences under the fields.
+- [x] The table lists reviewers with Created and Last sign-in ("Not yet" when they have never signed in). Optional `?q=` search.
+- [x] On success: the toast "Reviewer account created", the form clears, and the table refreshes.
 
 **Verification:** Standing checks, plus a `canProvisionReviewer` test in `tests/authz.test.ts` and a route test in `tests/routes.test.ts`. Create a reviewer in the browser, then sign in as them.
 

@@ -411,6 +411,27 @@ async function main() {
   check("its evidence is still in the vault and no longer in a case", (await call(M, "GET", `/api/evidence/${m1}/file`)).status === 200 && afterDelete.body.attached.length === 0, afterDelete.body);
   check("the collaborator is told the case was deleted", (await call(J, "GET", "/api/notifications")).body.items.some((n: { title: string }) => n.title === "Maya Smoke deleted a case you were on"));
 
+  step("13. An administrator creates reviewer accounts");
+  const adminEmail = `admin.${run}@safetrail.test`;
+  await ensureUser({ email: adminEmail, name: "Admin Smoke", password: PASSWORD, role: "admin" });
+  const AD = (await signIn(adminEmail, PASSWORD))!;
+  const newReviewer = `new.reviewer.${run}@safetrail.test`;
+  const made = await call(AD, "POST", "/api/admin/reviewers", { name: "New Reviewer", email: newReviewer.toUpperCase(), password: "temporary-pass-1" });
+  check("the administrator creates a reviewer", made.status === 201 && made.body.email === newReviewer, made.body);
+  const NR = await signIn(newReviewer, "temporary-pass-1");
+  check("the new reviewer signs in and reaches the Review Board", Boolean(NR) && (await call(NR!, "GET", "/api/review/cases")).status === 200);
+  const listed = await call(AD, "GET", `/api/admin/reviewers?q=${encodeURIComponent("new reviewer")}`);
+  check("the list shows them, with a last sign-in", listed.status === 200 && listed.body.items.some((r: { email: string; lastSignInAt: string | null }) => r.email === newReviewer && r.lastSignInAt), listed.body);
+  const student = await call(AD, "POST", "/api/admin/reviewers", { name: "Maya", email: `maya.${run}@${DOMAIN}`, password: "temporary-pass-1" });
+  check("a student's email is refused, and the student stays a student", student.status === 409 && student.body.error.message === "That email already belongs to a student account." && (await call(M, "GET", "/api/review/cases")).status === 403, student.body);
+  check("an email that is already a reviewer is refused", (await call(AD, "POST", "/api/admin/reviewers", { name: "Again", email: newReviewer, password: "temporary-pass-1" })).status === 409);
+  check("a short password or a bad email is a 400", (await call(AD, "POST", "/api/admin/reviewers", { name: "X", email: `x.${run}@safetrail.test`, password: "short" })).status === 400 && (await call(AD, "POST", "/api/admin/reviewers", { name: "X", email: "not-an-email", password: "temporary-pass-1" })).status === 400);
+  const body = { name: "Nope", email: `nope.${run}@safetrail.test`, password: "temporary-pass-1" };
+  check("students, reviewers and signed-out callers cannot create or list reviewers", (await call(M, "POST", "/api/admin/reviewers", body)).status === 403 && (await call(R, "POST", "/api/admin/reviewers", body)).status === 403 && (await call(null, "POST", "/api/admin/reviewers", body)).status === 401 && (await call(R, "GET", "/api/admin/reviewers")).status === 403);
+  check("an administrator cannot see cases, evidence or the board", (await call(AD, "GET", "/api/review/cases")).status === 403 && (await call(AD, "GET", `/api/cases/${caseId}`)).status === 404 && (await call(AD, "GET", `/api/evidence/${mayaEv}`)).status === 404);
+  const gateStillOn = await signUp("Outsider Two", `outsider2.${run}@gmail.com`);
+  check("the public sign-up gate is unaffected", gateStillOn.res.status >= 400 && !gateStillOn.token);
+
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length) failures.forEach((f) => console.log(`  - ${f}`));
   await pg.end();

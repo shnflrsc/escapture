@@ -101,4 +101,9 @@ export const reviewStatus = z.object({ status: z.literal("under_review") });
 export const closeCase = z.object({
   note: z.string().trim().min(1, "Please write a closing note.").max(5000),
 });
+export const createReviewer = z.object({
+  name: z.string().trim().min(1, "Enter the reviewer's name.").max(80),
+  email,
+  password: z.string().min(8, "Use at least 8 characters.").max(200),
+});
 export const markRead = z.object({ ids: z.array(uuid).max(200).optional() });

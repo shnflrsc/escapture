@@ -34,6 +34,11 @@ export function age(d: Date | string, now: Date = new Date()): string {
   const days = Math.floor(hours / 24);
   return `${days} day${days === 1 ? "" : "s"}`;
 }
+/** "Maya Santos" -> "MS". */
+export const initials = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return ((words[0]?.[0] ?? "") + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase() || "?";
+};
 export const kindLabel = (kind: "facebook_post" | "facebook_message") =>
   kind === "facebook_post" ? "Facebook post" : "Facebook messages";
 

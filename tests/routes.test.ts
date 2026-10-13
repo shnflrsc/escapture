@@ -47,6 +47,26 @@ describe("route guards (security checklist)", () => {
     }
   });
 
+  it("admin routes are admin-only", () => {
+    const admin = files.filter((f) => f.includes(`${path.sep}admin${path.sep}`));
+    expect(admin.length).toBeGreaterThan(0);
+    for (const f of admin) {
+      const src = readFileSync(f, "utf8");
+      const handlers = src.match(/export const (GET|POST|PATCH|PUT|DELETE) = handle/g) ?? [];
+      const adminGuards = src.match(/requireUser\(\{ roles: \["admin"\] \}\)/g) ?? [];
+      expect(adminGuards.length).toBe(handlers.length);
+    }
+  });
+
+  it("creating a reviewer never changes an existing account's role", () => {
+    const src = readFileSync(path.resolve(__dirname, "../server/services/admin.ts"), "utf8");
+    const create = src.slice(src.indexOf("export async function createReviewer"), src.indexOf("export async function listReviewers"));
+    // It refuses any address that already has an account before it creates anything.
+    expect(create.indexOf("if (existing)")).toBeGreaterThan(-1);
+    expect(create.indexOf("if (existing)")).toBeLessThan(create.indexOf("ensureUser("));
+    expect(create).toContain("That email already belongs to a student account.");
+  });
+
   it("the evidence file route always sends the sandbox CSP and nosniff", () => {
     const headers = readFileSync(path.resolve(__dirname, "../lib/evidence-headers.ts"), "utf8");
     expect(headers).toContain("sandbox; default-src 'none'");

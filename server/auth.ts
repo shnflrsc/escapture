@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { bearer } from "better-auth/plugins";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { headers } from "next/headers";
 import { isAllowedSignupEmail } from "@/lib/email-gate";
 import { db, schema } from "./db";
@@ -10,9 +11,10 @@ import { forbidden, unauthorized } from "./errors";
 export type Role = "student" | "reviewer" | "admin";
 export type Actor = { id: string; email: string; name: string; role: Role };
 
-// Set only by scripts/lib/users.ts so the CLI can create reviewer/admin
-// accounts. Never reachable from a request.
-export const signupGate = { bypass: false };
+// Lets server/services/admin.ts create reviewer and admin accounts past the
+// email-domain gate. It applies only to the call it wraps, so a public sign-up
+// that happens at the same moment is still gated. No request input can set it.
+export const signupBypass = new AsyncLocalStorage<boolean>();
 
 const appUrl =
   process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -45,7 +47,7 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (newUser) => {
-          if (signupGate.bypass) return { data: newUser };
+          if (signupBypass.getStore()) return { data: newUser };
           const domain = process.env.ALLOWED_EMAIL_DOMAIN ?? "bulsu.edu.ph";
           if (!isAllowedSignupEmail(newUser.email, domain, process.env.DEV_ALLOWED_EMAILS)) {
             throw new APIError("FORBIDDEN", {
@@ -79,4 +81,4 @@ export async function requireUser(opts?: { roles?: Role[] }): Promise<Actor> {
 }
 
 export const homeFor = (role: Role) =>
-  role === "reviewer" ? "/review" : role === "admin" ? "/notifications" : "/vault";
+  role === "reviewer" ? "/review" : role === "admin" ? "/admin/reviewers" : "/vault";
