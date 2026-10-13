@@ -30,25 +30,29 @@ import { NotificationPopover } from "./notification-popover";
 type Role = "student" | "reviewer" | "admin";
 type NavItem = { href: string; label: string; Icon: typeof Bell; match: (p: string) => boolean };
 
+const REVIEW_NAV: NavItem[] = [
+  {
+    href: "/review",
+    label: "Review Board",
+    Icon: Columns3,
+    // Evidence opens under /vault for every role; on the review side it belongs to the board.
+    match: (p) =>
+      p.startsWith("/vault") ||
+      (p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared")),
+  },
+  { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
+  { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
+];
+
 const NAV: Record<Role, NavItem[]> = {
   student: [
     { href: "/vault", label: "Vault", Icon: LockKeyhole, match: (p) => p.startsWith("/vault") },
     { href: "/cases", label: "Cases", Icon: FolderOpen, match: (p) => p.startsWith("/cases") },
   ],
-  reviewer: [
-    {
-      href: "/review",
-      label: "Review Board",
-      Icon: Columns3,
-      // Evidence opens under /vault for every role; for a reviewer it belongs to the board.
-      match: (p) =>
-        p.startsWith("/vault") ||
-        (p.startsWith("/review") && !p.startsWith("/review/archives") && !p.startsWith("/review/shared")),
-    },
-    { href: "/review/shared", label: "Shared with me", Icon: Inbox, match: (p) => p.startsWith("/review/shared") },
-    { href: "/review/archives", label: "Case Archives", Icon: Archive, match: (p) => p.startsWith("/review/archives") },
-  ],
+  reviewer: REVIEW_NAV,
+  // An administrator can do everything a reviewer can, and manages the reviewer accounts.
   admin: [
+    ...REVIEW_NAV,
     { href: "/admin/reviewers", label: "Reviewer accounts", Icon: Users, match: (p) => p.startsWith("/admin") },
   ],
 };
@@ -63,7 +67,7 @@ const ROLE: Record<Role, { label: string; group: string; search: { action: strin
   admin: {
     label: "Administrator",
     group: "Administration",
-    search: { action: "/admin/reviewers", label: "Search reviewer accounts" },
+    search: { action: "/review", label: "Search cases and reporters" },
   },
 };
 
@@ -236,7 +240,7 @@ export function AppShell({
           <>
             <p className="text-sm leading-5 font-semibold">Administrator</p>
             <p className="text-[13px] leading-[18px] text-muted">
-              You create reviewer accounts. You can&apos;t see cases or evidence.
+              You can review cases like any reviewer, assign reviewers to a case, and manage reviewer accounts.
             </p>
           </>
         )}

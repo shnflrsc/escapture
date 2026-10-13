@@ -7,7 +7,7 @@ import { boardSummary } from "./review";
 
 /**
  * The small counts beside the sidebar's links, keyed by the link's address:
- * how much is in each of the person's own lists. Administrators have none.
+ * how much is in each of the person's own lists.
  */
 export async function navCounts(actor: Actor): Promise<Record<string, number>> {
   if (actor.role === "student") {
@@ -21,9 +21,6 @@ export async function navCounts(actor: Actor): Promise<Record<string, number>> {
     ]);
     return { "/vault": evidence.mine, "/cases": caseCount?.n ?? 0 };
   }
-  if (actor.role === "reviewer") {
-    const s = await boardSummary(actor);
-    return { "/review": s.escalated + s.underReview, "/review/shared": s.sharedUnattached };
-  }
-  return {};
+  const s = await boardSummary(actor);
+  return { "/review": s.escalated + s.underReview, "/review/shared": s.sharedUnattached };
 }

@@ -447,7 +447,9 @@ async function main() {
   check("no new setup link once the password is set", (await call(AD, "POST", `/api/admin/reviewers/${reviewerId}/setup-link`, {})).status === 409);
 
   check("deactivating signs the reviewer out and blocks signing in", (await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: false })).status === 200 && (await call(NR!, "GET", "/api/review/cases")).status === 401 && !(await signIn(newReviewer, "chosen-by-reviewer-1")) && (await reviewerRow()).status === "deactivated");
-  check("reactivating lets them sign in again", (await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: true })).status === 200 && Boolean(await signIn(newReviewer, "chosen-by-reviewer-1")) && (await reviewerRow()).status === "active");
+  const reactivated = await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: true });
+  const NR2 = await signIn(newReviewer, "chosen-by-reviewer-1");
+  check("reactivating lets them sign in again", reactivated.status === 200 && Boolean(NR2) && (await reviewerRow()).status === "active");
   const mayaUserId = (await call(M, "GET", `/api/cases/${caseId}`)).body.owner.id as string;
   check("only reviewer accounts can be deactivated: a student is not found", (await call(AD, "PATCH", `/api/admin/reviewers/${mayaUserId}`, { active: false })).status === 404 && (await call(M, "GET", "/api/evidence")).status === 200);
 
@@ -457,7 +459,46 @@ async function main() {
   check("a bad email or an unknown office is a 400", (await call(AD, "POST", "/api/admin/reviewers", { name: "X", email: "not-an-email" })).status === 400 && (await call(AD, "POST", "/api/admin/reviewers", { name: "X", email: `x.${run}@safetrail.test`, office: "Somewhere else" })).status === 400);
   const body = { name: "Nope", email: `nope.${run}@safetrail.test` };
   check("students, reviewers and signed-out callers cannot create, list, deactivate or relink reviewers", (await call(M, "POST", "/api/admin/reviewers", body)).status === 403 && (await call(R, "POST", "/api/admin/reviewers", body)).status === 403 && (await call(null, "POST", "/api/admin/reviewers", body)).status === 401 && (await call(R, "GET", "/api/admin/reviewers")).status === 403 && (await call(R, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: false })).status === 403 && (await call(M, "POST", `/api/admin/reviewers/${reviewerId}/setup-link`, {})).status === 403);
-  check("an administrator cannot see cases, evidence or the board", (await call(AD, "GET", "/api/review/cases")).status === 403 && (await call(AD, "GET", `/api/cases/${caseId}`)).status === 404 && (await call(AD, "GET", `/api/evidence/${mayaEv}`)).status === 404);
+
+  step("14. An administrator reviews cases and assigns reviewers");
+  const assignBytes = tag(chat);
+  const assignEv = (await call(M, "POST", "/api/evidence", uploadForm(assignBytes, sha256Hex(assignBytes), "facebook_message"))).body.id as string;
+  const open2 = (await call(M, "POST", "/api/cases", { title: `Assignment case ${run}`, description: "For the assignment checks." })).body.id as string;
+  await call(M, "POST", `/api/cases/${open2}/evidence`, { evidenceId: assignEv });
+  const adminDraft = (await call(M, "POST", "/api/cases", { title: `Admin draft ${run}` })).body.id as string;
+  check("an administrator cannot see a draft, or open a case as its student would (I1)", (await call(AD, "GET", `/api/review/cases/${open2}`)).status === 404 && (await call(AD, "GET", `/api/evidence/${assignEv}`)).status === 404 && (await call(AD, "GET", `/api/review/cases/${adminDraft}`)).status === 404 && (await call(AD, "GET", `/api/cases/${adminDraft}`)).status === 404 && (await call(AD, "PATCH", `/api/cases/${adminDraft}`, { title: "x" })).status === 404);
+  check("nobody is assigned to a draft", (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 404);
+  const pv = await call(M, "GET", `/api/cases/${open2}/escalation-preview`);
+  check("Maya escalates the second case", (await call(M, "POST", `/api/cases/${open2}/escalate`, { digest: pv.body.digest, confirm: true })).status === 200);
+  type Assigned = { id: string; assignees: { id: string; name: string }[] };
+  const adminBoard = await call(AD, "GET", `/api/review/cases?q=${encodeURIComponent(run)}`);
+  const adminCase = await call(AD, "GET", `/api/review/cases/${open2}`);
+  check("an administrator sees the board, the case and its evidence, like a reviewer", adminBoard.status === 200 && (adminBoard.body.items as Assigned[]).some((c) => c.id === open2 && c.assignees.length === 0) && adminCase.status === 200 && adminCase.body.assignees.length === 0 && (await call(AD, "GET", `/api/evidence/${assignEv}`)).status === 200 && (await call(AD, "GET", "/api/review/summary")).status === 200 && (await call(AD, "GET", "/api/review/archives")).status === 200);
+  check("an administrator still cannot change the student's evidence", (await call(AD, "PATCH", `/api/evidence/${assignEv}`, { label: "x" })).status === 403);
+  check("the administrator is told about the escalation", ((await call(AD, "GET", "/api/notifications")).body.items as { type: string; caseId: string }[]).some((n) => n.type === "case_escalated" && n.caseId === open2));
+
+  check("reviewers, students and signed-out callers cannot assign", (await call(R, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 403 && (await call(NR2!, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 403 && (await call(M, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 403 && (await call(null, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 401);
+  const assigned = await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId });
+  check("the administrator assigns a reviewer", assigned.status === 201 && assigned.body.reviewer.id === reviewerId, assigned.body);
+  check("assigning the same reviewer twice is a 409", (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 409);
+  check("only reviewer accounts can be assigned", (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId: mayaUserId })).status === 404 && (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId: "no-such-user" })).status === 404 && (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, {})).status === 400);
+  const rows = async (token: string, query: string) => ((await call(token, "GET", `/api/review/cases?${query}`)).body.items ?? []) as Assigned[];
+  check("the board names who is assigned", (await rows(R, `q=${encodeURIComponent(run)}`)).some((c) => c.id === open2 && c.assignees.length === 1 && c.assignees[0].name === "New Reviewer"));
+  check("Assigned to me lists it for that reviewer only; Unassigned leaves it out", (await rows(NR2!, "mine=1")).some((c) => c.id === open2) && !(await rows(R, "mine=1")).some((c) => c.id === open2) && !(await rows(R, "unassigned=1")).some((c) => c.id === open2) && (await rows(R, "unassigned=1")).every((c) => c.assignees.length === 0));
+  check("the assigned reviewer is notified", ((await call(NR2!, "GET", "/api/notifications")).body.items as { type: string; caseId: string }[]).some((n) => n.type === "case_assigned" && n.caseId === open2));
+  check("assigning does not restrict: another reviewer still opens the case and starts the review", (await call(R, "GET", `/api/review/cases/${open2}`)).status === 200 && (await call(R, "POST", `/api/review/cases/${open2}/status`, { status: "under_review" })).status === 200);
+  const studentView = await call(M, "GET", `/api/cases/${open2}`);
+  check("the student never learns who was assigned", studentView.status === 200 && !JSON.stringify(studentView.body).includes("New Reviewer") && !(studentView.body.events as { type: string }[]).some((e) => e.type === "assigned" || e.type === "unassigned") && !("assignees" in studentView.body), studentView.body.events);
+  check("only an administrator takes a reviewer off", (await call(R, "DELETE", `/api/review/cases/${open2}/assignees/${reviewerId}`)).status === 403 && (await call(AD, "DELETE", `/api/review/cases/${open2}/assignees/${reviewerId}`)).status === 200 && (await call(AD, "DELETE", `/api/review/cases/${open2}/assignees/${reviewerId}`)).status === 404);
+  const history = ((await call(AD, "GET", `/api/review/cases/${open2}`)).body.events as { type: string; note: string | null }[]).filter((e) => e.type === "assigned" || e.type === "unassigned");
+  check("the case history records both, with the reviewer's name", history.map((e) => e.type).join() === "assigned,unassigned" && history.every((e) => e.note === "New Reviewer"), history);
+  check("the reviewer is told they were taken off", ((await call(NR2!, "GET", "/api/notifications")).body.items as { type: string; caseId: string }[]).some((n) => n.type === "case_unassigned" && n.caseId === open2));
+  await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId });
+  await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: false });
+  check("deactivating a reviewer takes them off open cases, and they can't be assigned", (await call(AD, "GET", `/api/review/cases/${open2}`)).body.assignees.length === 0 && (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 400);
+  await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: true });
+  check("an administrator closes the case; a closed case's reviewers can't be changed", (await call(AD, "POST", `/api/review/cases/${open2}/close`, { note: "Closed by the administrator in the smoke run." })).status === 200 && (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 409);
+  await call(M, "DELETE", `/api/cases/${adminDraft}`);
   const gateStillOn = await signUp("Outsider Two", `outsider2.${run}@gmail.com`);
   check("the public sign-up gate is unaffected", gateStillOn.res.status >= 400 && !gateStillOn.token);
 

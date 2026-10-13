@@ -98,8 +98,11 @@ export const boardQuery = z.object({
   page: z.coerce.number().int().min(1).max(10000).optional(),
   collab: z.literal("1").optional(),
   rev: z.literal("1").optional(),
+  mine: z.literal("1").optional(),
+  unassigned: z.literal("1").optional(),
   range: z.enum(["30d", "90d", "all"]).optional(),
 });
+export const assignReviewer = z.object({ reviewerId: z.string().min(1).max(64) });
 export const reviewStatus = z.object({ status: z.literal("under_review") });
 export const closeCase = z.object({
   note: z.string().trim().min(1, "Please write a closing note.").max(5000),

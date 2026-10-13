@@ -160,7 +160,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <Lock size={16} strokeWidth={1.75} aria-hidden />
             Locked since <span className="tnum">{formatDateTime(c.escalatedAt)}</span>.
           </span>{" "}
-          Reviewers can see this case. It can&apos;t be edited or withdrawn, and its evidence can&apos;t be deleted.
+          Reviewers and administrators can see this case. It can&apos;t be edited or withdrawn, and its evidence can&apos;t be deleted.
         </Banner>
       )}
       {draft && !owner && (

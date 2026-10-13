@@ -351,7 +351,7 @@ export function EscalateButton({ caseId, hasEvidence }: { caseId: string; hasEvi
         onClose={close}
         wide
         title="Review what reviewers will see"
-        description="This is exactly what will be sent. Take your time."
+        description="This is exactly what will be sent. Reviewers and the administrators who assign them will be able to see it. Take your time."
         footer={
           <>
             <Button variant="ghost" onClick={close}>

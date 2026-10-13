@@ -19,11 +19,12 @@ export const instant = false;
 export default async function EvidencePage({ params, searchParams }: PageProps<"/vault/[id]">) {
   const { id } = await params;
   const from = (await searchParams).from;
-  const user = await pageUser(["student", "reviewer"]);
+  const user = await pageUser(["student", "reviewer", "admin"]);
   if (!isUuid(id)) notFound();
   const ev = await orNotFound(getEvidence(user, id));
   const shares = ev.isOwner ? await listEvidenceShares(user, id) : [];
-  const reviewer = user.role === "reviewer";
+  // An administrator sees evidence exactly as a reviewer does.
+  const reviewer = user.role !== "student";
   // Opened from a case: lead back to it, but only if it is a case this person can open.
   const fromCase =
     !reviewer && typeof from === "string" && isUuid(from) && (await caseVersion(user, from).catch(() => null)) ? from : null;

@@ -27,6 +27,8 @@ export const caseEventType = pgEnum("case_event_type", [
   "escalated",
   "status_changed",
   "closed",
+  "assigned",
+  "unassigned",
 ]);
 
 export type TamperReport = {
@@ -142,6 +144,24 @@ export const caseCollaborators = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.caseId, t.userId] })],
+);
+
+// Reviewers an administrator has asked to take a case. It routes work; it does not limit who can review.
+export const caseAssignments = pgTable(
+  "case_assignments",
+  {
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    reviewerId: text("reviewer_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    assignedBy: text("assigned_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.caseId, t.reviewerId] }), index("case_assignments_reviewer_idx").on(t.reviewerId)],
 );
 
 // evidence_id is RESTRICT on purpose: the evidence service detaches from

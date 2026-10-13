@@ -13,7 +13,7 @@ import { listArchives } from "@/server/services/review";
 export const instant = false;
 
 export default async function ArchivesPage({ searchParams }: PageProps<"/review/archives">) {
-  const user = await pageUser(["reviewer"]);
+  const user = await pageUser(["reviewer", "admin"]);
   const params = await searchParams;
   const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const q = first(params.q).trim().slice(0, 120);

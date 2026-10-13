@@ -1,9 +1,10 @@
 import { requireUser } from "@/server/auth";
+import { STAFF } from "@/server/authz";
 import { handle, json } from "@/server/http";
 import { listArchives } from "@/server/services/review";
 
 export const GET = handle(async (req) => {
-  const user = await requireUser({ roles: ["reviewer"] });
+  const user = await requireUser({ roles: STAFF });
   const params = new URL(req.url).searchParams;
   const days = Number(params.get("days"));
   return json({

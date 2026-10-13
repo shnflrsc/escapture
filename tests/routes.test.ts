@@ -38,12 +38,12 @@ describe("route guards (security checklist)", () => {
     expect(publicRoutes).toEqual(["auth/[...all]/route.ts", "links/[token]/route.ts", "setup/[token]/route.ts"]);
   });
 
-  it("review routes are reviewer-only", () => {
+  it("review routes are for reviewers and administrators only", () => {
     for (const f of files.filter((f) => f.includes(`${path.sep}review${path.sep}`))) {
       const src = readFileSync(f, "utf8");
       const handlers = src.match(/export const (GET|POST|PATCH|PUT|DELETE) = handle/g) ?? [];
-      const reviewerGuards = src.match(/requireUser\(\{ roles: \["reviewer"\] \}\)/g) ?? [];
-      expect(reviewerGuards.length).toBe(handlers.length);
+      const staffGuards = src.match(/requireUser\(\{ roles: (STAFF|\["reviewer", "admin"\]) \}\)/g) ?? [];
+      expect(staffGuards.length).toBe(handlers.length);
     }
   });
 

@@ -3,18 +3,21 @@ import { formatDateTime } from "@/lib/format";
 
 type Event = {
   id: string;
-  type: "created" | "escalated" | "status_changed" | "closed";
+  type: "created" | "escalated" | "status_changed" | "closed" | "assigned" | "unassigned";
   toStatus: CaseStatus | null;
   note: string | null;
   createdAt: Date | string;
   actorName?: string;
 };
 
-const TEXT: Record<Event["type"], string> = {
-  created: "Case started as a private draft",
-  escalated: "Escalated to reviewers",
-  status_changed: "Reviewers started looking at this case",
-  closed: "Reviewers closed this case",
+// For an assignment the note is the reviewer's name. Only staff are ever sent these two.
+const TEXT: Record<Event["type"], (note: string | null) => string> = {
+  created: () => "Case started as a private draft",
+  escalated: () => "Escalated to reviewers",
+  status_changed: () => "Reviewers started looking at this case",
+  closed: () => "Reviewers closed this case",
+  assigned: (name) => `${name ?? "A reviewer"} was assigned`,
+  unassigned: (name) => `${name ?? "A reviewer"} was taken off this case`,
 };
 
 /** Simple vertical timeline, ending with the closing note. */
@@ -27,14 +30,14 @@ export function Timeline({ events }: { events: Event[] }) {
           <span className="relative mt-1.5 size-[15px] shrink-0 rounded-full border-2 border-brand-500 bg-card" aria-hidden />
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-2 font-semibold">
-              {TEXT[e.type]}
+              {TEXT[e.type](e.note)}
               {e.toStatus && e.toStatus !== "draft" && <StatusBadge status={e.toStatus} />}
             </p>
             <p className="tnum text-sm leading-[22px] text-muted">
               {formatDateTime(e.createdAt)}
               {e.actorName ? ` · ${e.actorName}` : ""}
             </p>
-            {e.note && (
+            {e.note && e.type === "closed" && (
               <div className="mt-2 rounded-md bg-subtle p-4">
                 <p className="text-sm font-semibold">Closing note</p>
                 <p className="max-w-prose whitespace-pre-wrap">{e.note}</p>

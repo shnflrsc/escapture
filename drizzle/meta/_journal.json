@@ -15,6 +15,13 @@
       "when": 1791873746400,
       "tag": "0001_broad_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791890141581,
+      "tag": "0002_material_daredevil",
+      "breakpoints": true
     }
   ]
 }

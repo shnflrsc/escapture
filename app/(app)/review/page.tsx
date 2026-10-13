@@ -36,10 +36,20 @@ const RANGES: { value: BoardRange; label: string; note: string }[] = [
   { value: "all", label: "All time", note: "Every case that has been escalated" },
 ];
 
-type View = { status?: string; q?: string; sort?: string; page?: number; collab?: boolean; rev?: boolean; range?: string };
+type View = {
+  status?: string;
+  q?: string;
+  sort?: string;
+  page?: number;
+  collab?: boolean;
+  rev?: boolean;
+  mine?: boolean;
+  unassigned?: boolean;
+  range?: string;
+};
 
 export default async function ReviewBoardPage({ searchParams }: PageProps<"/review">) {
-  const user = await pageUser(["reviewer"]);
+  const user = await pageUser(["reviewer", "admin"]);
   const params = await searchParams;
   // The address is typed by people too: anything unrecognised falls back to the default view.
   const parsed = boardQuery.safeParse({
@@ -49,10 +59,19 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     page: first(params.page) || undefined,
     collab: first(params.collab) || undefined,
     rev: first(params.rev) || undefined,
+    mine: first(params.mine) || undefined,
+    unassigned: first(params.unassigned) || undefined,
     range: first(params.range) || undefined,
   });
   const raw = parsed.success ? parsed.data : {};
-  const query = { ...raw, collab: Boolean(raw.collab), rev: Boolean(raw.rev) };
+  const query = {
+    ...raw,
+    collab: Boolean(raw.collab),
+    rev: Boolean(raw.rev),
+    // Only reviewers are assigned, so "assigned to me" means nothing for an administrator.
+    mine: Boolean(raw.mine) && user.role === "reviewer",
+    unassigned: Boolean(raw.unassigned),
+  };
   const range: BoardRange = raw.range ?? "90d";
   const [board, summary, insights] = await Promise.all([
     boardPage(user, query),
@@ -67,6 +86,8 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     if (next.q) s.set("q", next.q);
     if (next.collab) s.set("collab", "1");
     if (next.rev) s.set("rev", "1");
+    if (next.mine) s.set("mine", "1");
+    if (next.unassigned) s.set("unassigned", "1");
     if (next.sort && next.sort !== "escalated") s.set("sort", next.sort);
     if (next.range && next.range !== "90d") s.set("range", next.range);
     if (next.page && next.page > 1) s.set("page", String(next.page));
@@ -79,8 +100,16 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     const to = (direction === "ascending" ? `-${column}` : column) as BoardSort;
     return { direction, href: href({ sort: to, page: 1 }) };
   };
-  const filtered = Boolean(query.status || query.q || query.collab || query.rev);
-  const clear = href({ status: undefined, q: undefined, collab: false, rev: false, page: 1 });
+  const filtered = Boolean(query.status || query.q || query.collab || query.rev || query.mine || query.unassigned);
+  const clear = href({
+    status: undefined,
+    q: undefined,
+    collab: false,
+    rev: false,
+    mine: false,
+    unassigned: false,
+    page: 1,
+  });
   const nothingOpen = !filtered && board.counts.all === 0;
 
   return (
@@ -163,12 +192,26 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                 sort: query.sort,
                 collab: query.collab ? "1" : undefined,
                 rev: query.rev ? "1" : undefined,
+                mine: query.mine ? "1" : undefined,
+                unassigned: query.unassigned ? "1" : undefined,
                 range: raw.range,
               }}
               className="w-full sm:w-[280px]"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {user.role === "reviewer" && (
+              <FilterChip
+                label="Assigned to me"
+                href={href({ mine: !query.mine, unassigned: false, page: 1 })}
+                on={query.mine}
+              />
+            )}
+            <FilterChip
+              label="Unassigned"
+              href={href({ unassigned: !query.unassigned, mine: false, page: 1 })}
+              on={query.unassigned}
+            />
             <FilterChip label="Has collaborators" href={href({ collab: !query.collab, page: 1 })} on={query.collab} />
             <FilterChip label="Has reviewer attachments" href={href({ rev: !query.rev, page: 1 })} on={query.rev} />
             {filtered && (
@@ -196,7 +239,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
             </EmptyState>
           ) : (
             <>
-              <TableBox caption="Open cases" minWidth={860}>
+              <TableBox caption="Open cases" minWidth={1000}>
                 <thead>
                   <tr className={headRow}>
                     <th scope="col" className={th}>
@@ -204,6 +247,9 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                     </th>
                     <SortHeader label="Status" {...sortable("status")} />
                     <SortHeader label="Reporter" {...sortable("reporter")} />
+                    <th scope="col" className={th}>
+                      Assigned
+                    </th>
                     <th scope="col" className={`${th} text-right`}>
                       Collaborators
                     </th>
@@ -228,6 +274,18 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                         <StatusBadge status={c.status} />
                       </td>
                       <td className={`${td} whitespace-nowrap`}>{c.reporterName}</td>
+                      <td className={`${td} max-w-[200px]`}>
+                        {c.assignees.length === 0 ? (
+                          <span className="text-muted">Unassigned</span>
+                        ) : (
+                          <span className="block truncate" title={c.assignees.map((a) => a.name).join(", ")}>
+                            {c.assignees[0].name}
+                            {c.assignees.length > 1 && (
+                              <span className="text-muted"> and {c.assignees.length - 1} more</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
                       <td className={`${td} tnum text-right`}>{c.collaboratorCount}</td>
                       <td className={`${td} tnum text-right`}>{c.evidenceCount}</td>
                       <td className={`${td} tnum whitespace-nowrap text-muted`}>

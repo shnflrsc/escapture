@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, notInArray, or, sql } from "drizzle-orm";
 import { escalationDigest, type EscalationContent } from "@/lib/digest";
 import { safeEqual } from "@/lib/hash";
 import type { Actor } from "../auth";
@@ -211,7 +211,8 @@ export async function getCase(actor: Actor, caseId: string) {
         createdAt: caseEvents.createdAt,
       })
       .from(caseEvents)
-      .where(eq(caseEvents.caseId, caseId))
+      // Which reviewer was assigned is the review team's business, not the reporter's.
+      .where(and(eq(caseEvents.caseId, caseId), notInArray(caseEvents.type, ["assigned", "unassigned"])))
       .orderBy(asc(caseEvents.createdAt)),
   ]);
   return {
@@ -502,7 +503,11 @@ export async function escalate(actor: Actor, caseId: string, digest: string) {
       fromStatus: "draft",
       toStatus: "escalated",
     });
-    const reviewers = await tx.select({ id: user.id }).from(user).where(eq(user.role, "reviewer"));
+    // Administrators hear too: they decide who takes the case.
+    const reviewers = await tx
+      .select({ id: user.id })
+      .from(user)
+      .where(and(inArray(user.role, ["reviewer", "admin"]), sql`${user.deactivatedAt} is null`));
     await notify(tx, [
       ...reviewers.map((r) => ({
         userId: r.id,

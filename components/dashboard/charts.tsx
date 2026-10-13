@@ -1,4 +1,4 @@
-import { ArrowUpRight, CircleCheck, Eye, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, CircleCheck, Eye, UserMinus, UserPlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { formatDate, formatDateTime } from "@/lib/format";
 
@@ -140,6 +140,8 @@ const EVENTS: Record<string, { Icon: LucideIcon; text: (who: string) => string }
   escalated: { Icon: ArrowUpRight, text: (who) => `${who} escalated` },
   status_changed: { Icon: Eye, text: (who) => `${who} started reviewing` },
   closed: { Icon: CircleCheck, text: (who) => `${who} closed` },
+  assigned: { Icon: UserPlus, text: (who) => `${who} assigned a reviewer to` },
+  unassigned: { Icon: UserMinus, text: (who) => `${who} took a reviewer off` },
 };
 
 /** The latest things that happened on open cases: one sentence and a time each. */
@@ -171,5 +173,11 @@ export function ActivityFeed({ items }: { items: Activity[] }) {
 }
 
 /** How to say a case's latest event in the table's "Last update" column. */
-export const lastUpdateText = (type: string | null | undefined) =>
-  type === "closed" ? "Closed" : type === "status_changed" ? "Review started" : type === "escalated" ? "Escalated" : "";
+const LAST_UPDATE: Record<string, string> = {
+  escalated: "Escalated",
+  status_changed: "Review started",
+  closed: "Closed",
+  assigned: "Reviewer assigned",
+  unassigned: "Reviewer taken off",
+};
+export const lastUpdateText = (type: string | null | undefined) => (type ? (LAST_UPDATE[type] ?? "Updated") : "");

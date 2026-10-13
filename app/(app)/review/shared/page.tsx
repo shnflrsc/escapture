@@ -16,7 +16,7 @@ import { listBoard, listSharedForReview } from "@/server/services/review";
 export const instant = false;
 
 export default async function SharedWithReviewerPage({ searchParams }: PageProps<"/review/shared">) {
-  const user = await pageUser(["reviewer"]);
+  const user = await pageUser(["reviewer", "admin"]);
   const showAll = (await searchParams).tab === "all";
   const [all, board] = await Promise.all([listSharedForReview(user), listBoard(user)]);
   const unattached = all.filter((e) => e.cases.length === 0);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashboard/data-table";
 import { PageCrumbs } from "@/components/safetrail/app-shell";
+import { AssignReviewers } from "@/components/safetrail/assign-reviewers";
 import { CloseCasePanel, StartReviewButton } from "@/components/safetrail/review-actions";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { Timeline } from "@/components/safetrail/timeline";
@@ -11,7 +12,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDateTime, initials, kindLabel } from "@/lib/format";
 import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
-import { getReviewCase } from "@/server/services/review";
+import { getReviewCase, listAssignableReviewers } from "@/server/services/review";
 
 // Per-user page: allowed to wait for the server on navigation.
 export const instant = false;
@@ -20,10 +21,14 @@ const panelTitle = "text-[17px] leading-6";
 
 export default async function ReviewCasePage({ params }: PageProps<"/review/[id]">) {
   const { id } = await params;
-  const user = await pageUser(["reviewer"]);
+  const user = await pageUser(["reviewer", "admin"]);
   if (!isUuid(id)) notFound();
   const c = await orNotFound(getReviewCase(user, id));
   const closed = c.status === "closed";
+  // Only an administrator assigns, and only while the case is open.
+  const canAssign = user.role === "admin" && !closed;
+  const assigned = new Set(c.assignees.map((a) => a.id));
+  const assignable = canAssign ? (await listAssignableReviewers(user)).filter((r) => !assigned.has(r.id)) : [];
   const people = [
     { ...c.owner, role: "Reporter" },
     ...c.collaborators.map((p) => ({ ...p, role: "Collaborator" })),
@@ -112,7 +117,8 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                 <h2 className="text-[20px] leading-7">Added by reviewers</h2>
                 <p className="mt-0.5 flex items-start gap-1.5 text-sm leading-[22px] text-muted">
                   <EyeOff size={16} strokeWidth={1.75} aria-hidden className="mt-[3px] shrink-0" />
-                  Only reviewers can see this section. The student who reported and collaborators can&apos;t.
+                  Only reviewers and administrators can see this section. The student who reported and collaborators
+                  can&apos;t.
                 </p>
               </div>
               {!closed && (
@@ -167,6 +173,11 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                 </li>
               ))}
             </ul>
+          </Card>
+
+          <Card className="flex flex-col gap-3">
+            <h2 className={panelTitle}>Assigned reviewers</h2>
+            <AssignReviewers caseId={c.id} assignees={c.assignees} reviewers={assignable} canEdit={canAssign} />
           </Card>
 
           <Card className="flex flex-col gap-3">

@@ -10,7 +10,7 @@ Three kinds of people use it:
 
 - **Students (reporters and collaborators).** Often stressed, embarrassed or scared. They need calm, clarity and a sense of control.
 - **Case reviewers.** Work through cases on a shared Review Board. They need density, scannability and trust signals.
-- **Administrators.** Create reviewer accounts. Low-frequency, simple screens.
+- **Administrators.** Create reviewer accounts, assign reviewers to cases, and can review cases as a reviewer does.
 
 Target: **desktop browsers first.** The layout is designed at 1280px. Below 1024px the sidebar becomes a drawer opened from a menu button in the header, and the Vault is laid out for tablets and phones. Other pages only need to stay usable there; do not build separate mobile variants of them.
 
@@ -162,7 +162,7 @@ Load both through `next/font/google` (self-hosted at build time). Do not add any
   - A sentence-case group label above the nav ("Your space", "Reviews", "Administration"), 13px 600 `muted`.
   - Students: Vault, Cases, Notifications.
   - Reviewers: Review Board, Shared with me, Case Archives, Notifications.
-  - Administrators: Reviewer accounts, Notifications.
+  - Administrators: Review Board, Shared with me, Case Archives, Reviewer accounts, Notifications.
   - Active item: `brand-100` background, `brand-800` text, 10px radius, 44px tall. Unread notifications show a small `brand-700` dot, not a red count badge.
   - A small `brand-50` help card at the bottom (one heading, one sentence, at most one link), then Help, Privacy and Terms links.
 - **Header**
@@ -254,7 +254,7 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
   6. Recent activity.
 - The table is the job. Tiles and the chart summarise it and never replace it.
 - Chart colors come from the chart tokens (`chart-primary`, `chart-escalated`, `chart-review`, `chart-closed`), never badge colors. Never red, even when numbers rise.
-- Administrators get the same shell with a plain table and no tiles or charts.
+- Administrators get the reviewers' pages unchanged, plus Reviewer accounts: a plain table with no tiles or charts.
 
 ### Account menu
 - Opens from the header's account button. It shows the name and email, then "Sign out". It uses the same menu component as row menus.

@@ -35,6 +35,16 @@ describe("evidence", () => {
     expect(authz.canViewEvidence(admin, facts())).toBe("not_found");
   });
 
+  it("staff see evidence only once it is attached to a case that is no longer a draft", () => {
+    for (const staff of [reviewer, admin]) {
+      expect(authz.canViewEvidence(staff, facts())).toBe("not_found");
+      expect(authz.canViewEvidence(staff, facts({ inOwnCaseReporterSide: true }))).toBe("not_found");
+      expect(authz.canViewEvidence(staff, facts({ attachedToNonDraftCase: true }))).toBe("ok");
+      // Seeing is not owning: staff can't rename, share or delete it.
+      expect(authz.canManageEvidence(staff, facts({ attachedToNonDraftCase: true }))).toBe("forbidden");
+    }
+  });
+
   it("case participants see reporter-side evidence of their cases", () => {
     expect(authz.canViewEvidence(jules, facts({ inOwnCaseReporterSide: true }))).toBe("ok");
   });
@@ -130,12 +140,29 @@ describe("cases, student side", () => {
 });
 
 describe("review", () => {
-  it("reviewers never see drafts (I1); non-reviewers are forbidden", () => {
+  it("reviewers and administrators never see drafts (I1); students are forbidden", () => {
     expect(authz.canReviewCase(reviewer, { status: "draft" })).toBe("not_found");
     expect(authz.canReviewCase(reviewer, { status: "escalated" })).toBe("ok");
     expect(authz.canReviewCase(reviewer, { status: "closed" })).toBe("ok");
     expect(authz.canReviewCase(maya, { status: "escalated" })).toBe("forbidden");
-    expect(authz.canReviewCase(admin, { status: "escalated" })).toBe("forbidden");
+    expect(authz.canReviewCase(admin, { status: "draft" })).toBe("not_found");
+    expect(authz.canReviewCase(admin, { status: "escalated" })).toBe("ok");
+    expect(authz.canReviewCase(admin, { status: "closed" })).toBe("ok");
+  });
+
+  it("an administrator can do what a reviewer can on a case", () => {
+    expect(authz.canChangeStatus(admin, "escalated", "under_review")).toBe("ok");
+    expect(authz.canChangeStatus(admin, "under_review", "closed")).toBe("ok");
+    expect(authz.canChangeStatus(admin, "closed", "under_review")).toBe("locked");
+    expect(authz.canChangeStatus(admin, "draft", "under_review")).toBe("not_found");
+    const open = { status: "under_review" as const };
+    expect(authz.canAttachAsReviewer(admin, open, { ownerId: "alex", sharedWithUser: true })).toBe("ok");
+    expect(authz.canAttachAsReviewer(admin, open, { ownerId: "alex", sharedWithUser: false })).toBe("not_found");
+    // Still nothing a student owns: no editing, escalating or deleting someone's case.
+    const c = { ownerId: "maya", status: "draft" as const, collaboratorIds: [] };
+    expect(authz.canViewCase(admin, c)).toBe("not_found");
+    expect(authz.canEditCase(admin, c)).toBe("not_found");
+    expect(authz.canEscalate(admin, c)).toBe("not_found");
   });
 
   it("allows only the documented status transitions, with no reopening", () => {
@@ -159,6 +186,17 @@ describe("review", () => {
     expect(authz.canAttachAsReviewer(reviewer, { status: "closed" }, { ownerId: "rev", sharedWithUser: false })).toBe("locked");
     expect(authz.canAttachAsReviewer(reviewer, { status: "draft" }, { ownerId: "rev", sharedWithUser: false })).toBe("not_found");
     expect(authz.canAttachAsReviewer(maya, open, { ownerId: "maya", sharedWithUser: false })).toBe("forbidden");
+  });
+});
+
+describe("assigning reviewers", () => {
+  it("only an administrator assigns, and only while the case is open", () => {
+    expect(authz.canAssignReviewer(admin, { status: "escalated" })).toBe("ok");
+    expect(authz.canAssignReviewer(admin, { status: "under_review" })).toBe("ok");
+    expect(authz.canAssignReviewer(admin, { status: "closed" })).toBe("locked");
+    expect(authz.canAssignReviewer(admin, { status: "draft" })).toBe("not_found");
+    expect(authz.canAssignReviewer(reviewer, { status: "escalated" })).toBe("forbidden");
+    expect(authz.canAssignReviewer(maya, { status: "escalated" })).toBe("forbidden");
   });
 });
 

@@ -4,7 +4,7 @@ import { randomToken, sha256Hex } from "@/lib/hash";
 import { auth, signupBypass, type Actor, type Role } from "../auth";
 import { canProvisionReviewer, enforce } from "../authz";
 import { db } from "../db";
-import { session, user, verification } from "../db/schema";
+import { caseAssignments, cases, session, user, verification } from "../db/schema";
 import { AppError, badRequest, conflict, notFound } from "../errors";
 
 export const SETUP_LINK_DAYS = 7;
@@ -99,7 +99,18 @@ export async function setReviewerActive(actor: Actor, userId: string, active: bo
   const reviewer = await loadReviewer(userId);
   await db.transaction(async (tx) => {
     await tx.update(user).set({ deactivatedAt: active ? null : (reviewer.deactivatedAt ?? new Date()) }).where(eq(user.id, userId));
-    if (!active) await tx.delete(session).where(eq(session.userId, userId));
+    if (!active) {
+      await tx.delete(session).where(eq(session.userId, userId));
+      // They can no longer act on anything, so open cases shouldn't still name them. Closed cases keep their record.
+      await tx
+        .delete(caseAssignments)
+        .where(
+          and(
+            eq(caseAssignments.reviewerId, userId),
+            sql`${caseAssignments.caseId} in (select ${cases.id} from ${cases} where ${cases.status} in ('escalated', 'under_review'))`,
+          ),
+        );
+    }
   });
   return { id: userId, active };
 }

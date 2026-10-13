@@ -40,6 +40,8 @@ const kinds: Record<string, { Icon: LucideIcon; tone: Tone }> = {
   case_closed: { Icon: CircleCheck, tone: "done" },
   case_status_changed: { Icon: Eye, tone: "plain" },
   case_shared: { Icon: UserPlus, tone: "plain" },
+  case_assigned: { Icon: UserPlus, tone: "attention" },
+  case_unassigned: { Icon: UserMinus, tone: "plain" },
   evidence_shared: { Icon: Share2, tone: "plain" },
   collaborator_joined: { Icon: UserPlus, tone: "plain" },
   collaborator_left: { Icon: UserMinus, tone: "plain" },
@@ -50,7 +52,7 @@ const kinds: Record<string, { Icon: LucideIcon; tone: Tone }> = {
 
 /** Where a notification leads for this role, if anywhere. */
 export function notificationHref(n: Pick<NotificationItem, "caseId" | "evidenceId">, role: string): string | null {
-  if (n.caseId) return role === "reviewer" ? `/review/${n.caseId}` : `/cases/${n.caseId}`;
+  if (n.caseId) return role === "student" ? `/cases/${n.caseId}` : `/review/${n.caseId}`;
   return n.evidenceId ? `/vault/${n.evidenceId}` : null;
 }
 

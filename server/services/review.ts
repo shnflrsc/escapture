@@ -1,9 +1,18 @@
 import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { dayKey } from "@/lib/format";
 import type { Actor } from "../auth";
-import { assertRole, canAttachAsReviewer, canChangeStatus, canReviewCase, enforce } from "../authz";
+import {
+  assertRole,
+  canAssignReviewer,
+  canAttachAsReviewer,
+  canChangeStatus,
+  canReviewCase,
+  enforce,
+  STAFF,
+} from "../authz";
 import { db } from "../db";
 import {
+  caseAssignments,
   caseCollaborators,
   caseEvents,
   caseEvidence,
@@ -12,7 +21,7 @@ import {
   evidenceShares,
   user,
 } from "../db/schema";
-import { conflict } from "../errors";
+import { badRequest, conflict, notFound } from "../errors";
 import { listCaseEvidence, listCollaborators, loadCase } from "./cases";
 import { excerpt, notify } from "./notifications";
 
@@ -36,9 +45,23 @@ async function counts(caseIds: string[]) {
   };
 }
 
+/** Who is assigned to each of these cases, in the order they were assigned. */
+async function assigneesOf(caseIds: string[]) {
+  const byCase = new Map<string, { id: string; name: string }[]>();
+  if (!caseIds.length) return byCase;
+  const rows = await db
+    .select({ caseId: caseAssignments.caseId, id: user.id, name: user.name })
+    .from(caseAssignments)
+    .innerJoin(user, eq(user.id, caseAssignments.reviewerId))
+    .where(inArray(caseAssignments.caseId, caseIds))
+    .orderBy(asc(caseAssignments.createdAt));
+  for (const r of rows) byCase.set(r.caseId, [...(byCase.get(r.caseId) ?? []), { id: r.id, name: r.name }]);
+  return byCase;
+}
+
 /** Board data: escalated and under review only. Drafts never appear (I1). */
 export async function listBoard(actor: Actor, status?: "escalated" | "under_review") {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const rows = await db
     .select({
       id: cases.id,
@@ -75,6 +98,10 @@ export type BoardQuery = {
   collab?: boolean;
   /** Only cases a reviewer has attached evidence to. */
   rev?: boolean;
+  /** Only cases assigned to the person asking. */
+  mine?: boolean;
+  /** Only cases nobody is assigned to. */
+  unassigned?: boolean;
 };
 
 const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -84,7 +111,7 @@ const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
  * and closed cases never appear, whatever the filters say (I1).
  */
 export async function boardPage(actor: Actor, query: BoardQuery = {}) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const term = query.q?.trim();
   const search = and(
     term ? or(ilike(cases.title, likeTerm(term)), ilike(user.name, likeTerm(term))) : undefined,
@@ -93,6 +120,12 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
       : undefined,
     query.rev
       ? sql`exists (select 1 from ${caseEvidence} where ${caseEvidence.caseId} = ${cases.id} and ${caseEvidence.side} = 'reviewer')`
+      : undefined,
+    query.mine
+      ? sql`exists (select 1 from ${caseAssignments} where ${caseAssignments.caseId} = ${cases.id} and ${caseAssignments.reviewerId} = ${actor.id})`
+      : undefined,
+    query.unassigned
+      ? sql`not exists (select 1 from ${caseAssignments} where ${caseAssignments.caseId} = ${cases.id})`
       : undefined,
   );
   const open = inArray(cases.status, ["escalated", "under_review"]);
@@ -131,8 +164,9 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
   for (const r of byStatus) if (r.status === "escalated" || r.status === "under_review") tally[r.status] = r.n;
   const total = query.status ? tally[query.status] : tally.escalated + tally.under_review;
   const ids = rows.map((r) => r.id);
-  const [c, latest] = await Promise.all([
+  const [c, assignees, latest] = await Promise.all([
     counts(ids),
+    assigneesOf(ids),
     // The newest event of each case on this page, for the "Last update" column.
     ids.length
       ? db
@@ -153,6 +187,7 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
       lastEvent: last.get(r.id) ? { type: last.get(r.id)!.type, at: last.get(r.id)!.at } : null,
       evidenceCount: c.evidence.get(r.id) ?? 0,
       collaboratorCount: c.collaborators.get(r.id) ?? 0,
+      assignees: assignees.get(r.id) ?? [],
     })),
     counts: { all: tally.escalated + tally.under_review, ...tally },
     total,
@@ -171,7 +206,7 @@ const rangeDays: Record<BoardRange, number | null> = { "30d": 30, "90d": 90, all
  * things that happened on open cases. Counts only; nothing from inside a case.
  */
 export async function boardInsights(actor: Actor, range: BoardRange = "90d", now: Date = new Date()) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   // Weeks run Monday to Sunday in Manila. `thisMonday` is the start of the current one.
   const today = new Date(`${dayKey(now)}T00:00:00+08:00`);
   const sinceMonday = (new Date(`${dayKey(now)}T12:00:00+08:00`).getUTCDay() + 6) % 7;
@@ -223,7 +258,7 @@ export async function boardInsights(actor: Actor, range: BoardRange = "90d", now
 
 /** The four numbers above the board. Each is a count with one plain fact beside it. */
 export async function boardSummary(actor: Actor, now: Date = new Date()) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   // The first of this month in Manila, where the university is.
   const monthStart = new Date(`${dayKey(now).slice(0, 7)}-01T00:00:00+08:00`);
@@ -266,14 +301,20 @@ export async function boardSummary(actor: Actor, now: Date = new Date()) {
 }
 
 export async function getReviewCase(actor: Actor, caseId: string) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const { c } = await loadCase(db, caseId);
   enforce(canReviewCase(actor, c));
-  const [[owner], collaborators, reporterEvidence, reviewerEvidence, events] = await Promise.all([
+  const [[owner], collaborators, reporterEvidence, reviewerEvidence, assignees, events] = await Promise.all([
     db.select({ id: user.id, name: user.name, email: user.email }).from(user).where(eq(user.id, c.ownerId)),
     listCollaborators(db, caseId),
     listCaseEvidence(db, caseId, "reporter"),
     listCaseEvidence(db, caseId, "reviewer"),
+    db
+      .select({ id: user.id, name: user.name, email: user.email, assignedAt: caseAssignments.createdAt })
+      .from(caseAssignments)
+      .innerJoin(user, eq(user.id, caseAssignments.reviewerId))
+      .where(eq(caseAssignments.caseId, caseId))
+      .orderBy(asc(caseAssignments.createdAt)),
     db
       .select({
         id: caseEvents.id,
@@ -302,12 +343,70 @@ export async function getReviewCase(actor: Actor, caseId: string) {
     reporterEvidence,
     // Kept separate from the reporter's evidence, never shown to them (I5).
     reviewerEvidence,
+    assignees,
     events,
   };
 }
 
+/** The reviewer accounts an administrator can assign: every one that isn't deactivated. */
+export async function listAssignableReviewers(actor: Actor) {
+  assertRole(actor, "admin");
+  return db
+    .select({ id: user.id, name: user.name, email: user.email, office: user.office })
+    .from(user)
+    .where(and(eq(user.role, "reviewer"), sql`${user.deactivatedAt} is null`))
+    .orderBy(sql`lower(${user.name})`);
+}
+
+/** An administrator asks a reviewer to take an open case. The reviewer is told. */
+export async function assignReviewer(actor: Actor, caseId: string, reviewerId: string) {
+  assertRole(actor, ...STAFF);
+  return db.transaction(async (tx) => {
+    const { c } = await loadCase(tx, caseId, { lock: true });
+    enforce(canAssignReviewer(actor, c), "This case is closed, so its reviewers can't be changed.");
+    const [target] = await tx
+      .select({ id: user.id, name: user.name, role: user.role, deactivatedAt: user.deactivatedAt })
+      .from(user)
+      .where(eq(user.id, reviewerId))
+      .limit(1);
+    if (!target || target.role !== "reviewer") throw notFound("We couldn't find that reviewer.");
+    if (target.deactivatedAt) throw badRequest("That reviewer's account is deactivated.");
+    const inserted = await tx
+      .insert(caseAssignments)
+      .values({ caseId, reviewerId, assignedBy: actor.id })
+      .onConflictDoNothing()
+      .returning({ reviewerId: caseAssignments.reviewerId });
+    if (!inserted.length) throw conflict(`${target.name} is already assigned to this case.`, "already_assigned");
+    // The note holds the reviewer's name as it was, so the history reads the same later.
+    await tx.insert(caseEvents).values({ caseId, actorId: actor.id, type: "assigned", note: target.name });
+    await notify(tx, [
+      { userId: reviewerId, type: "case_assigned", title: "You were assigned to a case", body: c.title, caseId },
+    ]);
+    return { caseId, reviewer: { id: target.id, name: target.name } };
+  });
+}
+
+export async function unassignReviewer(actor: Actor, caseId: string, reviewerId: string) {
+  assertRole(actor, ...STAFF);
+  return db.transaction(async (tx) => {
+    const { c } = await loadCase(tx, caseId, { lock: true });
+    enforce(canAssignReviewer(actor, c), "This case is closed, so its reviewers can't be changed.");
+    const removed = await tx
+      .delete(caseAssignments)
+      .where(and(eq(caseAssignments.caseId, caseId), eq(caseAssignments.reviewerId, reviewerId)))
+      .returning({ reviewerId: caseAssignments.reviewerId });
+    if (!removed.length) throw notFound("That reviewer isn't assigned to this case.");
+    const [target] = await tx.select({ name: user.name }).from(user).where(eq(user.id, reviewerId)).limit(1);
+    await tx.insert(caseEvents).values({ caseId, actorId: actor.id, type: "unassigned", note: target?.name ?? null });
+    await notify(tx, [
+      { userId: reviewerId, type: "case_unassigned", title: "You were taken off a case", body: c.title, caseId },
+    ]);
+    return { caseId, reviewerId };
+  });
+}
+
 export async function setUnderReview(actor: Actor, caseId: string) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   return db.transaction(async (tx) => {
     const { c, facts } = await loadCase(tx, caseId, { lock: true });
     enforce(canChangeStatus(actor, c.status, "under_review"), "Only an escalated case can be moved to under review.");
@@ -338,7 +437,7 @@ export async function setUnderReview(actor: Actor, caseId: string) {
 }
 
 export async function closeCase(actor: Actor, caseId: string, note: string) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   return db.transaction(async (tx) => {
     const { c, facts } = await loadCase(tx, caseId, { lock: true });
     enforce(canChangeStatus(actor, c.status, "closed"), "This case is already closed.");
@@ -370,9 +469,9 @@ export async function closeCase(actor: Actor, caseId: string, note: string) {
   });
 }
 
-/** Reviewer attachment: evidence owned by or shared with this reviewer, side = reviewer. */
+/** Staff attachment: evidence owned by or shared with this person, side = reviewer. */
 export async function attachReviewerEvidence(actor: Actor, caseId: string, evidenceId: string) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   return db.transaction(async (tx) => {
     const { c } = await loadCase(tx, caseId, { lock: true });
     const [ev] = await tx
@@ -403,7 +502,7 @@ export async function attachReviewerEvidence(actor: Actor, caseId: string, evide
 
 /** The cases (never drafts) a piece of evidence is attached to, and on which side. */
 export async function casesWithEvidence(actor: Actor, evidenceId: string) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   return db
     .select({ id: cases.id, title: cases.title, status: cases.status, side: caseEvidence.side })
     .from(caseEvidence)
@@ -417,7 +516,7 @@ export async function casesWithEvidence(actor: Actor, evidenceId: string) {
  * attached to, if any. The newest share comes first.
  */
 export async function listSharedForReview(actor: Actor) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const rows = await db
     .select({
       id: evidence.id,
@@ -467,7 +566,7 @@ export type ArchiveQuery = {
 
 /** Closed cases, newest first. The search covers the title, reporter, description and closing note. */
 export async function listArchives(actor: Actor, query: ArchiveQuery = {}) {
-  assertRole(actor, "reviewer");
+  assertRole(actor, ...STAFF);
   const term = query.q?.trim();
   const like = term ? likeTerm(term) : null;
   const rows = await db

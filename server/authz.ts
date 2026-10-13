@@ -8,6 +8,10 @@ export type CaseStatus = "draft" | "escalated" | "under_review" | "closed";
 export type Decision = "ok" | "not_found" | "forbidden" | "locked";
 
 type U = { id: string; role: Role };
+
+/** The roles that handle escalated cases. An administrator can do everything a reviewer can. */
+export const STAFF: Role[] = ["reviewer", "admin"];
+export const isStaff = (u: { role: Role }) => u.role === "reviewer" || u.role === "admin";
 type CaseFacts = { ownerId: string; status: CaseStatus; collaboratorIds: string[] };
 
 export type EvidenceFacts = {
@@ -39,7 +43,7 @@ export function canViewEvidence(u: U, e: EvidenceFacts): Decision {
   if (e.ownerId === u.id) return "ok";
   if (e.sharedWithUser) return "ok";
   if (u.role === "student" && e.inOwnCaseReporterSide) return "ok";
-  if (u.role === "reviewer" && e.attachedToNonDraftCase) return "ok";
+  if (isStaff(u) && e.attachedToNonDraftCase) return "ok";
   return "not_found";
 }
 
@@ -118,16 +122,26 @@ export function canEscalate(u: U, c: CaseFacts): Decision {
 
 // ---- Administration ----
 
-/** Only an administrator creates reviewer accounts. Administrators never see cases or evidence. */
+/** Only an administrator creates reviewer accounts. */
 export function canProvisionReviewer(u: U): Decision {
   return u.role === "admin" ? "ok" : "forbidden";
 }
 
-// ---- Review (reviewer role only) ----
+/**
+ * Only an administrator assigns reviewers to a case, and only while it is open.
+ * Assigning routes the work: it never limits which reviewers can see or act on a case.
+ */
+export function canAssignReviewer(u: U, c: { status: CaseStatus }): Decision {
+  if (u.role !== "admin") return "forbidden";
+  if (c.status === "draft") return "not_found";
+  return c.status === "closed" ? "locked" : "ok";
+}
 
-/** Reviewers never see drafts (I1). */
+// ---- Review (reviewers and administrators) ----
+
+/** Staff never see drafts (I1). */
 export function canReviewCase(u: U, c: { status: CaseStatus }): Decision {
-  if (u.role !== "reviewer") return "forbidden";
+  if (!isStaff(u)) return "forbidden";
   return c.status === "draft" ? "not_found" : "ok";
 }
 
