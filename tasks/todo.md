@@ -1,210 +1,200 @@
-# Tasks: Case page
+# Tasks: Dashboard shell, notifications, reviewer dashboard, admin page
 
-Plan and rationale: [plan.md](plan.md). **Approved and implemented.** Browser checks were run with a throwaway headless-Chrome script (two students signed in at once), not a test kept in the repository.
+Plan and rationale: [plan.md](plan.md). Design source: [reference/](reference/).
 
-Standing checks for every task: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `/cases/[id]` still loads for an owner and a collaborator, as a draft and after escalation.
+**Standing checks after every task:**
+
+- Run `pnpm typecheck && pnpm lint && pnpm test`.
+- Sign in as each seeded role (`pnpm db:seed` prints the accounts) and check that every page in that role's sidebar loads at 1280px and 375px, with no sideways page scroll.
+- Check the keyboard path: Tab reaches every control, the focus ring is visible, and Escape closes popovers and dialogs.
+
+Do every **P0** task before any **P1** task. Commit after each task.
 
 ---
 
-## Phase 1: Evidence
+## Phase 1: Foundation (P0)
 
-### - [x] Task 1: Evidence table and page text cleanup
+### - [x] Task 1: Update DESIGN.md and tokens
 
-**Description:** Replace the tall evidence rows with a table, and remove the explanatory text the page no longer needs.
-
-**Acceptance criteria:**
-- [x] The table shows name, kind, captured and "added by" (you, or the person's name); a row opens the evidence page. With nothing attached it shows an empty message.
-- [x] Remove appears only on rows the viewer may remove (owner: any; collaborator: their own), and only on drafts.
-- [x] The "What happened" heading, the header sentence and every section subtitle are gone; the status chip stays.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test`
-- [x] Browser check as owner and collaborator, draft and escalated, at 1280 and 375.
-
-**Dependencies:** None
-
-**Files likely touched:** `components/safetrail/case-evidence-table.tsx` (new), `app/(app)/cases/[id]/page.tsx`, `components/safetrail/case-actions.tsx`
-
-**Estimated scope:** Medium
-
-### - [x] Task 2: Evidence picker
-
-**Description:** "Add evidence" above the table opens a dialog of your vault where you tick one or several items and add them in one go. It replaces the dropdown.
+**Description:** Apply [design-md-changes.md](design-md-changes.md) to `DESIGN.md`. Add the chart tokens (`--chart-primary`, `--chart-fill`, `--chart-grid`, `--chart-axis`, `--chart-escalated`, `--chart-review`, `--chart-closed`) and `--shadow-drawer` to `app/globals.css`, with values from `reference/ds/tokens.json`. Map them in `@theme inline`.
 
 **Acceptance criteria:**
-- [x] The dialog lists your own items not yet in the case, with search and a kind filter; the Add button shows how many are ticked and is disabled at zero.
-- [x] Adding sends one request; all ticked items are attached or none are, the table updates and a toast confirms. A failure keeps the dialog and the ticks.
-- [x] With an empty vault, or nothing left to add, the dialog says so. The single-item attach used by the evidence page still works.
+- [x] DESIGN.md describes the header, the notifications popover and the reviewer dashboard. "No top bar" is gone.
+- [x] The new tokens exist, and no raw hex values appear in components.
 
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm smoke` with new checks: several at once; one not yours refuses the whole request; an escalated case refuses.
-- [x] Browser check: add three, search then add, keyboard only.
+**Verification:** `pnpm lint`, and read through the DESIGN.md diff.
+
+**Files likely touched:** `DESIGN.md`, `app/globals.css`
+
+**Estimated scope:** Small
+
+### - [ ] Task 2: Shell: sidebar and header
+
+**Description:** Rework `components/safetrail/app-shell.tsx` into a sidebar plus a content column with a 64px sticky header (`reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, `.sb`/`.hd` in `reference/app.css`). Move the account block into a header account menu. Add the admin nav (Reviewer accounts, Notifications). Merge the mobile top bar into the header.
+
+**Acceptance criteria:**
+- [ ] Sidebar: logo, role label, group label, nav with active state and unread dot, role help card, footer links. No account block.
+- [ ] Header: breadcrumb slot, search slot, Help, bell (with dot when anything is unread), divider, account button that opens a menu with name, email and "Sign out".
+- [ ] Below 1024px: the menu button sits in the header and opens the existing drawer, the search wraps to its own row, and there is only one bar.
+- [ ] Students get comfortable density and reviewers and admins get compact, as today.
+
+**Verification:** Standing checks, plus sign out from the header menu for each role.
 
 **Dependencies:** Task 1
 
-**Files likely touched:** `components/safetrail/evidence-picker.tsx` (new), `server/services/cases.ts`, `lib/validators.ts`, `app/api/cases/[id]/evidence/route.ts`, `scripts/smoke.ts`
+**Files likely touched:** `components/safetrail/app-shell.tsx`, new `components/safetrail/app-header.tsx`, `components/safetrail/account-menu.tsx`, `app/(app)/layout.tsx`
 
 **Estimated scope:** Medium
 
-### - [x] Task 3: Back to the case from an evidence page
+### - [ ] Task 3: Notification popover
 
-**Description:** Opening evidence from a case and pressing the page's back link returns to that case.
+**Description:** The bell opens a popover with the latest 6 notifications (fetched on open from `GET /api/notifications`), "Mark all as read" (`POST /api/notifications/read`) and "View all notifications".
 
 **Acceptance criteria:**
-- [x] Evidence opened from a case shows "Back to the case" and returns there.
-- [x] Opened from the vault, or with a case the viewer cannot open in the address, it shows today's link.
+- [ ] Row anatomy follows plan.md: icon circle by type, title, relative time, unread dot, and a `brand-50` background on unread rows. Each row links to its case or evidence.
+- [ ] The empty state reads "You're all caught up."
+- [ ] `aria-expanded` and an accessible name with the unread count are set. Escape and an outside click close it, focus returns to the bell, and it never opens together with the drawer.
+- [ ] After "Mark all as read" the dot disappears (via `router.refresh()`).
+- [ ] No red badge or count bubble.
 
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint`
-- [x] Browser check: from a case, from the vault, and with someone else's case id typed into the address.
+**Verification:** Standing checks, plus escalating a case as a student and then seeing the notification in a reviewer's popover.
 
-**Dependencies:** Task 1
+**Dependencies:** Task 2
 
-**Files likely touched:** `app/(app)/vault/[id]/page.tsx`, `components/safetrail/case-evidence-table.tsx`
+**Files likely touched:** new `components/safetrail/notification-popover.tsx`, `components/safetrail/app-header.tsx`
+
+**Estimated scope:** Medium
+
+### - [ ] Task 4: `/notifications` tabs and day groups
+
+**Description:** Add All/Unread tabs (`?tab=unread`) and group rows into Today, Earlier this week and Earlier, using the popover's row anatomy (`reference/StudentNotifications.dc.html`).
+
+**Acceptance criteria:**
+- [ ] Header copy and the footer caption match plan.md. "Mark all as read" still works.
+- [ ] The page works for students, reviewers and admins.
+
+**Verification:** Standing checks.
+
+**Dependencies:** Task 3
+
+**Files likely touched:** `app/(app)/notifications/page.tsx`, `components/safetrail/notification-actions.tsx`
 
 **Estimated scope:** Small
 
-### Checkpoint: Evidence
-- [x] Standing checks and `pnpm smoke` pass
-- [x] A student can build a case's evidence list without a dropdown, and get back from an item
-- [x] Review with human before continuing
+### - [ ] Task 5: Breadcrumbs and header search on every page
+
+**Description:** Every signed-in page sets its breadcrumb trail. Detail pages show "Section › Title". Header search submits to the role's target (plan.md, "Decisions with defaults").
+
+**Acceptance criteria:**
+- [ ] `/vault/[id]` shows "Vault › {label}", `/cases/[id]` shows "Cases › {title}", and `/review/[id]` shows "Review Board › {title}". Top-level pages show their name.
+- [ ] Student search goes to `/vault?q=`, reviewer search to `/review?q=`, and admin search to `/admin/reviewers?q=`. The current query is pre-filled.
+- [ ] The layout doesn't fetch page data to build breadcrumbs.
+
+**Verification:** Standing checks.
+
+**Dependencies:** Task 2 (the board `q` filter lands in Task 6, and the admin `q` in Task 7)
+
+**Files likely touched:** `components/safetrail/app-header.tsx`, each `app/(app)/**/page.tsx`
+
+**Estimated scope:** Small to medium
+
+## Phase 2: Reviewer and admin (P0)
+
+### - [ ] Task 6: Review Board table and tiles
+
+**Description:** Replace the kanban columns with tiles, a toolbar and a table (`reference/ReviewBoard.dc.html`).
+
+**Acceptance criteria:**
+- [ ] Four tiles (Escalated, Under Review, Shared with you, Closed this month), each with a count and one line of context, computed by a new `boardSummary(actor)`.
+- [ ] Tabs All open / Escalated / Under Review (`?status=`) and search (`?q=`, title or reporter) filter the table.
+- [ ] Table columns are Case, Status, Reporter, Collaborators, Evidence and Escalated. The Status, Reporter and Escalated headers sort via `?sort=` with `aria-sort`. Rows are focusable and open on Enter.
+- [ ] Pagination after 20 rows. An empty result shows an `EmptyState` with "Clear filters".
+- [ ] Closed cases never appear. Drafts never appear (the existing rule).
+
+**Verification:** Standing checks, plus unit tests for the `listBoard` filters and `boardSummary` counts against seeded data.
+
+**Dependencies:** Task 2
+
+**Files likely touched:** `app/(app)/review/page.tsx`, `server/services/review.ts`, new `components/dashboard/stat-tile.tsx`, `components/dashboard/board-table.tsx`, `components/ui/tabs.tsx` (if missing)
+
+**Estimated scope:** Medium to large
+
+### - [ ] Task 7: Admin: reviewer accounts
+
+**Description:** New `/admin/reviewers` with a reviewer table and a "Create a reviewer account" form (`reference/AdminReviewers.dc.html`, adapted as plan.md says: temporary password, no Office, no Deactivate in P0).
+
+**Acceptance criteria:**
+- [ ] Only admins can open it; other roles are redirected home. `homeFor("admin")` returns `/admin/reviewers`.
+- [ ] `POST /api/admin/reviewers` (zod: name, email, password of 8+ characters) creates a reviewer using shared logic moved from `scripts/lib/users.ts` into `server/services/admin.ts`. The CLI still works.
+- [ ] An email that already belongs to a student returns 409 with "That email already belongs to a student account." Errors show as plain sentences under the fields.
+- [ ] The table lists reviewers with Created and Last sign-in ("Not yet" when they have never signed in). Optional `?q=` search.
+- [ ] On success: the toast "Reviewer account created", the form clears, and the table refreshes.
+
+**Verification:** Standing checks, plus a `canProvisionReviewer` test in `tests/authz.test.ts` and a route test in `tests/routes.test.ts`. Create a reviewer in the browser, then sign in as them.
+
+**Dependencies:** Task 2
+
+**Files likely touched:** `app/(app)/admin/reviewers/page.tsx`, `app/api/admin/reviewers/route.ts`, `server/services/admin.ts`, `server/authz.ts`, `server/auth.ts`, `scripts/lib/users.ts`, `components/safetrail/app-shell.tsx`, `tests/*`
+
+**Estimated scope:** Medium
+
+### - [ ] Task 8: Reviewer case page layout
+
+**Description:** Rearrange `/review/[id]` into the two-column layout (`reference/ReviewCase.dc.html`). Behaviour doesn't change.
+
+**Acceptance criteria:**
+- [ ] Left: Description, the "Reporter's evidence" table ("Passed tamper checks"), and the "Added by reviewers" zone with its privacy line and "Attach shared evidence".
+- [ ] Right: People (with emails), Status history, and "Close this case" (the "Actions taken" textarea with helper text, and the only primary button). A closed case shows the closing note instead.
+- [ ] The status change to Under Review still works from the header.
+
+**Verification:** Standing checks, plus taking a case through Escalated → Under Review → Closed. The student sees the note, and never sees reviewer attachments.
+
+**Dependencies:** Task 2
+
+**Files likely touched:** `app/(app)/review/[id]/page.tsx`, `components/safetrail/review-actions.tsx`
+
+**Estimated scope:** Medium
+
+### - [ ] Task 9: Shared with me and Case Archives columns
+
+**Description:** Align both tables and their copy with `reference/SharedWithMe.dc.html` and `reference/Archives.dc.html`.
+
+**Acceptance criteria:**
+- [ ] Shared with me: the info banner, Not attached/All tabs, and the columns Evidence, Shared by, Captured, Tamper checks, Attached to, and action (Attach to case, or Open case). Via is P1 if the data isn't stored.
+- [ ] Archives: the columns Case, Reporter, Escalated, Closed (newest first), Closed by, Closing note (clamped to one line) and Evidence. Search also matches closing notes.
+
+**Verification:** Standing checks.
+
+**Dependencies:** Task 2
+
+**Files likely touched:** `app/(app)/review/shared/page.tsx`, `app/(app)/review/archives/page.tsx`, `server/services/review.ts`, `server/services/shares.ts`
+
+**Estimated scope:** Medium
+
+### - [ ] Task 10: P0 verification pass
+
+**Acceptance criteria:**
+- [ ] Every role's whole journey works end to end in the browser: capture or seed, case, escalate, notification, review, close, archive, and admin creating a reviewer.
+- [ ] `pnpm smoke` passes against a running dev server.
+- [ ] DESIGN.md's pre-merge checklist holds for every changed page.
+
+**Dependencies:** Tasks 1–9
 
 ---
 
-## Phase 2: Editing together
+## Phase 3: Polish (P1). Only after every P0 task passes.
 
-### - [x] Task 4: Autosave with same-field conflict
+### - [ ] Task 11: Board chart, status breakdown, activity, filter chips
+Weekly escalations bar chart (plain SVG, tooltip, "View as table"), a "Cases by status" stacked bar with legend, a recent-activity feed from `case_events`, a "Last update" column, the "Has collaborators" and "Has reviewer attachments" chips, "Clear filters", a result count and the date-range select. At most one chart. Never red.
 
-**Description:** Title and description are edited in place and save themselves. Two people changing the same field no longer silently overwrite each other.
+### - [ ] Task 12: Vault columns
+Tamper checks, In cases and Sharing columns (add share and link counts to `listEvidence` `mine`), the footer privacy caption, and the "Capture evidence" label.
 
-**Acceptance criteria:**
-- [x] There is no Save button. A change saves about a second after typing stops and when leaving the field, with a "Saving… / Saved" indicator; an empty title is refused with its message.
-- [x] A save whose field was changed by someone else meanwhile is refused; the page shows their text beside yours and lets you keep either. Changes to different fields both succeed.
-- [x] On any failure the typed text stays in the field and the indicator says it is not saved.
+### - [ ] Task 13: Cases list tabs and row anatomy; locked and closed case page
+Tabs All, Drafts, With reviewers and Closed. Folder icon, lock icon and caption on rows. On the case page: the lock line, then the closing note card first.
 
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke` with new checks: stale same-field save gets a conflict with the current text; different fields both apply; escalated refuses.
-- [x] Browser check with two students signed in at once.
+### - [ ] Task 14: Sidebar counts and the admin extras (Ask first)
+Counts beside Vault, Cases, Review Board and Shared with me. Admin: Office field, Deactivate/Reactivate and the setup-link flow. **Each admin item needs a schema or auth change, so ask the user before starting it.**
 
-**Dependencies:** None
-
-**Files likely touched:** `components/safetrail/case-details.tsx` (new), `server/services/cases.ts`, `lib/validators.ts`, `app/api/cases/[id]/route.ts`, `scripts/smoke.ts`
-
-**Estimated scope:** Medium
-
-### - [x] Task 5: Stay current while open
-
-**Description:** A draft that is open picks up other people's changes without a manual reload.
-
-**Acceptance criteria:**
-- [x] Within about five seconds of someone else changing the title, description, evidence or people, an open draft shows it.
-- [x] A field being typed in, or with an unsaved edit, is not replaced.
-- [x] Nothing is checked on escalated cases or while the tab is hidden.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint`
-- [x] Browser check with two students: edits and added evidence appear on the other screen; typing is not interrupted.
-
-**Dependencies:** Task 4
-
-**Files likely touched:** `components/safetrail/case-details.tsx`, `components/safetrail/case-live.tsx` (new), `app/api/cases/[id]/route.ts`
-
-**Estimated scope:** Small
-
-### Checkpoint: Editing together
-- [x] Standing checks and `pnpm smoke` pass
-- [x] Two people can work on one draft without losing text
-- [x] Review with human before continuing
-
----
-
-## Phase 3: People and lifecycle
-
-### - [x] Task 6: Delete a draft case
-
-**Description:** The owner can delete a draft from a "More" menu in the header.
-
-**Acceptance criteria:**
-- [x] Only the owner of a draft sees Delete case; it asks first, naming the case, then returns to the case list with a toast.
-- [x] The case, its collaborator list and its links are gone; every piece of evidence is still in its owner's vault and no longer shows the case.
-- [x] Collaborators get a notification. Escalated cases, collaborators and strangers are refused.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke` with new checks for each of the above.
-- [x] Browser check: delete as owner; no menu item as collaborator or after escalation.
-
-**Dependencies:** None
-
-**Files likely touched:** `server/authz.ts`, `server/services/cases.ts`, `app/api/cases/[id]/route.ts`, `components/safetrail/case-actions.tsx`, `app/(app)/cases/[id]/page.tsx`
-
-**Estimated scope:** Medium
-
-### - [x] Task 7: Remove a collaborator, leave a case
-
-**Description:** The owner can remove a collaborator from a draft, and a collaborator can leave one. Their evidence leaves the case with them.
-
-**Acceptance criteria:**
-- [x] The owner sees Remove on each collaborator; a collaborator sees Leave case in the header menu. Both ask first and say that the person's evidence will be removed from the case.
-- [x] Afterwards that person cannot open the case, their items are off the case and still in their vault, and the removed person and the owner are notified.
-- [x] A collaborator cannot remove anyone else; nothing is allowed after escalation; the owner cannot be removed.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke` with new checks for each rule.
-- [x] Browser check: remove as owner; leave as collaborator.
-
-**Dependencies:** Task 6
-
-**Files likely touched:** `server/authz.ts`, `server/services/cases.ts`, `app/api/cases/[id]/collaborators/[userId]/route.ts` (new), `components/safetrail/case-actions.tsx`, `app/(app)/cases/[id]/page.tsx`
-
-**Estimated scope:** Medium
-
-### - [x] Task 8: Ready-to-escalate check
-
-**Description:** Escalate tells you what is missing instead of being disabled beside a banner.
-
-**Acceptance criteria:**
-- [x] On a draft the owner can always open Escalate. With no evidence the dialog says so and cannot be confirmed; with an empty description it warns and can be confirmed.
-- [x] With nothing missing, the dialog is the existing preview, unchanged.
-- [x] The "add at least one piece of evidence" banner is gone.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm smoke`
-- [x] Browser check: no evidence; evidence but no description; complete.
-
-**Dependencies:** None
-
-**Files likely touched:** `components/safetrail/case-actions.tsx`, `app/(app)/cases/[id]/page.tsx`
-
-**Estimated scope:** Small
-
-### Checkpoint: People and lifecycle
-- [x] Standing checks and `pnpm smoke` pass
-- [x] Every new action is refused on the server for the wrong person or the wrong status
-- [x] Review with human before continuing
-
----
-
-## Phase 4: Finish
-
-### - [x] Task 9: Verification pass and cleanup
-
-**Description:** Check the finished page against the decisions in the plan and remove anything left over.
-
-**Acceptance criteria:**
-- [x] Each decision in the plan is done or listed as a limitation.
-- [x] No unused components or exports remain (the old form and dropdown); README describes deleting, removing, leaving and autosave where it covers cases.
-- [x] The page works with the keyboard alone and at 375, 768 and 1280.
-
-**Verification:**
-- [x] `pnpm typecheck && pnpm lint && pnpm test && pnpm smoke && pnpm build`
-- [x] The vault, evidence page and reviewer browser checks still pass.
-
-**Dependencies:** Tasks 1 to 8
-
-**Files likely touched:** `README.md`, files touched above
-
-**Estimated scope:** Small
-
-### Checkpoint: Complete
-- [x] All acceptance criteria met or listed as limitations
-- [x] Ready for review
+### - [ ] Task 15: Final verification
+Run the standing checks for every role at 1280px, 1024px and 375px, check reduced motion, and confirm contrast for any new color pair (update DESIGN.md §4.4).

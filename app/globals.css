@@ -25,6 +25,11 @@
   /* the decorative trail lines on the landing page */
   --trail-line: #CDE2EC; --trail-line-dark: #2D556B;
 
+  /* reviewer charts: never badge colours, never red */
+  --chart-primary: var(--brand-700); --chart-fill: var(--brand-100);
+  --chart-grid: var(--border); --chart-axis: var(--border-strong);
+  --chart-escalated: #B07A1E; --chart-review: var(--brand-800); --chart-closed: #76858F;
+
   /* shape and depth */
   --radius: 10px;
   --radius-card: 12px;
@@ -33,6 +38,7 @@
   --shadow-soft: 0 1px 2px rgba(30,42,50,0.04), 0 4px 12px rgba(30,42,50,0.05);
   --shadow-raised: 0 8px 24px rgba(30,42,50,0.10);
   --shadow-modal: 0 16px 40px rgba(30,42,50,0.14);
+  --shadow-drawer: -8px 0 32px rgba(30,42,50,0.12);
   --overlay: rgba(30,42,50,0.40);
 
   /* density (comfortable default) */
@@ -68,6 +74,10 @@
   --color-brand-800: var(--brand-800); --color-brand-900: var(--brand-900);
   --color-brand-950: var(--brand-950);
   --color-on-dark: var(--on-dark); --color-on-dark-muted: var(--on-dark-muted);
+  --color-chart-primary: var(--chart-primary); --color-chart-fill: var(--chart-fill);
+  --color-chart-grid: var(--chart-grid); --color-chart-axis: var(--chart-axis);
+  --color-chart-escalated: var(--chart-escalated); --color-chart-review: var(--chart-review);
+  --color-chart-closed: var(--chart-closed);
   --color-escalated-bg: var(--escalated-bg); --color-escalated-fg: var(--escalated-fg);
   --color-escalated-solid: var(--escalated-solid);
   --color-review-bg: var(--review-bg); --color-review-fg: var(--review-fg);
@@ -83,6 +93,7 @@
   --shadow-soft: var(--shadow-soft);
   --shadow-raised: var(--shadow-raised);
   --shadow-modal: var(--shadow-modal);
+  --shadow-drawer: var(--shadow-drawer);
   --font-sans: var(--font-nunito), system-ui, sans-serif;
   --font-heading: var(--font-lora), Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

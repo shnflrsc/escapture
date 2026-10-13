@@ -12,7 +12,7 @@ Three kinds of people use it:
 - **Case reviewers.** Work through cases on a shared Review Board. They need density, scannability and trust signals.
 - **Administrators.** Create reviewer accounts. Low-frequency, simple screens.
 
-Target: **desktop browsers first.** The layout is designed at 1280px. Below 1024px the sidebar becomes a drawer opened from a top bar, and the Vault is laid out for tablets and phones. Other pages only need to stay usable there; do not build separate mobile variants of them.
+Target: **desktop browsers first.** The layout is designed at 1280px. Below 1024px the sidebar becomes a drawer opened from a menu button in the header, and the Vault is laid out for tablets and phones. Other pages only need to stay usable there; do not build separate mobile variants of them.
 
 ## 2. Design principles
 
@@ -152,15 +152,23 @@ Load both through `next/font/google` (self-hosted at build time). Do not add any
 ## 6. Layout, spacing and density
 
 - **Spacing scale (4px base):** 4, 8, 12, 16, 24, 32, 48, 64. Use only these values.
-- **App shell:** a fixed left sidebar (248px, `card` background, 1px right `border`) and a scrolling content area on `canvas`. No top bar. Account menu sits at the bottom of the sidebar.
-- **Sidebar navigation**
+- **App shell:** a left sidebar (248px, `card` background, 1px right `border`) and a content column on `canvas`. The content column starts with a **header** (64px, `card`, 1px bottom `border`, sticky). The account menu sits at the right of the header, not in the sidebar.
+- **Sidebar**
+  - Logo, then the role label in 13px `muted` ("Student", "Case reviewer", "Administrator").
+  - A sentence-case group label above the nav ("Your space", "Reviews", "Administration"), 13px 600 `muted`.
   - Students: Vault, Cases, Notifications.
-  - Reviewers: Review Board, Case Archives, Notifications.
-  - Administrators: Reviewer accounts.
-  - Active item: `brand-100` background, `brand-800` text, 10px radius. Unread notifications show a small `brand-700` dot, not a red count badge.
-- **Page structure:** H1 and one short sentence of context on the left, at most one primary button on the right, then content. Do not stack banners above the header.
+  - Reviewers: Review Board, Shared with me, Case Archives, Notifications.
+  - Administrators: Reviewer accounts, Notifications.
+  - Active item: `brand-100` background, `brand-800` text, 10px radius, 44px tall. Unread notifications show a small `brand-700` dot, not a red count badge.
+  - A small `brand-50` help card at the bottom (one heading, one sentence, at most one link), then Help, Privacy and Terms links.
+- **Header**
+  - Left: breadcrumbs. A top-level page shows its name. A detail page shows `Section › Title`, with the section as a `brand-700` link.
+  - Middle: one search field (320px, 40px tall) that searches the role's main list.
+  - Right: Help, the notification bell, a divider, then the account button (avatar initials, name, role) that opens the account menu with Sign out.
+  - Below 1024px the menu button that opens the sidebar drawer joins the header at the far left and the search wraps to its own row. There is never a second bar.
+- **Page structure:** H1 and one short sentence of context on the left, at most one primary button on the right, then content. Do not stack banners above the header. The page H1 is the page's own title; the header breadcrumb doesn't replace it.
 - **Content width:** students max 1040px, centered. Reviewers use the full width up to 1440px.
-- **Designed for 1024px and wider.** Below that the sidebar collapses into a drawer (a top bar with a menu button), page padding tightens, and the Vault table stacks into a list. Other pages need not look designed there, but must not break, overlap or scroll sideways.
+- **Designed for 1024px and wider.** Below 1024px the sidebar collapses into a drawer opened from the header's menu button, page padding tightens, and the Vault table stacks into a list. Other pages need not look designed there, but must not break, overlap or scroll sideways.
 
 ### Two density modes, one system
 
@@ -220,6 +228,32 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
 ### Tables (reviewer views)
 - Header row on `subtle`, 13px 600 `muted` text. Rows 44px, 1px `border` rules, hover `brand-50`, selected `brand-100`. No zebra striping. Sortable columns show an arrow icon. Keep columns to what a reviewer needs to triage: title, status, reporter, collaborators, escalated date.
 
+### Notification bell and popover
+- Bell: a 44×44 icon button in the header, `aria-label="Notifications, N unread"`, with a `brand-700` dot ringed in `card` when anything is unread. Never a number bubble or red badge.
+- Popover:
+  - Layout: 400px wide, `card`, `shadow-raised`, 12px radius, anchored under the bell.
+  - Head: "Notifications" (Lora 17px) and a ghost "Mark all as read".
+  - Rows: a 32px icon circle, title (14px), relative time (13px `muted`) and an unread dot. Unread rows are tinted `brand-50`.
+  - Footer: "View all notifications".
+  - Icon circle by type: escalation uses amber attention tokens, closing uses closed tokens, a saved capture uses tamper tokens, and anything else uses `brand-100`.
+  - Behaviour: Escape and an outside click close it, and focus returns to the bell.
+- Notifications never show evidence contents, only titles and short excerpts.
+
+### Reviewer dashboard (Review Board only)
+- Order:
+  1. Page header.
+  2. At most 4 summary tiles: label, count in Lora 32px, one plain line of context. No arrows, sparklines or percentages without the count.
+  3. At most one chart and one status breakdown, each in a panel.
+  4. One toolbar row: status tabs, search, filter chips, and a ghost "Clear filters" that shows only when a filter is on.
+  5. The table with pagination.
+  6. Recent activity.
+- The table is the job. Tiles and the chart summarise it and never replace it.
+- Chart colors come from the chart tokens (`chart-primary`, `chart-escalated`, `chart-review`, `chart-closed`), never badge colors. Never red, even when numbers rise.
+- Administrators get the same shell with a plain table and no tiles or charts.
+
+### Account menu
+- Opens from the header's account button. It shows the name and email, then "Sign out". It uses the same menu component as row menus.
+
 ### Dialogs
 - 16px radius, `shadow-modal`, max width 560px (720px for the escalation preview). Title in H3, one-sentence explanation, actions bottom-right with the safe choice (Cancel, "Go back") on the left of the confirm action. Focus is trapped and returns to the trigger on close.
 
@@ -263,6 +297,7 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
 
 ### 10.7 Reviewer separation
 - On the case page for reviewers, the reporter's evidence and the reviewer's own attachments are in two visibly separate sections with their own headings. Reviewer attachments are labelled "Added by reviewers" and are never shown to the reporter.
+- The "Added by reviewers" section uses a dashed 1px `border-strong` edge on `brand-50` and starts with an eye-off icon and the line "Only reviewers can see this section. The student who reported and collaborators can't."
 
 ### 10.8 Privacy reassurance
 - Wherever a student is about to act, make clear what is private. Use short reassurance text, for example "Only you can see your vault." and "Nothing reaches reviewers until you escalate."
@@ -432,7 +467,8 @@ Rules for code:
 - Shield or fingerprint icons outside the logo.
 - More than one primary button in a view, or more than one banner above a page header.
 - Emoji, exclamation marks, countdowns, or urgency language.
-- Dense dashboards for students: no widget grids, stat tiles or charts on student screens.
+- Dense dashboards for students: no widget grids, stat tiles or charts on student screens. On reviewer screens: no more than four tiles, more than one chart per view, dual axes or pie charts.
+- A red count badge on the notification bell, or a second top bar under 1024px.
 - Repeating the same card grid on every page. Choose the layout that fits the task (list, detail, form, timeline).
 - Separate mobile-only screens or components. Narrow widths reuse the same page, rearranged.
 - Generic AI aesthetics: purple-blue gradients, floating cards on mesh backgrounds, "sparkle" icons, stock hero sections, or filler illustrations.
@@ -448,3 +484,4 @@ Rules for code:
 - [ ] Private versus shared, and anything irreversible, is clearly stated before the user acts.
 - [ ] Looks right at 1280px and does not break at 1024px.
 - [ ] Reduced motion respected.
+- [ ] Header breadcrumb and search work on the page; the bell popover opens, closes on Escape and returns focus.
