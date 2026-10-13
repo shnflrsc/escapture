@@ -1,4 +1,5 @@
-import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import { dayKey } from "@/lib/format";
 import type { Actor } from "../auth";
 import { assertRole, canAttachAsReviewer, canChangeStatus, canReviewCase, enforce } from "../authz";
 import { db } from "../db";
@@ -58,6 +59,121 @@ export async function listBoard(actor: Actor, status?: "escalated" | "under_revi
     evidenceCount: c.evidence.get(r.id) ?? 0,
     collaboratorCount: c.collaborators.get(r.id) ?? 0,
   }));
+}
+
+export const BOARD_PAGE_SIZE = 20;
+
+export type BoardSort = "escalated" | "-escalated" | "status" | "-status" | "reporter" | "-reporter";
+export type BoardQuery = {
+  status?: "escalated" | "under_review";
+  /** Matches the case title or the reporter's name. */
+  q?: string;
+  /** Left out: oldest escalated first, so what has waited longest is on top. */
+  sort?: BoardSort;
+  page?: number;
+};
+
+const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+
+/**
+ * The Review Board's table: open cases only, filtered, sorted and paged. Drafts
+ * and closed cases never appear, whatever the filters say (I1).
+ */
+export async function boardPage(actor: Actor, query: BoardQuery = {}) {
+  assertRole(actor, "reviewer");
+  const term = query.q?.trim();
+  const search = term ? or(ilike(cases.title, likeTerm(term)), ilike(user.name, likeTerm(term))) : undefined;
+  const open = inArray(cases.status, ["escalated", "under_review"]);
+  const where = and(open, query.status ? eq(cases.status, query.status) : undefined, search);
+
+  const sort = query.sort ?? "escalated";
+  const dir = sort.startsWith("-") ? desc : asc;
+  const column =
+    sort.endsWith("status") ? cases.status : sort.endsWith("reporter") ? sql`lower(${user.name})` : cases.escalatedAt;
+  const page = Math.max(1, query.page ?? 1);
+
+  const [rows, byStatus] = await Promise.all([
+    db
+      .select({
+        id: cases.id,
+        title: cases.title,
+        status: cases.status,
+        escalatedAt: cases.escalatedAt,
+        reporterName: user.name,
+      })
+      .from(cases)
+      .innerJoin(user, eq(user.id, cases.ownerId))
+      .where(where)
+      .orderBy(dir(column), asc(cases.escalatedAt))
+      .limit(BOARD_PAGE_SIZE)
+      .offset((page - 1) * BOARD_PAGE_SIZE),
+    // The tabs' counts follow the search, not the tab that is selected.
+    db
+      .select({ status: cases.status, n: count() })
+      .from(cases)
+      .innerJoin(user, eq(user.id, cases.ownerId))
+      .where(and(open, search))
+      .groupBy(cases.status),
+  ]);
+  const tally = { escalated: 0, under_review: 0 };
+  for (const r of byStatus) if (r.status === "escalated" || r.status === "under_review") tally[r.status] = r.n;
+  const total = query.status ? tally[query.status] : tally.escalated + tally.under_review;
+  const c = await counts(rows.map((r) => r.id));
+  return {
+    items: rows.map((r) => ({
+      ...r,
+      evidenceCount: c.evidence.get(r.id) ?? 0,
+      collaboratorCount: c.collaborators.get(r.id) ?? 0,
+    })),
+    counts: { all: tally.escalated + tally.under_review, ...tally },
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / BOARD_PAGE_SIZE)),
+  };
+}
+
+/** The four numbers above the board. Each is a count with one plain fact beside it. */
+export async function boardSummary(actor: Actor, now: Date = new Date()) {
+  assertRole(actor, "reviewer");
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  // The first of this month in Manila, where the university is.
+  const monthStart = new Date(`${dayKey(now).slice(0, 7)}-01T00:00:00+08:00`);
+  const [[open], [shared], [closed]] = await Promise.all([
+    db
+      .select({
+        escalated: sql<number>`count(*) filter (where ${cases.status} = 'escalated')::int`,
+        newThisWeek: sql<number>`count(*) filter (where ${cases.status} = 'escalated' and ${cases.escalatedAt} >= ${weekAgo.toISOString()}::timestamptz)::int`,
+        underReview: sql<number>`count(*) filter (where ${cases.status} = 'under_review')::int`,
+        oldestUnderReview: sql<Date | null>`min(${cases.escalatedAt}) filter (where ${cases.status} = 'under_review')`,
+      })
+      .from(cases)
+      .where(inArray(cases.status, ["escalated", "under_review"])),
+    // Evidence shared with this reviewer that no case holds yet.
+    db
+      .select({ n: count() })
+      .from(evidenceShares)
+      .innerJoin(evidence, eq(evidence.id, evidenceShares.evidenceId))
+      .where(
+        and(
+          eq(evidenceShares.userId, actor.id),
+          ne(evidence.ownerId, actor.id),
+          sql`not exists (select 1 from ${caseEvidence} where ${caseEvidence.evidenceId} = ${evidence.id})`,
+        ),
+      ),
+    db
+      .select({ n: count() })
+      .from(caseEvents)
+      .where(and(eq(caseEvents.type, "closed"), gte(caseEvents.createdAt, monthStart))),
+  ]);
+  const oldest = open?.oldestUnderReview ? new Date(open.oldestUnderReview) : null;
+  return {
+    escalated: open?.escalated ?? 0,
+    newThisWeek: open?.newThisWeek ?? 0,
+    underReview: open?.underReview ?? 0,
+    oldestUnderReviewDays: oldest ? Math.floor((now.getTime() - oldest.getTime()) / (24 * 60 * 60 * 1000)) : null,
+    sharedUnattached: shared?.n ?? 0,
+    closedThisMonth: closed?.n ?? 0,
+  };
 }
 
 export async function getReviewCase(actor: Actor, caseId: string) {

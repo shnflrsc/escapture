@@ -91,6 +91,12 @@ export const escalate = z.object({
 });
 
 export const boardStatus = z.enum(["escalated", "under_review"]).optional();
+export const boardQuery = z.object({
+  status: boardStatus,
+  q: z.string().trim().max(120).optional(),
+  sort: z.enum(["escalated", "-escalated", "status", "-status", "reporter", "-reporter"]).optional(),
+  page: z.coerce.number().int().min(1).max(10000).optional(),
+});
 export const reviewStatus = z.object({ status: z.literal("under_review") });
 export const closeCase = z.object({
   note: z.string().trim().min(1, "Please write a closing note.").max(5000),

@@ -100,16 +100,16 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 ## Phase 2: Reviewer and admin (P0)
 
-### - [ ] Task 6: Review Board table and tiles
+### - [x] Task 6: Review Board table and tiles
 
 **Description:** Replace the kanban columns with tiles, a toolbar and a table (`reference/ReviewBoard.dc.html`).
 
 **Acceptance criteria:**
-- [ ] Four tiles (Escalated, Under Review, Shared with you, Closed this month), each with a count and one line of context, computed by a new `boardSummary(actor)`.
-- [ ] Tabs All open / Escalated / Under Review (`?status=`) and search (`?q=`, title or reporter) filter the table.
-- [ ] Table columns are Case, Status, Reporter, Collaborators, Evidence and Escalated. The Status, Reporter and Escalated headers sort via `?sort=` with `aria-sort`. Rows are focusable and open on Enter.
-- [ ] Pagination after 20 rows. An empty result shows an `EmptyState` with "Clear filters".
-- [ ] Closed cases never appear. Drafts never appear (the existing rule).
+- [x] Four tiles (Escalated, Under Review, Shared with you, Closed this month), each with a count and one line of context, computed by a new `boardSummary(actor)`.
+- [x] Tabs All open / Escalated / Under Review (`?status=`) and search (`?q=`, title or reporter) filter the table.
+- [x] Table columns are Case, Status, Reporter, Collaborators, Evidence and Escalated. The Status, Reporter and Escalated headers sort via `?sort=` with `aria-sort`. Rows are focusable and open on Enter.
+- [x] Pagination after 20 rows. An empty result shows an `EmptyState` with "Clear filters".
+- [x] Closed cases never appear. Drafts never appear (the existing rule).
 
 **Verification:** Standing checks, plus unit tests for the `listBoard` filters and `boardSummary` counts against seeded data.
 

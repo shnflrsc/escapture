@@ -348,11 +348,12 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="min-w-0 flex-1">
           <CrumbContext.Provider value={setCrumb}>
             <div
               className={cn(
-                "mx-auto flex flex-col gap-[var(--section-gap)] p-[var(--page-pad)]",
+                // min-w-0: a wide table scrolls inside its own box instead of widening the page.
+                "mx-auto flex flex-col gap-[var(--section-gap)] p-[var(--page-pad)] [&>*]:min-w-0",
                 user.role === "student" ? "max-w-[1040px]" : "max-w-[1440px]",
               )}
             >
