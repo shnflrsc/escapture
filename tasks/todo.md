@@ -59,16 +59,16 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `components/safetrail/auth-form.tsx`, `app/(auth)/sign-in/page.tsx`
 
-### - [ ] Task 5: Register form
+### - [x] Task 5: Register form
 
 **Description:** Update `auth-form.tsx` (sign-up mode) to match plan.md.
 
 **Acceptance criteria:**
-- [ ] The fields are Your name, BulSU email and Password, plus the Terms checkbox. H1 only.
-- [ ] The email input always renders. A live domain check swaps the helper "Must end in @{domain}" for the error. Empty on submit shows "Enter your BulSU email."
-- [ ] The live "At least 8 characters" rule turns green (`tamper-fg`, `CircleCheck`) when met, shows in `danger-fg` if unmet on submit, and is `aria-live="polite"`.
-- [ ] An unchecked Terms box blocks submit with "Please agree to the terms to create an account."
-- [ ] The email typed on the home page is still pre-filled. On success, redirect to `next`. There is no success banner.
+- [x] The fields are Your name, BulSU email and Password, plus the Terms checkbox. H1 only.
+- [x] The email input always renders. A live domain check swaps the helper "Must end in @{domain}" for the error. Empty on submit shows "Enter your BulSU email."
+- [x] The live "At least 8 characters" rule turns green (`tamper-fg`, `CircleCheck`) when met, shows in `danger-fg` if unmet on submit, and is `aria-live="polite"`.
+- [x] An unchecked Terms box blocks submit with "Please agree to the terms to create an account."
+- [x] The email typed on the home page is still pre-filled. On success, redirect to `next`. There is no success banner.
 
 **Dependencies:** Tasks 1 and 3
 

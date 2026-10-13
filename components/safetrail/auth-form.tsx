@@ -157,7 +157,7 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
               aria-live="polite"
               data-state={longEnough ? "met" : passwordShort ? "unmet" : "waiting"}
               className={cn(
-                "flex items-center gap-1.5 text-[13px] leading-[18px]",
+                "flex items-center gap-1 text-[13px] leading-[18px]",
                 longEnough ? "text-tamper-fg" : passwordShort ? "text-danger-fg" : "text-muted",
               )}
             >
