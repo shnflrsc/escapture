@@ -25,7 +25,7 @@
   /* the decorative trail lines on the landing page */
   --trail-line: #CDE2EC; --trail-line-dark: #2D556B;
 
-  /* reviewer charts: never badge colours, never red */
+  /* reviewer charts: their own colours, never badge colours and never red */
   --chart-primary: var(--brand-700); --chart-fill: var(--brand-100);
   --chart-grid: var(--border); --chart-axis: var(--border-strong);
   --chart-escalated: #B07A1E; --chart-review: var(--brand-800); --chart-closed: #76858F;
@@ -108,11 +108,15 @@ body {
   background: var(--canvas);
   color: var(--ink);
 }
-h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; color: var(--ink); }
-h1 { font-size: 32px; line-height: 40px; }
-h2 { font-size: 24px; line-height: 32px; }
-h3 { font-size: 20px; line-height: 28px; }
-h4 { font-size: 17px; line-height: 24px; }
+/* In the base layer, so a component can give one heading a different size or colour
+   (a 17px panel title, a heading on a dark band). Outside a layer these would win. */
+@layer base {
+  h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; color: var(--ink); }
+  h1 { font-size: 32px; line-height: 40px; }
+  h2 { font-size: 24px; line-height: 32px; }
+  h3 { font-size: 20px; line-height: 28px; }
+  h4 { font-size: 17px; line-height: 24px; }
+}
 
 :focus-visible { outline: 2px solid var(--brand-700); outline-offset: 2px; }
 

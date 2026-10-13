@@ -69,13 +69,18 @@ const ROLE: Record<Role, { label: string; group: string; search: { action: strin
 
 // A detail page names itself for the header's breadcrumb. The header belongs to
 // the layout, which must not fetch page data, so the page hands its title up.
-const CrumbContext = createContext<(crumb: { path: string; title: string }) => void>(() => {});
+type Crumb = { path: string; title: string; section?: string };
+const CrumbContext = createContext<(crumb: Crumb) => void>(() => {});
 
-/** Put this on a detail page: the header then shows "Section › {title}". */
-export function PageCrumbs({ title }: { title: string }) {
+/**
+ * Put this on a detail page: the header then shows "Section › {title}". `section`
+ * is the address of a different sidebar page to file it under, when the address
+ * alone would pick the wrong one (a closed case belongs to the archives).
+ */
+export function PageCrumbs({ title, section }: { title: string; section?: string }) {
   const set = useContext(CrumbContext);
   const path = usePathname();
-  useEffect(() => set({ path, title }), [set, path, title]);
+  useEffect(() => set({ path, title, section }), [set, path, title, section]);
   return null;
 }
 
@@ -127,11 +132,12 @@ export function AppShell({
     { href: "/notifications", label: "Notifications", Icon: Bell, match: (p) => p.startsWith("/notifications") },
   ];
   const home = items[0].href;
-  const section = items.find((item) => item.match(pathname)) ?? items[0];
-
-  const [crumb, setCrumb] = useState<{ path: string; title: string } | null>(null);
-  // A title only counts on the page that set it.
-  const detail = crumb && crumb.path === pathname && pathname !== section.href ? crumb.title : null;
+  const [crumb, setCrumb] = useState<Crumb | null>(null);
+  // A page's crumb only counts on the page that set it.
+  const mine = crumb && crumb.path === pathname ? crumb : null;
+  const section =
+    items.find((item) => item.href === mine?.section) ?? items.find((item) => item.match(pathname)) ?? items[0];
+  const detail = mine && pathname !== section.href ? mine.title : null;
 
   async function signOut() {
     await api("/api/auth/sign-out", { body: {} }).catch(() => {});
@@ -171,8 +177,8 @@ export function AppShell({
       <nav aria-label="Main">
         <p className="mb-1 px-3 text-[13px] leading-[18px] font-semibold text-muted">{role.group}</p>
         <ul className="flex flex-col gap-1">
-          {items.map(({ href, label, Icon, match }) => {
-            const active = match(pathname);
+          {items.map(({ href, label, Icon }) => {
+            const active = href === section.href;
             const showDot = href === "/notifications" && unread > 0;
             return (
               <li key={href}>

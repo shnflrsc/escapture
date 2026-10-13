@@ -138,14 +138,14 @@ Do every **P0** task before any **P1** task. Commit after each task.
 
 **Estimated scope:** Medium
 
-### - [ ] Task 8: Reviewer case page layout
+### - [x] Task 8: Reviewer case page layout
 
 **Description:** Rearrange `/review/[id]` into the two-column layout (`reference/ReviewCase.dc.html`). Behaviour doesn't change.
 
 **Acceptance criteria:**
-- [ ] Left: Description, the "Reporter's evidence" table ("Passed tamper checks"), and the "Added by reviewers" zone with its privacy line and "Attach shared evidence".
-- [ ] Right: People (with emails), Status history, and "Close this case" (the "Actions taken" textarea with helper text, and the only primary button). A closed case shows the closing note instead.
-- [ ] The status change to Under Review still works from the header.
+- [x] Left: Description, the "Reporter's evidence" table ("Passed tamper checks"), and the "Added by reviewers" zone with its privacy line and "Attach shared evidence".
+- [x] Right: People (with emails), Status history, and "Close this case" (the "Actions taken" textarea with helper text, and the only primary button). A closed case shows the closing note instead.
+- [x] The status change to Under Review still works from the header.
 
 **Verification:** Standing checks, plus taking a case through Escalated → Under Review → Closed. The student sees the note, and never sees reviewer attachments.
 
