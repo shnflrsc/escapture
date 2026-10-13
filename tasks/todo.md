@@ -190,7 +190,7 @@ Weekly escalations bar chart (plain SVG, tooltip, "View as table"), a "Cases by 
 ### - [x] Task 12: Vault columns
 Tamper checks, In cases and Sharing columns (add share and link counts to `listEvidence` `mine`), the footer privacy caption, and the "Capture evidence" label.
 
-### - [ ] Task 13: Cases list tabs and row anatomy; locked and closed case page
+### - [x] Task 13: Cases list tabs and row anatomy; locked and closed case page
 Tabs All, Drafts, With reviewers and Closed. Folder icon, lock icon and caption on rows. On the case page: the lock line, then the closing note card first.
 
 ### - [ ] Task 14: Sidebar counts and the admin extras (Ask first)

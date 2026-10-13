@@ -373,14 +373,15 @@ export function EscalateButton({ caseId, hasEvidence }: { caseId: string; hasEvi
                 to go on.
               </Banner>
             )}
-            <div>
-              <h4>{preview.title}</h4>
+            <div className="rounded-md bg-subtle p-4">
+              <p className="text-[13px] leading-[18px] font-semibold text-muted">Case</p>
+              <h4 className="mt-1">{preview.title}</h4>
               <p className="mt-1 max-w-prose text-sm leading-[22px] whitespace-pre-wrap">
                 {preview.description || "No description was added."}
               </p>
             </div>
-            <div>
-              <h4>People reviewers will see</h4>
+            <div className="rounded-md bg-subtle p-4">
+              <h4>People reviewers will see ({preview.collaborators.length + 1})</h4>
               <ul className="mt-1 flex flex-col gap-1 text-sm leading-[22px]">
                 <li>
                   {preview.owner.name} <span className="text-muted">{preview.owner.email} · Reported this case</span>
@@ -392,11 +393,11 @@ export function EscalateButton({ caseId, hasEvidence }: { caseId: string; hasEvi
                 ))}
               </ul>
             </div>
-            <div>
-              <h4>Evidence reviewers will see</h4>
+            <div className="rounded-md bg-subtle p-4">
+              <h4>Attached evidence ({preview.evidence.length})</h4>
               <ul className="mt-1 flex flex-col gap-2">
                 {preview.evidence.map((e) => (
-                  <li key={e.id} className="rounded-md bg-subtle p-3 text-sm leading-[22px]">
+                  <li key={e.id} className="rounded-md bg-card p-3 text-sm leading-[22px]">
                     <p className="font-semibold">{e.label}</p>
                     <p className="text-muted">
                       {kindLabel(e.kind)} · Captured <span className="tnum">{formatDateTime(e.capturedAt)}</span> ·

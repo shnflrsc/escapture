@@ -71,7 +71,9 @@ export default async function EvidencePage({ params, searchParams }: PageProps<"
           <>
             {kindLabel(ev.kind)} · Captured <span className="tnum">{formatDateTime(ev.capturedAt)}</span> ·{" "}
             {ev.isOwner
-              ? "Only you can see this unless you share it."
+              ? shares.length === 0
+                ? "Private: only you can see this."
+                : `Shared with ${shares.length} ${shares.length === 1 ? "person" : "people"}.`
               : `Captured by ${ev.owner?.name ?? "another student"}.`}
           </>
         }

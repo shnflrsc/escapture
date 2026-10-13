@@ -133,12 +133,28 @@ export async function listCases(actor: Actor) {
     )
     .groupBy(caseEvidence.caseId);
   const byCase = new Map(counts.map((c) => [c.caseId, c.n]));
+  const ids = rows.map((r) => r.id);
+  const [people, owners] = await Promise.all([
+    db
+      .select({ caseId: caseCollaborators.caseId, n: count() })
+      .from(caseCollaborators)
+      .where(inArray(caseCollaborators.caseId, ids))
+      .groupBy(caseCollaborators.caseId),
+    db
+      .select({ id: user.id, name: user.name })
+      .from(user)
+      .where(inArray(user.id, [...new Set(rows.map((r) => r.ownerId))])),
+  ]);
+  const collaborators = new Map(people.map((p) => [p.caseId, p.n]));
+  const ownerName = new Map(owners.map((o) => [o.id, o.name]));
   return rows.map((c) => ({
     id: c.id,
     title: c.title,
     status: c.status,
     role: c.ownerId === actor.id ? ("owner" as const) : ("collaborator" as const),
+    ownerName: ownerName.get(c.ownerId) ?? "",
     evidenceCount: byCase.get(c.id) ?? 0,
+    collaboratorCount: collaborators.get(c.id) ?? 0,
     updatedAt: c.updatedAt,
     escalatedAt: c.escalatedAt,
   }));
