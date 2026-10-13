@@ -96,9 +96,6 @@ export default async function CasesPage({ searchParams }: PageProps<"/cases">) {
               })}
             </ul>
           )}
-          <p className="text-[13px] leading-[18px] text-muted">
-            Escalated cases are locked. You can always see their status and the closing note here.
-          </p>
         </div>
       )}
     </>
