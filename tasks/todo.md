@@ -22,14 +22,14 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `app/(auth)/layout.tsx`, `components/safetrail/auth-shell.tsx`, the moved `sign-in/page.tsx` and `sign-up/page.tsx`
 
-### - [ ] Task 2: Illustrations
+### - [x] Task 2: Illustrations
 
 **Description:** Convert `reference/illustrations/trail-sign-in.svg` and `trail-register.svg` into React components and put them in the shell's panel.
 
 **Acceptance criteria:**
-- [ ] Sign in shows the finished trail with the vault. Register shows the trail starting, with the dashed vault outline.
-- [ ] Each has `aria-hidden` and `focusable="false"`, scales to the panel (max 520px wide and 560px tall), and isn't rendered below 1040px.
-- [ ] Only brand and tamper token colours are used.
+- [x] Sign in shows the finished trail with the vault. Register shows the trail starting, with the dashed vault outline.
+- [x] Each has `aria-hidden` and `focusable="false"`, scales to the panel (max 520px wide and 560px tall), and isn't rendered below 1040px.
+- [x] Only brand and tamper token colours are used.
 
 **Dependencies:** Task 1
 

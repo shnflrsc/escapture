@@ -1,5 +1,7 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { TrailRegister } from "@/components/safetrail/illustrations/trail-register";
+import { TrailSignIn } from "@/components/safetrail/illustrations/trail-sign-in";
 import { Logo } from "@/components/safetrail/logo";
 
 const topLink = "link inline-flex min-h-10 items-center rounded-sm";
@@ -17,6 +19,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   const register = illustration === "register";
+  const Illustration = register ? TrailRegister : TrailSignIn;
   return (
     <div className="@container bg-card">
       <div className="flex min-h-screen @max-[1040px]:flex-col">
@@ -27,7 +30,9 @@ export function AuthShell({
           <div
             data-illustration={illustration}
             className="flex min-h-0 flex-1 items-center justify-center @max-[1040px]:hidden"
-          />
+          >
+            <Illustration className="h-auto max-h-[560px] w-full max-w-[520px]" />
+          </div>
         </div>
 
         <main className="flex min-w-0 flex-[1_1_520px] flex-col gap-8 px-12 py-8 @max-[1040px]:p-6 @max-[560px]:gap-6 @max-[560px]:px-4 @max-[560px]:pt-4">
