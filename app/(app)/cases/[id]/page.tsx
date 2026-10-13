@@ -30,7 +30,14 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const vault = draft ? await listEvidence(user, "mine") : [];
 
   const description = (
-    <Card>
+    // On a draft the card is the text box: no padding of its own, and it carries the focus ring.
+    <Card
+      className={
+        draft
+          ? "p-0! has-[textarea:focus-visible]:border-border-strong has-[textarea:focus-visible]:outline-2 has-[textarea:focus-visible]:outline-offset-2 has-[textarea:focus-visible]:outline-brand-700"
+          : undefined
+      }
+    >
       {draft ? (
         <CaseField caseId={c.id} field="description" value={c.description} />
       ) : (

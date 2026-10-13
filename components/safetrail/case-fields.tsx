@@ -169,13 +169,18 @@ export function CaseField({
           maxLength={10000}
           rows={5}
           placeholder="What happened? Describe it in your own words. You can keep editing until you escalate."
-          className="min-h-32 w-full resize-y rounded-md border border-transparent bg-transparent text-base leading-[26px] text-ink [field-sizing:content] placeholder:text-muted hover:border-border focus:border-border-strong focus:px-3 focus:py-2"
+          // Fills its card edge to edge, so the card itself is the text box; the card shows the focus ring.
+          className="block min-h-32 w-full resize-none rounded-xl border-0 bg-transparent px-[var(--card-pad)] pt-[var(--card-pad)] pb-2 text-base leading-[26px] text-ink [field-sizing:content] placeholder:text-muted focus-visible:outline-none!"
         />
       )}
       <p
         id={`${id}-status`}
         aria-live="polite"
-        className={cn("min-h-[18px] text-[13px] leading-[18px]", error ? "text-danger-fg" : "text-muted")}
+        className={cn(
+          "min-h-[18px] text-[13px] leading-[18px]",
+          error ? "text-danger-fg" : "text-muted",
+          field === "description" && "px-[var(--card-pad)] pb-3",
+        )}
       >
         {error ? (
           <>
@@ -193,7 +198,13 @@ export function CaseField({
         ) : null}
       </p>
       {theirs !== null && (
-        <div role="alert" className="flex flex-col gap-3 rounded-md bg-escalated-bg p-4 text-sm leading-[22px]">
+        <div
+          role="alert"
+          className={cn(
+            "flex flex-col gap-3 rounded-md bg-escalated-bg p-4 text-sm leading-[22px]",
+            field === "description" && "mx-[var(--card-pad)] mb-[var(--card-pad)]",
+          )}
+        >
           <p className="font-semibold text-escalated-fg">
             Someone else changed the {field} while you were editing. Yours has not been saved.
           </p>
