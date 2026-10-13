@@ -112,7 +112,7 @@ pnpm build
 ## How it is put together
 
 ```
-app/(site)     the public home page, and placeholder Terms and Privacy pages
+app/(marketing) the public landing page (built to HOME_PAGE.md), and placeholder Terms, Privacy and Contact pages
 app/(public)   sign-in, sign-up, s/[token] (shared links)
 app/(app)      vault, cases, notifications, review (pages check the role on the server)
 app/api        thin route handlers: validate, call a service, map errors
@@ -160,5 +160,5 @@ These match the Risks section of the proposal. Say them out loud in a demo.
 - **Desktop first.** Below 1024px the sidebar becomes a drawer and the Vault is laid out for tablets and phones; the other pages stay usable there but are not designed for it.
 - **An evidence page lists only the cases you are part of.** An item can be locked by a case you cannot open (for example one a reviewer attached it to); the page says it is locked without naming that case.
 - **The Vault list is not paged.** Search, the kind filter and sorting run on the server, but every matching item is shown on one page.
-- **Placeholders on the public pages.** The Terms of service and Privacy policy pages say they are being written, and the home page's "If you need help now" panel has no contact details yet. All three must be filled in before real students use SafeTrail.
+- **Placeholders on the public pages.** The Terms, Privacy and Contact pages say they are being written, and the landing page's extension links lead to the vault because there is no store listing yet. All of these must be replaced before real students use SafeTrail.
 - **Out of scope:** other platforms, the university's own investigation and sanctions, accused persons who are not BulSU students, judging whether a report is true, email or SMS notifications, case assignment, outcome categories, account deletion, reopening cases, an admin UI, legal pages.

@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/field";
 import { api, ApiError } from "@/lib/client-api";
+import { takeSignupEmail } from "@/lib/signup-email";
 
 const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
@@ -14,6 +15,15 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Someone who typed their email on the home page shouldn't have to type it again.
+  useEffect(() => {
+    if (mode !== "sign-up") return;
+    const email = takeSignupEmail();
+    const field = formRef.current?.elements.namedItem("email");
+    if (email && field instanceof HTMLInputElement && !field.value) field.value = email;
+  }, [mode]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,7 +59,7 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
 
   // method="post" so a submit before hydration can never put the password in the URL.
   return (
-    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form ref={formRef} method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       {error && <Banner tone="attention">{error}</Banner>}
       {mode === "sign-up" && <Input label="Your name" name="name" autoComplete="name" required maxLength={80} />}
       <Input

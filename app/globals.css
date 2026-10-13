@@ -20,10 +20,16 @@
   --tamper-bg: #E2F3F0;    --tamper-fg: #1D6359;   --tamper-solid: #4FB3A3;
   --danger-bg: #FCEDED;    --danger-fg: #9A3B3B;   --danger-solid: #A83F3F;
 
+  /* text and focus on dark bands (brand-900) */
+  --on-dark: #FFFFFF; --on-dark-muted: #CDE2EC; --focus-on-dark: #CDE2EC;
+  /* the decorative trail lines on the landing page */
+  --trail-line: #CDE2EC; --trail-line-dark: #2D556B;
+
   /* shape and depth */
   --radius: 10px;
   --radius-card: 12px;
   --radius-modal: 16px;
+  --radius-section: 24px;
   --shadow-soft: 0 1px 2px rgba(30,42,50,0.04), 0 4px 12px rgba(30,42,50,0.05);
   --shadow-raised: 0 8px 24px rgba(30,42,50,0.10);
   --shadow-modal: 0 16px 40px rgba(30,42,50,0.14);
@@ -61,6 +67,7 @@
   --color-brand-600: var(--brand-600); --color-brand-700: var(--brand-700);
   --color-brand-800: var(--brand-800); --color-brand-900: var(--brand-900);
   --color-brand-950: var(--brand-950);
+  --color-on-dark: var(--on-dark); --color-on-dark-muted: var(--on-dark-muted);
   --color-escalated-bg: var(--escalated-bg); --color-escalated-fg: var(--escalated-fg);
   --color-escalated-solid: var(--escalated-solid);
   --color-review-bg: var(--review-bg); --color-review-fg: var(--review-fg);
