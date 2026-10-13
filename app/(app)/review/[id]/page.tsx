@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashboard/data-table";
 import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { AssignReviewers } from "@/components/safetrail/assign-reviewers";
-import { CloseCasePanel, StartReviewButton } from "@/components/safetrail/review-actions";
+import { CloseCaseButton, StartReviewButton } from "@/components/safetrail/review-actions";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { Timeline } from "@/components/safetrail/timeline";
 import { StatusBadge } from "@/components/ui/badge";
@@ -55,7 +55,9 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
             </span>
           </p>
         </div>
+        {/* One step at a time: start the review, then the same spot offers closing it. */}
         {c.status === "escalated" && <StartReviewButton caseId={c.id} />}
+        {c.status === "under_review" && <CloseCaseButton caseId={c.id} />}
       </header>
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -189,18 +191,13 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
             <Timeline events={c.events} />
           </Card>
 
-          {closed ? (
+          {closed && (
             <Card className="flex flex-col gap-2">
               <h2 className={panelTitle}>Closing note</h2>
               <p className="whitespace-pre-wrap">{c.closingNote || "No note was recorded."}</p>
               {c.closedAt && (
                 <p className="tnum text-[13px] leading-[18px] text-muted">Closed {formatDateTime(c.closedAt)}</p>
               )}
-            </Card>
-          ) : (
-            <Card className="flex flex-col gap-3">
-              <h2 className={panelTitle}>Close this case</h2>
-              <CloseCasePanel caseId={c.id} />
             </Card>
           )}
         </div>
