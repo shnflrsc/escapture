@@ -15,7 +15,7 @@ export const instant = false;
 const TABS = [
   { key: "all", label: "All", match: () => true },
   { key: "drafts", label: "Drafts", match: (s: string) => s === "draft" },
-  { key: "reviewers", label: "With reviewers", match: (s: string) => s === "escalated" || s === "under_review" },
+  { key: "reviewers", label: "Escalated", match: (s: string) => s === "escalated" || s === "under_review" },
   { key: "closed", label: "Closed", match: (s: string) => s === "closed" },
 ] as const;
 

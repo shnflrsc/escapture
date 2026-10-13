@@ -4,7 +4,6 @@ import {
   Archive,
   Bell,
   ChevronDown,
-  CircleHelp,
   Columns3,
   FolderOpen,
   Inbox,
@@ -278,9 +277,6 @@ export function AppShell({
           </Suspense>
 
           <div className="ml-auto flex items-center gap-1 lg:gap-2">
-            <Link href="/contact" aria-label="Help" title="Help" className={cn(iconButton, "hidden sm:grid")}>
-              <CircleHelp size={20} strokeWidth={1.75} aria-hidden />
-            </Link>
             <NotificationPopover unread={unread} role={user.role} />
             <span aria-hidden className="mx-1 hidden h-7 w-px bg-border sm:block" />
             <Menu
