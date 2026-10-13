@@ -35,13 +35,13 @@ Plan: [plan.md](plan.md). Design: [reference/](reference/).
 
 **Files:** `components/safetrail/illustrations/*`, `components/safetrail/auth-shell.tsx`
 
-### - [ ] Task 3: Password field with show/hide
+### - [x] Task 3: Password field with show/hide
 
 **Description:** Add a password input with a show/hide toggle (a `PasswordInput` in `components/ui/field.tsx`, or an end slot on `Input`).
 
 **Acceptance criteria:**
-- [ ] The toggle is a 36×36 `<button type="button">` inside the field, with the `Eye`/`EyeOff` icons, the labels "Show password" / "Hide password", and `aria-pressed`.
-- [ ] It keeps the existing label, hint, error and `aria-describedby` behaviour, and never submits the form.
+- [x] The toggle is a 36×36 `<button type="button">` inside the field, with the `Eye`/`EyeOff` icons, the labels "Show password" / "Hide password", and `aria-pressed`.
+- [x] It keeps the existing label, hint, error and `aria-describedby` behaviour, and never submits the form.
 
 **Files:** `components/ui/field.tsx`
 

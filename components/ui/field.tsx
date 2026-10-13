@@ -1,7 +1,7 @@
 "use client";
 
-import { CircleAlert } from "lucide-react";
-import { useId, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { CircleAlert, Eye, EyeOff } from "lucide-react";
+import { useId, useState, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 const control =
@@ -14,13 +14,24 @@ function Wrap({
   label,
   hint,
   error,
+  labelEnd,
   children,
-}: Common & { id: string; children: React.ReactNode }) {
+}: Common & { id: string; labelEnd?: React.ReactNode; children: React.ReactNode }) {
+  const labelEl = (
+    <label htmlFor={id} className="text-sm leading-5 font-semibold text-ink">
+      {label}
+    </label>
+  );
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm leading-5 font-semibold text-ink">
-        {label}
-      </label>
+      {labelEnd ? (
+        <div className="flex items-baseline justify-between gap-3">
+          {labelEl}
+          {labelEnd}
+        </div>
+      ) : (
+        labelEl
+      )}
       {children}
       {hint && !error && (
         <p id={`${id}-hint`} className="text-[13px] leading-[18px] text-muted">
@@ -57,6 +68,48 @@ export function Input({
         className={cn(control, "h-[var(--control-h)]", error ? "border-danger-fg" : "border-border-strong", className)}
         {...rest}
       />
+    </Wrap>
+  );
+}
+
+/** A password field with a show/hide button inside it. `labelEnd` sits at the right of the label row. */
+export function PasswordInput({
+  label,
+  hint,
+  error,
+  labelEnd,
+  className,
+  ...rest
+}: Common & { labelEnd?: React.ReactNode } & Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const id = useId();
+  const [shown, setShown] = useState(false);
+  const Icon = shown ? EyeOff : Eye;
+  return (
+    <Wrap id={id} label={label} hint={hint} error={error} labelEnd={labelEnd}>
+      <div className="relative">
+        <input
+          id={id}
+          type={shown ? "text" : "password"}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(id, hint, error)}
+          className={cn(
+            control,
+            "h-[var(--control-h)] pr-[52px]",
+            error ? "border-danger-fg" : "border-border-strong",
+            className,
+          )}
+          {...rest}
+        />
+        <button
+          type="button"
+          aria-label={shown ? "Hide password" : "Show password"}
+          aria-pressed={shown}
+          onClick={() => setShown((v) => !v)}
+          className="absolute top-1/2 right-1 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted transition-colors duration-150 ease-out hover:bg-brand-100 hover:text-brand-800"
+        >
+          <Icon size={20} strokeWidth={1.75} aria-hidden />
+        </button>
+      </div>
     </Wrap>
   );
 }

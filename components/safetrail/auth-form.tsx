@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/feedback";
-import { Input } from "@/components/ui/field";
+import { Input, PasswordInput } from "@/components/ui/field";
 import { api, ApiError } from "@/lib/client-api";
 import { takeSignupEmail } from "@/lib/signup-email";
 
@@ -72,10 +72,9 @@ export function AuthForm({ mode, domain }: { mode: "sign-in" | "sign-up"; domain
         error={emailError}
         hint={mode === "sign-up" && domain ? `Must end in @${domain}` : undefined}
       />
-      <Input
+      <PasswordInput
         label="Password"
         name="password"
-        type="password"
         autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
         required
         minLength={8}
