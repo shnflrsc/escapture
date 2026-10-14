@@ -1,4 +1,4 @@
-// pnpm db:seed — idempotent demo data (INSTRUCTIONS.md section 12).
+// pnpm db:seed — idempotent demo data.
 import { eq } from "drizzle-orm";
 import { readFile } from "node:fs/promises";
 import { allowedEmailDomain } from "@/lib/email-domain";

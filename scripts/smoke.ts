@@ -1,4 +1,4 @@
-// End-to-end API walkthrough (INSTRUCTIONS.md section 15). Runs against a
+// End-to-end API walkthrough. Runs against a
 // running dev server and asserts the product invariants. Uses fresh accounts
 // on every run, so it is safe to repeat.
 //   pnpm dev   (in one terminal)
