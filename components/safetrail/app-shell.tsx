@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu as MenuIcon,
   Search,
+  Tags,
   Users,
   X,
 } from "lucide-react";
@@ -52,7 +53,8 @@ const NAV: Record<Role, NavItem[]> = {
   // An administrator can do everything a reviewer can, and manages the reviewer accounts.
   admin: [
     ...REVIEW_NAV,
-    { href: "/admin/reviewers", label: "Reviewer accounts", Icon: Users, match: (p) => p.startsWith("/admin") },
+    { href: "/admin/reviewers", label: "Reviewer accounts", Icon: Users, match: (p) => p.startsWith("/admin/reviewers") },
+    { href: "/admin/word-bank", label: "Word bank", Icon: Tags, match: (p) => p.startsWith("/admin/word-bank") },
   ],
 };
 

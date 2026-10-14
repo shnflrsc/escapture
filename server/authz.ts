@@ -122,6 +122,11 @@ export function canEscalate(u: U, c: CaseFacts): Decision {
 
 // ---- Administration ----
 
+/** Only an administrator keeps the word bank used to flag escalated cases. */
+export function canManageWordBank(u: U): Decision {
+  return u.role === "admin" ? "ok" : "forbidden";
+}
+
 /** Only an administrator creates reviewer accounts. */
 export function canProvisionReviewer(u: U): Decision {
   return u.role === "admin" ? "ok" : "forbidden";

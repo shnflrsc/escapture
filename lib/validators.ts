@@ -111,8 +111,11 @@ export const boardQuery = z.object({
   rev: z.literal("1").optional(),
   mine: z.literal("1").optional(),
   unassigned: z.literal("1").optional(),
+  flagged: z.literal("1").optional(),
   range: z.enum(["30d", "90d", "all"]).optional(),
 });
+/** A word or phrase for the word bank. */
+export const flaggedWord = z.object({ word: z.string().trim().min(2, "Enter a word or phrase of at least 2 characters.").max(60) });
 export const assignReviewer = z.object({ reviewerId: z.string().min(1).max(64) });
 export const reviewStatus = z.object({ status: z.literal("under_review") });
 export const closeCase = z.object({
