@@ -42,7 +42,7 @@ export default function TermsPage() {
 
       <h2 className={h2}>About these Terms</h2>
       <p>
-        By creating an account or using Escapture or the Escrow Capture extension, you agree to these Terms and to our{" "}
+        By creating an account or using Escapture or its browser extension, you agree to these Terms and to our{" "}
         <Link href="/privacy" className="link">
           Privacy Policy
         </Link>
@@ -90,7 +90,7 @@ export default function TermsPage() {
           decisions belong to BulSU&apos;s process.
         </li>
         <li>
-          Escrow Capture checks whether a page was changed by hand through browser developer tools or common
+          The Escapture extension checks whether a page was changed by hand through browser developer tools or common
           userscripts, and it refuses to capture if it finds that. These checks do not catch every way of altering a
           page, such as modified Facebook app code or rewriting of content in transit.
         </li>

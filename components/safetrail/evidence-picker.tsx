@@ -100,7 +100,7 @@ export function EvidencePicker({
         {available.length === 0 ? (
           <p className="text-sm leading-[22px] text-muted">
             {vaultEmpty
-              ? "Your vault is empty. Evidence you capture with the Escrow Capture extension will appear here."
+              ? "Your vault is empty. Evidence you capture with the Escapture extension will appear here."
               : "Everything in your vault is already in this case."}
           </p>
         ) : (

@@ -69,7 +69,7 @@ export default async function VaultPage({ searchParams }: PageProps<"/vault">) {
             title="Your vault is empty"
             action={<HowToCapture variant="primary" label="Capture evidence" />}
           >
-            Capture a Facebook post or conversation with the Escrow Capture extension and it will appear here.
+            Capture a Facebook post or conversation with the Escapture extension and it will appear here.
           </EmptyState>
         )}
         {total === 0 && view.tab === "shared" && (

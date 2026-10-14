@@ -201,7 +201,7 @@
 
   function SiteFooter(p) {
     var cols = p.columns || [
-      { title: "Product", links: ["How it works", "Escrow Capture extension", "For reviewers"] },
+      { title: "Product", links: ["How it works", "Escapture extension", "For reviewers"] },
       { title: "Help", links: ["FAQ", "Contact the team"] },
       { title: "Legal", links: ["Privacy", "Terms"] }];
     return h("footer", { className: "st-footer" }, h("div", { className: "st-wrap" },

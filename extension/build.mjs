@@ -1,4 +1,4 @@
-// Bundles the Escrow Capture extension into extension/dist (load unpacked
+// Bundles the Escapture extension into extension/dist (load unpacked
 // from there). APP_URL is injected at build time:
 //   pnpm ext:build                       -> NEXT_PUBLIC_APP_URL from .env.local, or http://localhost:3000
 //   APP_URL=https://example.com pnpm ext:build

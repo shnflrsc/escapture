@@ -65,7 +65,7 @@ Reference: `reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, and the `.sb
 - A sentence-case group label above the nav: "Your space" (student), "Reviews" (reviewer), "Administration" (admin). 13px 600 `muted`. Never uppercase.
 - Nav items stay as today, plus **admin: Reviewer accounts (`Users` icon) and Notifications**. Items are 44px tall with a 10px radius. Active: `brand-100` background and `brand-800` text. Notifications shows the unread dot.
 - Help card at the bottom, `brand-50` with a 12px radius:
-  - Student: "Escrow Capture", "Capture a Facebook post or conversation with the Chrome extension. It goes straight to your vault.", and a link "How to capture" that opens the existing `HowToCapture`.
+  - Student: "Escapture extension", "Capture a Facebook post or conversation with the Chrome extension. It goes straight to your vault.", and a link "How to capture" that opens the existing `HowToCapture`.
   - Reviewer: "Reviewing cases", "Escapture supplements the university's own process. Record the outcome when you close a case."
   - Admin: "Administrator", "You create reviewer accounts. You can't see cases or evidence."
 - Footer links: Help, Privacy (`/privacy`), Terms (`/terms`), 13px `muted`.

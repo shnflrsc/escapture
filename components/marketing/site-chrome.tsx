@@ -67,7 +67,7 @@ const columns = [
     links: [
       { label: "How it works", href: "/#how" },
       // There is no store listing yet: the install steps are in the vault, under "How to capture".
-      { label: "Escrow Capture extension", href: "/vault" },
+      { label: "Escapture extension", href: "/vault" },
       { label: "For reviewers", href: "/#reviewers" },
     ],
   },

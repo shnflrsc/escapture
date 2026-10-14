@@ -43,7 +43,7 @@ export function VaultVisual() {
 
 export function ExtensionVisual() {
   return (
-    <ProductFrame url="Escrow Capture extension" label="The Escrow Capture extension after saving a capture">
+    <ProductFrame url="Escapture extension" label="The Escapture extension after saving a capture">
       <div className="mk-popup-wrap">
         <div className="mk-popup">
           <div className="flex items-center justify-between">
@@ -172,7 +172,7 @@ export function EmptyVaultVisual() {
           When you capture a post or conversation, it appears here with its tamper checks and capture time.
         </p>
         <MockButton variant="soft" className="mt-2">
-          Install Escrow Capture
+          Install the Escapture extension
         </MockButton>
       </div>
     </ProductFrame>
