@@ -49,7 +49,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
       </div>
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <h1 className="break-words">{c.title}</h1>
+          <h1 className="wrap-anywhere">{c.title}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm leading-[22px] text-muted">
             <StatusBadge status={c.status} />
             {c.escalatedAt && <span className="tnum">Escalated {formatDateTime(c.escalatedAt)}</span>}
@@ -74,7 +74,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
         <div className="flex min-w-0 flex-col gap-[var(--section-gap)] [&>*]:min-w-0">
           <Card className="flex flex-col gap-2">
             <h2 className={panelTitle}>Description from the student</h2>
-            <p className="max-w-[72ch] whitespace-pre-wrap">{c.description || "No description was added."}</p>
+            <p className="max-w-[72ch] whitespace-pre-wrap wrap-anywhere">{c.description || "No description was added."}</p>
           </Card>
 
           <section className="flex flex-col gap-3">

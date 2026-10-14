@@ -53,7 +53,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           className="block min-h-32 w-full resize-none rounded-xl border-0 bg-transparent px-[var(--card-pad)] pt-[var(--card-pad)] pb-2 text-base leading-[26px] text-ink [field-sizing:content] placeholder:text-muted focus-visible:outline-none!"
         />
       ) : (
-        <p className="max-w-prose whitespace-pre-wrap">{c.description || "No description was added."}</p>
+        <p className="max-w-prose whitespace-pre-wrap wrap-anywhere">{c.description || "No description was added."}</p>
       )}
     </Card>
   );
@@ -179,7 +179,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               />
             </>
           ) : (
-            <h1 className="break-words">{c.title}</h1>
+            <h1 className="wrap-anywhere">{c.title}</h1>
           )}
           <p className="flex flex-wrap items-center gap-2 text-muted">
             <StatusBadge status={c.status} />

@@ -19,7 +19,7 @@ export function Panel({ title, note, children }: { title: string; note?: string;
 
 const shortDay = (d: Date) => formatDate(d).replace(/ \d{4}$/, "");
 
-/** One series of bars. Hover or focus a bar for its number; "View as table" gives them all. */
+/** One series of bars. Hover a bar for its number; screen readers hear them all. */
 export function BarChart({ data, unit }: { data: { start: Date; count: number }[]; unit: [string, string] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   const W = 560;
@@ -69,29 +69,6 @@ export function BarChart({ data, unit }: { data: { start: Date; count: number }[
         })}
         <line x1="0" x2={W} y1={H} y2={H} stroke="var(--chart-axis)" strokeWidth="1" />
       </svg>
-      <details className="text-sm leading-5">
-        <summary className="link cursor-pointer rounded-sm">View as table</summary>
-        <table className="mt-2 w-full max-w-sm border-collapse text-left">
-          <thead>
-            <tr className="border-b border-border text-[13px] text-muted">
-              <th scope="col" className="py-1 pr-4 font-semibold">
-                Week of
-              </th>
-              <th scope="col" className="py-1 text-right font-semibold">
-                Cases escalated
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((d) => (
-              <tr key={d.start.toISOString()} className="border-b border-border last:border-b-0">
-                <td className="tnum py-1 pr-4">{formatDate(d.start)}</td>
-                <td className="tnum py-1 text-right">{d.count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
     </div>
   );
 }
