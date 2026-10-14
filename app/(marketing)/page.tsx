@@ -11,6 +11,7 @@ import {
   TrailPattern,
   TrustPanel,
 } from "@/components/marketing/blocks";
+import { RevealOnScroll } from "@/components/marketing/reveal";
 import { emailDomain } from "@/components/marketing/site-chrome";
 import { StartForm } from "@/components/marketing/start-form";
 import {
@@ -91,6 +92,7 @@ const faq = [
 export default function LandingPage() {
   return (
     <>
+      <RevealOnScroll />
       <section className="mk-hero">
         <TrailPattern />
         <div className="mk-wrap">

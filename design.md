@@ -330,6 +330,7 @@ The student may be distressed. Write like a calm, kind, competent person.
 
 - Transitions 150 to 200ms, `ease-out`, on color, background, opacity and small transforms. Dialogs fade and rise 8px over 200ms.
 - One signature moment: when a capture is saved to the vault, the new item fades in and its check icon scales in gently over 240ms. Nothing bounces, shakes or flashes.
+- Home page only: the hero's lines rise in once on load, and each block below fades and rises 12px over about 420ms the first time it scrolls into view. Nothing loops, and nothing moves on its own after that.
 - Respect `prefers-reduced-motion`: replace movement with an instant or opacity-only change.
 
 ## 13. Accessibility (WCAG 2.2 AA)
