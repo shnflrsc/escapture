@@ -143,7 +143,7 @@ Reviewers triage cases all day, so their screens may be dense; students never se
 - **Sharing:** a short acknowledgment dialog before any share, confirmed with "I understand, share". Password-protected links show a lock icon. Always list who has access with a "Remove access" ghost action.
 - **Escalation:** a 720px dialog "Review what reviewers will see" listing everything as reviewers will see it, a `brand-50` panel ("Once you escalate, this case is locked. You can't edit or withdraw it, and attached evidence can't be deleted."), then ghost "Go back" and weighty "Escalate to reviewers". Afterwards: "Locked since [date]. Reviewers can see this case."
 - **Reviewer separation:** the reporter's evidence and reviewer attachments ("Added by reviewers") sit in separate headed sections; reviewer attachments are never shown to the reporter.
-- **Escrow Capture extension:** same tokens and voice; 360px popup, comfortable density, 16px padding; Lora and Nunito bundled as files. States: signed out, ready, capturing, saved (with the tamper badge and "Open in vault"), refused and error (amber banners).
+- **Escapture extension:** same tokens and voice; 360px popup, comfortable density, 16px padding; Lora and Nunito bundled as files. States: signed out, ready, capturing, saved (with the tamper badge and "Open in vault"), refused and error (amber banners).
 
 ## Implementation
 

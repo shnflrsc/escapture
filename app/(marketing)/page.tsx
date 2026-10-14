@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 const steps = [
   {
     title: "Capture",
-    body: "Use the Escrow Capture extension to save a Facebook post or conversation. Each capture is saved with tamper checks.",
+    body: "Use the Escapture extension to save a Facebook post or conversation. Each capture is saved with tamper checks.",
   },
   {
     title: "Build a case",
@@ -138,7 +138,7 @@ export default function LandingPage() {
 
       <Section tone="canvas">
         <FeatureRow
-          eyebrow="Escrow Capture extension"
+          eyebrow="Escapture extension"
           title="Save it the moment you see it"
           body="Open the post or conversation on Facebook and click Capture. Escapture saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
           points={[
@@ -246,7 +246,7 @@ export default function LandingPage() {
         tone="card"
         eyebrow="Get started"
         title="Set up your vault"
-        lead="Sign in with your university email, add the Escrow Capture extension, and you're set."
+        lead="Sign in with your university email, add the Escapture extension, and you're set."
       >
         <div className="mk-split">
           <div className="flex flex-col gap-6">

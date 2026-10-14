@@ -4,7 +4,7 @@ Escapture helps students who are being cyberbullied keep evidence of what happen
 
 It has four connected parts:
 
-1. **Escrow Capture** (Chrome extension): saves a frozen, script-free copy of a post or conversation, after running tamper checks, straight into the student's vault.
+1. **The Escapture extension** (for Chrome): saves a frozen, script-free copy of a post or conversation, after running tamper checks, straight into the student's vault.
 2. **Escrow Vault**: private storage. Every item records the SHA-256 of the exact stored bytes and a server-side capture time, and can be re-verified at any time. The owner can see who an item is shared with, stop sharing with any of them, and list and revoke its password links.
 3. **Cases**: a student gathers evidence, invites people they trust, previews exactly what reviewers will see, and escalates. Escalation locks the case. A draft saves itself as it is edited, shows other people's changes within a few seconds, and can be deleted by the person who started it; people can be removed from it or leave it, and their evidence leaves with them.
 4. **Dashboard and Review Board**: reviewers see summary counts and charts on the Dashboard, triage escalated cases in the Review Board table, attach evidence shared with them (kept separate from the reporter's), and close cases with a note.
@@ -72,7 +72,7 @@ BETTER_AUTH_SECRET=<32+ random bytes, e.g. `node -e "console.log(require('crypto
 | `pnpm ext:build` / `ext:watch` | Build the extension into `extension/dist` |
 | `pnpm fixtures:serve` | Fake Facebook-like pages on http://localhost:4100 for testing capture |
 
-## The Escrow Capture extension
+## The Escapture extension
 
 ```bash
 pnpm ext:build                                   # for http://localhost:3000
@@ -124,7 +124,7 @@ server/authz.ts        every permission decision, as pure functions
 server/services        evidence, shares, links, cases, review, notifications
 server/storage.ts      Supabase Storage, or local disk in development
 server/db              Drizzle schema and client
-extension/             Escrow Capture (background, content, page-guard, popup)
+extension/             Escapture extension (background, content, page-guard, popup)
 fixtures/              fake pages for testing capture
 scripts/               local database, seed, create-user, smoke test
 ```

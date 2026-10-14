@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Escapture Escrow Capture",
+  "name": "Escapture",
   "version": "0.0.0",
   "description": "Save a tamper-checked copy of a Facebook post or conversation to your Escapture vault.",
   "icons": {
@@ -11,7 +11,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Escapture Escrow Capture",
+    "default_title": "Escapture",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"

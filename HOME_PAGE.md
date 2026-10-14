@@ -74,14 +74,14 @@ Marketing (`components/marketing/`):
 4. **Section** (card tone, id `how`)
    - Eyebrow "How it works", title "Three steps, at your pace", lead "You decide when, and whether, anything goes further."
    - Steps:
-     - Capture: "Use the Escrow Capture extension to save a Facebook post or conversation. Each capture is saved with tamper checks."
+     - Capture: "Use the Escapture extension to save a Facebook post or conversation. Each capture is saved with tamper checks."
      - Build a case: "Choose the evidence that matters, describe what happened in your own words, and invite someone you trust to help."
      - Escalate when you're ready: "Review exactly what reviewers will see. Once you escalate, the case is locked and reviewers can see it."
 5. **Section** (canvas tone) with 3 FeatureRows:
-   - a. Eyebrow "Escrow Capture extension", title "Save it the moment you see it".
+   - a. Eyebrow "Escapture extension", title "Save it the moment you see it".
      - Body: "Open the post or conversation on Facebook and click Capture. Escapture saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
      - Points: "Works on Facebook posts and Messenger conversations" / "Each capture is saved with tamper checks" / "Goes straight to your private vault"
-     - Visual: a ProductFrame (url "Escrow Capture extension") holding a 360px extension popup (16px padding, radius-card, shadow-raised). The popup contains: "Escapture" in Lora with "Signed in as you" in muted text, the item "Comments on my post / Facebook post · 18 comments loaded", a TamperCheck with "13 Oct 2026, 7:42 PM", a success Banner "Saved to your vault." with an "Open in vault" link, and a full-width secondary button "Capture another page". Below the popup, a Toast "Saved to your vault".
+     - Visual: a ProductFrame (url "Escapture extension") holding a 360px extension popup (16px padding, radius-card, shadow-raised). The popup contains: "Escapture" in Lora with "Signed in as you" in muted text, the item "Comments on my post / Facebook post · 18 comments loaded", a TamperCheck with "13 Oct 2026, 7:42 PM", a success Banner "Saved to your vault." with an "Open in vault" link, and a full-width secondary button "Capture another page". Below the popup, a Toast "Saved to your vault".
    - b. (reverse) Eyebrow "Your vault", title "Private until you choose".
      - Body: "Everything you capture stays in your vault. You can ask a friend, counselor or family member to help, and you can take their access away at any time."
      - Points: "Only you can see your vault" / "Share with a password-protected link" / "See who has access, and remove it anytime"
@@ -108,10 +108,10 @@ Marketing (`components/marketing/`):
    - Points: "Triage by status, reporter and escalated date" / "Passed tamper checks shown on every item" / "Reviewer attachments are never shown to the student"
    - Visual: a ProductFrame (url `escapture.app/review`) with a "Review Board" h3 and "3 cases" in muted text, then 3 rows with StatusBadges: "Comments on my post · Escalated 8 Oct 2026" escalated / "Group chat, 3 Oct · Escalated 5 Oct 2026" review / "Edited photo caption · Escalated 22 Sep 2026" closed. Below them, a reviewer TamperCheck "Passed tamper checks" with "3 Oct 2026, 8:12 PM".
 9. **Section** (card tone, id `start`)
-   - Eyebrow "Get started", title "Set up your vault", lead "Sign in with your university email, add the Escrow Capture extension, and you're set."
+   - Eyebrow "Get started", title "Set up your vault", lead "Sign in with your university email, add the Escapture extension, and you're set."
    - 2 columns.
    - Left: a canvas-bg panel (radius 16, 32px padding) with an Input labelled "University email", placeholder "yourname@bulsu.edu.ph", helper "Use the email that ends in bulsu.edu.ph." Then primary "Create your vault" (ArrowRight after the label) and soft "Get the extension", then an EyeOff note "Only you can see your vault." Under the panel, an info Banner: "Escapture isn't an emergency service. If you feel unsafe right now, reach out to your university's guidance office or local emergency services."
-   - Right: a ProductFrame (url `escapture.app/vault`) holding an EmptyState with an Inbox icon, "Your vault is ready", "When you capture a post or conversation, it appears here with its tamper checks and capture time.", and a soft "Install Escrow Capture" button.
+   - Right: a ProductFrame (url `escapture.app/vault`) holding an EmptyState with an Inbox icon, "Your vault is ready", "When you capture a post or conversation, it appears here with its tamper checks and capture time.", and a soft "Install the Escapture extension" button.
 10. **Section** (canvas tone, id `faq`), centered
     - Eyebrow "Questions", title "Common questions". Faq items:
       - Who can see my vault? → Only you. Nothing reaches reviewers until you escalate a case, and you choose who else can see it.
@@ -125,7 +125,7 @@ Marketing (`components/marketing/`):
     - Buttons: on-dark "Start your vault" (#start) plus ghost-on-dark "See how it works" (#how). The design-system component only supported one button; add the second.
 12. **SiteFooter**
     - Blurb: "Keep evidence of what happened online and share it with your university when you're ready."
-    - Columns: Product (How it works, Escrow Capture extension, For reviewers) · Help (FAQ, Contact the team) · Legal (Privacy, Terms)
+    - Columns: Product (How it works, Escapture extension, For reviewers) · Help (FAQ, Contact the team) · Legal (Privacy, Terms)
     - Note: "Escapture supplements Bulacan State University's existing process. It does not replace it."
 
 ## Responsive (below 1024px)

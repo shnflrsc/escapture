@@ -89,7 +89,7 @@ export default function PrivacyPage() {
       <p>
         Escapture supplements the university&apos;s own process for handling cyberbullying cases and does not replace
         it. We handle personal data in line with the Data Privacy Act of 2012 (Republic Act No. 10173) and its
-        implementing rules. This policy covers the Escapture web application and the Escrow Capture browser extension.
+        implementing rules. This policy covers the Escapture web application and the Escapture browser extension.
         It does not cover Facebook, or the university&apos;s own investigation, hearing and sanction procedures, which
         follow their own rules.
       </p>

@@ -267,7 +267,7 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
 - Toast: bottom-left, `ink` background, white text, auto-dismiss in 5s, pauses on hover, never used for anything the user must act on.
 
 ### Empty states
-- A small illustration or icon, an H3, one sentence of reassurance and what to do next, and at most one button. Example: "Your vault is empty. Capture a Facebook post or conversation with the Escrow Capture extension and it will appear here."
+- A small illustration or icon, an H3, one sentence of reassurance and what to do next, and at most one button. Example: "Your vault is empty. Capture a Facebook post or conversation with the Escapture extension and it will appear here."
 
 ### Skeletons and loading
 - Use `subtle` skeleton blocks with a slow, subtle pulse. No full-page spinners.
@@ -345,7 +345,7 @@ The student may be distressed. Write like a calm, kind, competent person.
 - Never rely on color alone. Never auto-play motion or sound.
 - Dialogs trap focus, close on Escape, and restore focus.
 
-## 14. Escrow Capture (Chrome extension)
+## 14. Escapture (Chrome extension)
 
 The extension must feel like the same product.
 

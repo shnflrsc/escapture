@@ -42,7 +42,7 @@ export function HowToCapture({
       >
         <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-[22px] text-ink">
           <li>
-            Install the Escrow Capture extension in Chrome. Open <span className="mono">chrome://extensions</span>, turn
+            Install the Escapture extension in Chrome. Open <span className="mono">chrome://extensions</span>, turn
             on Developer mode, choose Load unpacked and select the <span className="mono">extension/dist</span> folder.
           </li>
           <li>Open the Facebook post or Messenger conversation, then open the extension and sign in.</li>
