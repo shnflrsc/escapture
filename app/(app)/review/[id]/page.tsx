@@ -214,7 +214,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
           {closed && (
             <Card className="flex flex-col gap-2">
               <h2 className={panelTitle}>Closing note</h2>
-              <p className="whitespace-pre-wrap">{c.closingNote || "No note was recorded."}</p>
+              <p className="whitespace-pre-wrap wrap-anywhere">{c.closingNote || "No note was recorded."}</p>
               {c.closedAt && (
                 <p className="tnum text-[13px] leading-[18px] text-muted">Closed {formatDateTime(c.closedAt)}</p>
               )}

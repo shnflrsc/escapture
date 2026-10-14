@@ -225,7 +225,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             {c.status === "closed" && (
               <Card className="flex flex-col gap-2">
                 <h2 className="text-[20px] leading-7">Closing note from the reviewer</h2>
-                <p className="max-w-prose whitespace-pre-wrap">{c.closingNote || "No note was recorded."}</p>
+                <p className="max-w-prose whitespace-pre-wrap wrap-anywhere">{c.closingNote || "No note was recorded."}</p>
                 {c.closedAt && (
                   <p className="tnum text-[13px] leading-[18px] text-muted">Closed {formatDateTime(c.closedAt)}</p>
                 )}
