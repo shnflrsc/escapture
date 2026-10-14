@@ -22,7 +22,7 @@ import {
   user,
 } from "../db/schema";
 import { badRequest, conflict, notFound } from "../errors";
-import { listCaseEvidence, listCollaborators, loadCase } from "./cases";
+import { listCaseEvidence, listCaseRecord, listCollaborators, loadCase } from "./cases";
 import { excerpt, notify } from "./notifications";
 
 async function counts(caseIds: string[]) {
@@ -307,11 +307,15 @@ export async function getReviewCase(actor: Actor, caseId: string) {
   assertRole(actor, ...STAFF);
   const { c } = await loadCase(db, caseId);
   enforce(canReviewCase(actor, c));
-  const [[owner], collaborators, reporterEvidence, reviewerEvidence, assignees, events] = await Promise.all([
+  const isClosed = c.status === "closed";
+  const [[owner], collaborators, reporterEvidence, reviewerEvidence, reporterRecord, reviewerRecord, assignees, events] = await Promise.all([
     db.select({ id: user.id, name: user.name, email: user.email }).from(user).where(eq(user.id, c.ownerId)),
     listCollaborators(db, caseId),
-    listCaseEvidence(db, caseId, "reporter"),
-    listCaseEvidence(db, caseId, "reviewer"),
+    isClosed ? [] : listCaseEvidence(db, caseId, "reporter"),
+    isClosed ? [] : listCaseEvidence(db, caseId, "reviewer"),
+    // After closure the content is no longer staff's to see: only the record of what was attached.
+    isClosed ? listCaseRecord(db, caseId, "reporter") : null,
+    isClosed ? listCaseRecord(db, caseId, "reviewer") : null,
     db
       .select({ id: user.id, name: user.name, email: user.email, assignedAt: caseAssignments.createdAt })
       .from(caseAssignments)
@@ -346,6 +350,8 @@ export async function getReviewCase(actor: Actor, caseId: string) {
     reporterEvidence,
     // Kept separate from the reporter's evidence, never shown to them (I5).
     reviewerEvidence,
+    reporterRecord,
+    reviewerRecord,
     assignees,
     events,
   };
@@ -444,6 +450,13 @@ export async function closeCase(actor: Actor, caseId: string, note: string) {
   return db.transaction(async (tx) => {
     const { c, facts } = await loadCase(tx, caseId, { lock: true });
     enforce(canChangeStatus(actor, c.status, "closed"), "This case is already closed.");
+    // Before the status changes, write what each item was. The archive is read from these columns.
+    await tx.execute(sql`
+      update ${caseEvidence} set
+        "record_label" = e."label", "record_sha256" = e."sha256", "record_kind" = e."kind",
+        "record_captured_at" = e."captured_at", "record_owner_name" = u."name", "record_owner_email" = u."email"
+      from ${evidence} e, ${user} u
+      where e."id" = ${caseEvidence.evidenceId} and u."id" = e."owner_id" and ${caseEvidence.caseId} = ${caseId}`);
     const now = new Date();
     const [updated] = await tx
       .update(cases)

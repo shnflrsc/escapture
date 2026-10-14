@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CaseMenu, EscalateButton, RemovePersonButton } from "@/components/safetrail/case-actions";
 import { CaseEvidenceTable } from "@/components/safetrail/case-evidence-table";
+import { EvidenceRecord } from "@/components/safetrail/evidence-record";
+import { LinkList } from "@/components/safetrail/sharing-lists";
 import { CaseField, CaseLive } from "@/components/safetrail/case-fields";
 import { EvidencePicker } from "@/components/safetrail/evidence-picker";
 import { EmailShareButton, LinkShareButton } from "@/components/safetrail/share-dialogs";
@@ -15,6 +17,7 @@ import { formatDateTime } from "@/lib/format";
 import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
 import { getCase } from "@/server/services/cases";
 import { listEvidence } from "@/server/services/evidence";
+import { listCaseLinks } from "@/server/services/links";
 
 // Per-user page: allowed to wait for the server on navigation.
 export const instant = false;
@@ -28,6 +31,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const owner = c.role === "owner";
   const attached = new Set(c.evidence.map((e) => e.id));
   const vault = draft ? await listEvidence(user, "mine") : [];
+  const links = owner ? await listCaseLinks(user, c.id) : [];
 
   const description = (
     // On a draft the card is the text box: no padding of its own, and it carries the focus ring.
@@ -60,7 +64,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         ) : undefined
       }
     >
-      {c.evidence.length === 0 ? (
+      {c.record ? (
+        c.record.length === 0 ? (
+          <Card>
+            <p className="text-sm leading-[22px] text-muted">No evidence was attached.</p>
+          </Card>
+        ) : (
+          // The record of what was attached. An item its owner has since deleted has no page to open.
+          <EvidenceRecord
+            caption="Evidence in this case, as recorded when it closed"
+            items={c.record}
+            hrefFor={(e) => `/vault/${e.evidenceId}?from=${c.id}`}
+          />
+        )
+      ) : c.evidence.length === 0 ? (
         <Card>
           <p className="text-sm leading-[22px] text-muted">No evidence has been added yet.</p>
         </Card>
@@ -114,6 +131,12 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               title="Create a password link to this case"
               risk="Any student who has this link, its password and a SafeTrail account can join this case, see its evidence and add their own. Reviewers will see their name and email."
             />
+          </div>
+        )}
+        {links.length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-border pt-4">
+            <h3 className="text-sm leading-5 font-semibold">Password links</h3>
+            <LinkList endpoint={`/api/cases/${c.id}/links`} links={links} />
           </div>
         )}
       </Card>

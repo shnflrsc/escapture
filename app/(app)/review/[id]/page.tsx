@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashboard/data-table";
 import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { AssignReviewers } from "@/components/safetrail/assign-reviewers";
+import { EvidenceRecord } from "@/components/safetrail/evidence-record";
 import { CloseCaseButton, StartReviewButton } from "@/components/safetrail/review-actions";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { Timeline } from "@/components/safetrail/timeline";
@@ -25,6 +26,8 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
   if (!isUuid(id)) notFound();
   const c = await orNotFound(getReviewCase(user, id));
   const closed = c.status === "closed";
+  // After closure the review team keeps the record of what was attached, not the evidence itself.
+  const reporterCount = c.reporterRecord?.length ?? c.reporterEvidence.length;
   // Only an administrator assigns, and only while the case is open.
   const canAssign = user.role === "admin" && !closed;
   const assigned = new Set(c.assignees.map((a) => a.id));
@@ -71,10 +74,13 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
             <div className="flex flex-wrap items-baseline justify-between gap-x-4">
               <h2 className="text-[20px] leading-7">Reporter&apos;s evidence</h2>
               <span className="tnum text-[13px] leading-[18px] text-muted">
-                {c.reporterEvidence.length} {c.reporterEvidence.length === 1 ? "item" : "items"} · attached by the
+                {reporterCount} {reporterCount === 1 ? "item" : "items"} · attached by the
                 student and collaborators
               </span>
             </div>
+            {c.reporterRecord ? (
+              <EvidenceRecord caption="Evidence the student and collaborators attached, as recorded at closure" items={c.reporterRecord} />
+            ) : (
             <TableBox caption="Evidence attached by the student and collaborators" minWidth={640}>
               <thead>
                 <tr className={headRow}>
@@ -110,6 +116,7 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                 ))}
               </tbody>
             </TableBox>
+            )}
           </section>
 
           {/* Kept apart from the reporter's evidence, and never shown to them (I5). */}
@@ -129,7 +136,13 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
                 </Link>
               )}
             </div>
-            {c.reviewerEvidence.length === 0 ? (
+            {c.reviewerRecord ? (
+              c.reviewerRecord.length === 0 ? (
+                <p className="text-sm leading-[22px] text-muted">No reviewer attachments.</p>
+              ) : (
+                <EvidenceRecord caption="Evidence reviewers attached, as recorded at closure" items={c.reviewerRecord} />
+              )
+            ) : c.reviewerEvidence.length === 0 ? (
               <p className="text-sm leading-[22px] text-muted">No reviewer attachments yet.</p>
             ) : (
               <ul className="rounded-xl border border-border bg-card">

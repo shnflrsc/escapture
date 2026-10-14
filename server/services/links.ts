@@ -1,7 +1,7 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { randomToken, scryptHash, scryptVerify, sha256Hex } from "@/lib/hash";
 import type { Actor } from "../auth";
-import { canAddCollaborator, enforce } from "../authz";
+import { canAddCollaborator, canViewCase, caseRole, enforce } from "../authz";
 import { db } from "../db";
 import { caseCollaborators, cases, evidence, evidenceShares, shareLinks } from "../db/schema";
 import { AppError, conflict, forbidden, notFound } from "../errors";
@@ -138,4 +138,61 @@ export async function redeemLink(actor: Actor, token: string, password: string) 
   }
 
   throw notFound("This link isn't valid.");
+}
+
+const linkColumns = { id: shareLinks.id, createdAt: shareLinks.createdAt, failedAttempts: shareLinks.failedAttempts };
+const toLink = (l: { id: string; createdAt: Date; failedAttempts: number }) => ({
+  id: l.id,
+  createdAt: l.createdAt,
+  /** Locked after too many wrong passwords: it no longer opens for anyone. */
+  locked: l.failedAttempts >= MAX_LINK_ATTEMPTS,
+});
+
+/** Only the case's owner manages its links, at any stage of the case. */
+async function ownedCase(actor: Actor, caseId: string) {
+  const { facts } = await loadCase(db, caseId);
+  enforce(canViewCase(actor, facts));
+  if (caseRole(actor, facts) !== "owner") throw forbidden("Only the person who started this case can manage its links.");
+}
+
+async function revoke(linkId: string, target: ReturnType<typeof eq>) {
+  const revoked = await db
+    .update(shareLinks)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(shareLinks.id, linkId), target, isNull(shareLinks.revokedAt)))
+    .returning({ id: shareLinks.id });
+  if (!revoked.length) throw notFound("That link isn't active.");
+  return { id: linkId };
+}
+
+/** The password links for this evidence that haven't been revoked, newest first. Owner only. */
+export async function listEvidenceLinks(actor: Actor, evidenceId: string) {
+  await loadManageable(actor, evidenceId);
+  const rows = await db
+    .select(linkColumns)
+    .from(shareLinks)
+    .where(and(eq(shareLinks.evidenceId, evidenceId), isNull(shareLinks.revokedAt)))
+    .orderBy(desc(shareLinks.createdAt));
+  return rows.map(toLink);
+}
+
+/** The link stops opening. People who already opened it keep the access it gave them until that is removed too. */
+export async function revokeEvidenceLink(actor: Actor, evidenceId: string, linkId: string) {
+  await loadManageable(actor, evidenceId);
+  return revoke(linkId, eq(shareLinks.evidenceId, evidenceId));
+}
+
+export async function listCaseLinks(actor: Actor, caseId: string) {
+  await ownedCase(actor, caseId);
+  const rows = await db
+    .select(linkColumns)
+    .from(shareLinks)
+    .where(and(eq(shareLinks.caseId, caseId), isNull(shareLinks.revokedAt)))
+    .orderBy(desc(shareLinks.createdAt));
+  return rows.map(toLink);
+}
+
+export async function revokeCaseLink(actor: Actor, caseId: string, linkId: string) {
+  await ownedCase(actor, caseId);
+  return revoke(linkId, eq(shareLinks.caseId, caseId));
 }

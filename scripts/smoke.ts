@@ -357,6 +357,41 @@ async function main() {
   const read = await call(M, "POST", "/api/notifications/read", {});
   check("mark all read", read.status === 200 && read.body.unreadCount === 0, read.body);
 
+  step("10b. After closure: the record stays, the evidence is its owner's again");
+  type Rec = { evidenceId: string | null; label: string; sha256: string; ownerName: string };
+  const closedView = (await call(R, "GET", `/api/review/cases/${caseId}`)).body as { reporterEvidence: unknown[]; reviewerEvidence: unknown[]; reporterRecord: Rec[]; reviewerRecord: Rec[] };
+  const mayaRec = closedView.reporterRecord?.find((r) => r.evidenceId === mayaEv);
+  check("a closed case gives reviewers the record, not the evidence", closedView.reporterEvidence.length === 0 && closedView.reviewerEvidence.length === 0 && closedView.reporterRecord.length === 2 && closedView.reviewerRecord.length === 1, closedView);
+  check("the record has each item's title, owner and SHA-256", Boolean(mayaRec) && mayaRec!.sha256 === sha256Hex(mayaBytes) && mayaRec!.label.length > 0 && mayaRec!.ownerName === "Maya Smoke" && closedView.reviewerRecord[0].sha256 === sha256Hex(alexBytes), mayaRec);
+  check("reviewers can no longer open the student's evidence or its file", (await call(R, "GET", `/api/evidence/${mayaEv}`)).status === 404 && (await call(R, "GET", `/api/evidence/${mayaEv}/file`)).status === 404 && (await call(R, "GET", `/api/evidence/${julesEv}`)).status === 404 && (await call(R, "POST", `/api/evidence/${mayaEv}/verify`, {})).status === 404);
+  check("evidence shared with a reviewer directly stays shared after closure", (await call(R, "GET", `/api/evidence/${alexEv}`)).status === 200);
+  check("the student and collaborator still open their case's evidence", (await call(M, "GET", `/api/evidence/${julesEv}`)).status === 200 && (await call(J, "GET", `/api/evidence/${mayaEv}`)).status === 200);
+
+  const sharedWith = (await call(A, "GET", `/api/evidence/${alexEv}/shares`)).body.items as { id: string; email: string; via: string }[];
+  const reviewerUser = sharedWith.find((p) => p.email === reviewerEmail);
+  check("the owner sees who it is shared with and how", Boolean(reviewerUser) && reviewerUser!.via === "email", sharedWith);
+  check("only the owner stops sharing", (await call(R, "DELETE", `/api/evidence/${alexEv}/shares/${reviewerUser!.id}`)).status === 403 && (await call(M, "DELETE", `/api/evidence/${alexEv}/shares/${reviewerUser!.id}`)).status === 404 && (await call(null, "DELETE", `/api/evidence/${alexEv}/shares/${reviewerUser!.id}`)).status === 401);
+  check("the owner stops sharing: the reviewer loses it at once", (await call(A, "DELETE", `/api/evidence/${alexEv}/shares/${reviewerUser!.id}`)).status === 200 && (await call(R, "GET", `/api/evidence/${alexEv}`)).status === 404 && (await call(R, "GET", `/api/evidence/${alexEv}/file`)).status === 404 && (await call(A, "DELETE", `/api/evidence/${alexEv}/shares/${reviewerUser!.id}`)).status === 404);
+
+  const newLink = await call(M, "POST", `/api/evidence/${mayaEv}/links`, { password: "link-password-9", acknowledge: true });
+  const linkToken = String(newLink.body.url).split("/s/")[1];
+  type LinkRow = { id: string; createdAt: string; locked: boolean };
+  const linksOf = async () => (await call(M, "GET", `/api/evidence/${mayaEv}/links`)).body.items as LinkRow[];
+  const madeLinks = await linksOf();
+  check("the owner lists an item's password links with when each was madeLinks; no token or password comes back", newLink.status === 201 && madeLinks.length === 1 && !Number.isNaN(Date.parse(madeLinks[0].createdAt)) && madeLinks[0].locked === false && Object.keys(madeLinks[0]).sort().join() === "createdAt,id,locked", madeLinks);
+  check("nobody else lists or revokes them", (await call(J, "GET", `/api/evidence/${mayaEv}/links`)).status === 403 && (await call(A, "GET", `/api/evidence/${mayaEv}/links`)).status === 404 && (await call(J, "DELETE", `/api/evidence/${mayaEv}/links/${madeLinks[0].id}`)).status === 403);
+  check("a revoked link stops opening and leaves the list", (await call(M, "DELETE", `/api/evidence/${mayaEv}/links/${madeLinks[0].id}`)).status === 200 && (await linksOf()).length === 0 && (await call(A, "POST", `/api/links/${linkToken}/redeem`, { password: "link-password-9" })).status === 404 && (await call(null, "GET", `/api/links/${linkToken}`)).body.valid === false && (await call(M, "DELETE", `/api/evidence/${mayaEv}/links/${madeLinks[0].id}`)).status === 404);
+
+  const oldLabel = mayaRec!.label;
+  check("after closure the owner can rename the evidence again", (await call(M, "PATCH", `/api/evidence/${mayaEv}`, { label: "Renamed after closure" })).status === 200 && (await call(J, "PATCH", `/api/evidence/${mayaEv}`, { label: "x" })).status === 403);
+  const afterRename = (await call(R, "GET", `/api/review/cases/${caseId}`)).body.reporterRecord as Rec[];
+  check("the record keeps the title it had at closure", afterRename.find((r) => r.evidenceId === mayaEv)?.label === oldLabel && !JSON.stringify(afterRename).includes("Renamed after closure"), afterRename);
+  check("after closure the owner can delete the evidence again", (await call(M, "DELETE", `/api/evidence/${mayaEv}`)).status === 200 && (await call(M, "GET", `/api/evidence/${mayaEv}`)).status === 404);
+  const recAfterDelete = (await call(M, "GET", `/api/cases/${caseId}`)).body.record as Rec[];
+  const gone = recAfterDelete?.find((r) => r.label === oldLabel);
+  check("the case still records the deleted item's title and hash", recAfterDelete?.length === 2 && Boolean(gone) && gone!.evidenceId === null && gone!.sha256 === sha256Hex(mayaBytes), recAfterDelete);
+  check("the archive still counts it", ((await call(R, "GET", `/api/review/archives?q=${encodeURIComponent(run)}`)).body.items as { id: string; evidenceCount: number }[]).find((c) => c.id === caseId)?.evidenceCount === 2);
+
   step("11. Drafts stay private (I1)");
   const draft2 = await call(M, "POST", "/api/cases", { title: `Private draft ${run}`, description: "" });
   check("a reviewer cannot see a draft case", (await call(R, "GET", `/api/review/cases/${draft2.body.id}`)).status === 404);

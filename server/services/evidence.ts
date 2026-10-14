@@ -29,7 +29,7 @@ import { getObject, putObject, removeObject } from "../storage";
 
 type Row = typeof evidence.$inferSelect;
 
-const LOCKED = "This evidence is part of an escalated case, so it can't be changed or deleted.";
+const LOCKED = "This evidence is part of a case under review, so it can't be changed or deleted until the case is closed.";
 
 function toDto(row: Row, actor: Actor, facts: EvidenceFacts) {
   return {
@@ -46,7 +46,7 @@ function toDto(row: Row, actor: Actor, facts: EvidenceFacts) {
     isOwner: row.ownerId === actor.id,
     /** Shared directly with the viewer, by email or a redeemed link. */
     sharedWithMe: facts.sharedWithUser,
-    locked: facts.attachedToNonDraftCase,
+    locked: facts.attachedToOpenCase,
   };
 }
 export type EvidenceDto = ReturnType<typeof toDto>;
@@ -88,7 +88,7 @@ export async function evidenceFacts(
     inOwnCaseReporterSide: attachments.some(
       (a) => a.side === "reporter" && (a.caseOwnerId === actor.id || collabIds.has(a.caseId)),
     ),
-    attachedToNonDraftCase: attachments.some((a) => a.status !== "draft"),
+    attachedToOpenCase: attachments.some((a) => a.status === "escalated" || a.status === "under_review"),
   };
 }
 
@@ -172,7 +172,7 @@ export async function createEvidence(
       ownerId: actor.id,
       sharedWithUser: false,
       inOwnCaseReporterSide: false,
-      attachedToNonDraftCase: false,
+      attachedToOpenCase: false,
     });
   } catch (err) {
     await removeObject(storagePath).catch(() => {});
@@ -221,7 +221,7 @@ export async function listEvidence(actor: Actor, scope: "mine" | "shared", filte
         caseTitle: sql<string | null>`(select ${cases.title} from ${caseEvidence} inner join ${cases} on ${cases.id} = ${caseEvidence.caseId} where ${caseEvidence.evidenceId} = ${evidence.id} and ${caseEvidence.side} = 'reporter' order by ${caseEvidence.createdAt} limit 1)`,
         // How many people it is shared with, and how many password links point at it.
         shareCount: sql<number>`(select count(*)::int from ${evidenceShares} where ${evidenceShares.evidenceId} = ${evidence.id})`,
-        linkCount: sql<number>`(select count(*)::int from ${shareLinks} where ${shareLinks.evidenceId} = ${evidence.id})`,
+        linkCount: sql<number>`(select count(*)::int from ${shareLinks} where ${shareLinks.evidenceId} = ${evidence.id} and ${shareLinks.revokedAt} is null)`,
         // Same rule as the lock on rename and delete: attached to any case that is no longer a draft.
         locked: sql<boolean>`exists (select 1 from ${caseEvidence} inner join ${cases} on ${cases.id} = ${caseEvidence.caseId} where ${caseEvidence.evidenceId} = ${evidence.id} and ${cases.status} <> 'draft')`,
       })
@@ -305,8 +305,15 @@ export async function deleteEvidence(actor: Actor, id: string) {
     // complete while we are deleting (I3).
     const facts = await evidenceFacts(tx, actor, row, { lock: true });
     enforce(canDeleteEvidence(actor, facts), LOCKED);
-    // Only draft cases reach this point: remove it from them first.
-    await tx.delete(caseEvidence).where(eq(caseEvidence.evidenceId, id));
+    // Open cases refused above. Detach it from drafts; closed cases keep their own record of it.
+    await tx
+      .delete(caseEvidence)
+      .where(
+        and(
+          eq(caseEvidence.evidenceId, id),
+          sql`${caseEvidence.caseId} in (select ${cases.id} from ${cases} where ${cases.status} = 'draft')`,
+        ),
+      );
     await tx.delete(evidence).where(eq(evidence.id, id));
     return row.storagePath;
   });

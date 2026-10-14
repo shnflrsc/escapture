@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CasesCard, IntegrityCard } from "@/components/safetrail/evidence-cards";
 import { EvidenceFrame } from "@/components/safetrail/evidence-frame";
 import { EvidenceTitle } from "@/components/safetrail/evidence-title";
+import { AccessList, LinkList } from "@/components/safetrail/sharing-lists";
 import { VaultRowMenu } from "@/components/safetrail/vault-row-menu";
 import { Card } from "@/components/ui/card";
 import { formatDateTime, kindLabel } from "@/lib/format";
@@ -12,6 +13,7 @@ import { isUuid, orNotFound, pageUser } from "@/server/page-auth";
 import { casesForEvidence, caseVersion } from "@/server/services/cases";
 import { getEvidence } from "@/server/services/evidence";
 import { casesWithEvidence, listBoard } from "@/server/services/review";
+import { listEvidenceLinks } from "@/server/services/links";
 import { listEvidenceShares } from "@/server/services/shares";
 
 // Per-user page: allowed to wait for the server on navigation.
@@ -23,7 +25,9 @@ export default async function EvidencePage({ params, searchParams }: PageProps<"
   const user = await pageUser(["student", "reviewer", "admin"]);
   if (!isUuid(id)) notFound();
   const ev = await orNotFound(getEvidence(user, id));
-  const shares = ev.isOwner ? await listEvidenceShares(user, id) : [];
+  const [shares, links] = ev.isOwner
+    ? await Promise.all([listEvidenceShares(user, id), listEvidenceLinks(user, id)])
+    : [[], []];
   // An administrator sees evidence exactly as a reviewer does.
   const reviewer = user.role !== "student";
   const fromId = typeof from === "string" && isUuid(from) ? from : null;
@@ -126,16 +130,15 @@ export default async function EvidencePage({ params, searchParams }: PageProps<"
               {shares.length === 0 ? (
                 <p className="text-sm leading-[22px] text-muted">Only you have access.</p>
               ) : (
-                <div>
+                <div className="flex flex-col gap-2">
                   <h4>Who has access</h4>
-                  <ul className="mt-1 flex flex-col gap-1 text-sm leading-[22px]">
-                    {shares.map((s) => (
-                      <li key={s.email} className="break-words">
-                        {s.name}
-                        {s.role === "reviewer" ? " (reviewer)" : ""} <span className="text-muted">{s.email}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <AccessList evidenceId={ev.id} people={shares} />
+                </div>
+              )}
+              {links.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <h4>Password links</h4>
+                  <LinkList endpoint={`/api/evidence/${ev.id}/links`} links={links} />
                 </div>
               )}
               <VaultRowMenu id={ev.id} label={ev.label} locked={ev.locked} onPage />

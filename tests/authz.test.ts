@@ -17,7 +17,7 @@ const facts = (over: Partial<authz.EvidenceFacts> = {}): authz.EvidenceFacts => 
   ownerId: "maya",
   sharedWithUser: false,
   inOwnCaseReporterSide: false,
-  attachedToNonDraftCase: false,
+  attachedToOpenCase: false,
   ...over,
 });
 
@@ -35,13 +35,13 @@ describe("evidence", () => {
     expect(authz.canViewEvidence(admin, facts())).toBe("not_found");
   });
 
-  it("staff see evidence only once it is attached to a case that is no longer a draft", () => {
+  it("staff see evidence only while it is attached to a case that is escalated or under review", () => {
     for (const staff of [reviewer, admin]) {
       expect(authz.canViewEvidence(staff, facts())).toBe("not_found");
       expect(authz.canViewEvidence(staff, facts({ inOwnCaseReporterSide: true }))).toBe("not_found");
-      expect(authz.canViewEvidence(staff, facts({ attachedToNonDraftCase: true }))).toBe("ok");
+      expect(authz.canViewEvidence(staff, facts({ attachedToOpenCase: true }))).toBe("ok");
       // Seeing is not owning: staff can't rename, share or delete it.
-      expect(authz.canManageEvidence(staff, facts({ attachedToNonDraftCase: true }))).toBe("forbidden");
+      expect(authz.canManageEvidence(staff, facts({ attachedToOpenCase: true }))).toBe("forbidden");
     }
   });
 
@@ -51,11 +51,23 @@ describe("evidence", () => {
 
   it("reviewers see evidence only once it is on a non-draft case (I1, I2)", () => {
     expect(authz.canViewEvidence(reviewer, facts())).toBe("not_found");
-    expect(authz.canViewEvidence(reviewer, facts({ attachedToNonDraftCase: true }))).toBe("ok");
+    expect(authz.canViewEvidence(reviewer, facts({ attachedToOpenCase: true }))).toBe("ok");
+  });
+
+  it("once every case it is in has closed, staff lose it unless it was shared with them directly", () => {
+    // attachedToOpenCase is false again when the only cases holding it are closed.
+    const afterClosure = facts({ inOwnCaseReporterSide: true });
+    for (const staff of [reviewer, admin]) {
+      expect(authz.canViewEvidence(staff, afterClosure)).toBe("not_found");
+      expect(authz.canViewEvidence(staff, facts({ sharedWithUser: true }))).toBe("ok");
+    }
+    // The student and their collaborators keep it.
+    expect(authz.canViewEvidence(maya, afterClosure)).toBe("ok");
+    expect(authz.canViewEvidence(jules, afterClosure)).toBe("ok");
   });
 
   it("students never see evidence just because a reviewer attached it (I5)", () => {
-    const alexEvidence = facts({ ownerId: "alex", attachedToNonDraftCase: true });
+    const alexEvidence = facts({ ownerId: "alex", attachedToOpenCase: true });
     expect(authz.canViewEvidence(maya, alexEvidence)).toBe("not_found");
     expect(authz.canViewEvidence(jules, alexEvidence)).toBe("not_found");
   });
@@ -66,11 +78,17 @@ describe("evidence", () => {
     expect(authz.canManageEvidence(alex, facts())).toBe("not_found");
   });
 
-  it("evidence on an escalated case cannot be deleted or renamed (I3)", () => {
+  it("evidence on a case under review cannot be deleted or renamed; after closure it can again (I3)", () => {
     expect(authz.canDeleteEvidence(maya, facts())).toBe("ok");
-    expect(authz.canDeleteEvidence(maya, facts({ attachedToNonDraftCase: true }))).toBe("locked");
-    expect(authz.canRenameEvidence(maya, facts({ attachedToNonDraftCase: true }))).toBe("locked");
+    expect(authz.canDeleteEvidence(maya, facts({ attachedToOpenCase: true }))).toBe("locked");
+    expect(authz.canRenameEvidence(maya, facts({ attachedToOpenCase: true }))).toBe("locked");
     expect(authz.canDeleteEvidence(jules, facts({ sharedWithUser: true }))).toBe("forbidden");
+    // Closed: the lock is gone for its owner, and only for its owner.
+    const afterClosure = facts({ inOwnCaseReporterSide: true });
+    expect(authz.canDeleteEvidence(maya, afterClosure)).toBe("ok");
+    expect(authz.canRenameEvidence(maya, afterClosure)).toBe("ok");
+    expect(authz.canDeleteEvidence(jules, afterClosure)).toBe("forbidden");
+    expect(authz.canRenameEvidence(reviewer, afterClosure)).toBe("not_found");
   });
 });
 

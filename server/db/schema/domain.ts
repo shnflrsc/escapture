@@ -164,8 +164,10 @@ export const caseAssignments = pgTable(
   (t) => [primaryKey({ columns: [t.caseId, t.reviewerId] }), index("case_assignments_reviewer_idx").on(t.reviewerId)],
 );
 
-// evidence_id is RESTRICT on purpose: the evidence service detaches from
-// draft cases explicitly and refuses for non-draft ones (I3).
+// While a case is a draft, escalated or under review, evidence_id is always set
+// and the evidence service refuses to delete the item (I3). When the case is
+// closed, the columns below record what it was; after that its owner may rename
+// or delete it, and a deleted item leaves evidence_id empty.
 export const caseEvidence = pgTable(
   "case_evidence",
   {
@@ -173,13 +175,18 @@ export const caseEvidence = pgTable(
     caseId: uuid("case_id")
       .notNull()
       .references(() => cases.id, { onDelete: "cascade" }),
-    evidenceId: uuid("evidence_id")
-      .notNull()
-      .references(() => evidence.id, { onDelete: "restrict" }),
+    evidenceId: uuid("evidence_id").references(() => evidence.id, { onDelete: "set null" }),
     attachedBy: text("attached_by")
       .notNull()
       .references(() => user.id),
     side: evidenceSide("side").notNull(),
+    // The record kept when the case closes. Empty until then.
+    recordLabel: text("record_label"),
+    recordSha256: char("record_sha256", { length: 64 }),
+    recordKind: evidenceKind("record_kind"),
+    recordCapturedAt: ts("record_captured_at"),
+    recordOwnerName: text("record_owner_name"),
+    recordOwnerEmail: text("record_owner_email"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [unique("case_evidence_unique").on(t.caseId, t.evidenceId)],

@@ -20,8 +20,8 @@ export type EvidenceFacts = {
   sharedWithUser: boolean;
   /** On the reporter side of a case the user owns or collaborates on. */
   inOwnCaseReporterSide: boolean;
-  /** Attached (either side) to a case that is no longer a draft. */
-  attachedToNonDraftCase: boolean;
+  /** Attached (either side) to a case that is escalated or under review: not a draft, not closed. */
+  attachedToOpenCase: boolean;
 };
 
 export function enforce(decision: Decision, lockedMessage = "This case is locked and can't be changed.") {
@@ -43,7 +43,7 @@ export function canViewEvidence(u: U, e: EvidenceFacts): Decision {
   if (e.ownerId === u.id) return "ok";
   if (e.sharedWithUser) return "ok";
   if (u.role === "student" && e.inOwnCaseReporterSide) return "ok";
-  if (isStaff(u) && e.attachedToNonDraftCase) return "ok";
+  if (isStaff(u) && e.attachedToOpenCase) return "ok";
   return "not_found";
 }
 
@@ -56,7 +56,7 @@ export function canManageEvidence(u: U, e: EvidenceFacts): Decision {
 export function canDeleteEvidence(u: U, e: EvidenceFacts): Decision {
   const manage = canManageEvidence(u, e);
   if (manage !== "ok") return manage;
-  return e.attachedToNonDraftCase ? "locked" : "ok";
+  return e.attachedToOpenCase ? "locked" : "ok";
 }
 
 /** A label is part of what reviewers were shown at escalation (I3, I4). */

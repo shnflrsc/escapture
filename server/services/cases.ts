@@ -59,8 +59,54 @@ export async function listCollaborators(dbx: Db | Tx, caseId: string) {
     .orderBy(asc(caseCollaborators.createdAt));
 }
 
+/** One line of a closed case's evidence record. `evidenceId` is empty once the owner has deleted the item. */
+export type CaseRecordItem = {
+  key: string;
+  evidenceId: string | null;
+  label: string;
+  kind: "facebook_post" | "facebook_message";
+  capturedAt: Date;
+  sha256: string;
+  ownerName: string;
+  ownerEmail: string;
+  attachedAt: Date;
+};
+
 /**
- * The ONLY way case evidence is listed. Student-side callers always pass
+ * A closed case's evidence, read from the record written when it closed, never
+ * from the items themselves: those may since have been renamed or deleted by
+ * their owners. Student-side callers always pass "reporter" (I5).
+ */
+export async function listCaseRecord(dbx: Db | Tx, caseId: string, side: "reporter" | "reviewer"): Promise<CaseRecordItem[]> {
+  const rows = await dbx
+    .select({
+      key: caseEvidence.id,
+      evidenceId: caseEvidence.evidenceId,
+      label: caseEvidence.recordLabel,
+      kind: caseEvidence.recordKind,
+      capturedAt: caseEvidence.recordCapturedAt,
+      sha256: caseEvidence.recordSha256,
+      ownerName: caseEvidence.recordOwnerName,
+      ownerEmail: caseEvidence.recordOwnerEmail,
+      attachedAt: caseEvidence.createdAt,
+    })
+    .from(caseEvidence)
+    .where(and(eq(caseEvidence.caseId, caseId), eq(caseEvidence.side, side)))
+    .orderBy(asc(caseEvidence.createdAt));
+  // The record columns are filled for every row when a case closes.
+  return rows.map((r) => ({
+    ...r,
+    label: r.label ?? "",
+    kind: r.kind ?? "facebook_post",
+    capturedAt: r.capturedAt ?? r.attachedAt,
+    sha256: r.sha256 ?? "",
+    ownerName: r.ownerName ?? "",
+    ownerEmail: r.ownerEmail ?? "",
+  }));
+}
+
+/**
+ * The ONLY way a live case's evidence is listed. Student-side callers always pass
  * "reporter", so reviewer attachments can never leak to them (I5).
  */
 export async function listCaseEvidence(dbx: Db | Tx, caseId: string, side: "reporter" | "reviewer") {
@@ -197,10 +243,12 @@ export async function casesForEvidence(actor: Actor, ev: { id: string; isOwner: 
 export async function getCase(actor: Actor, caseId: string) {
   const { c, facts } = await loadCase(db, caseId);
   enforce(canViewCase(actor, facts));
-  const [o, collaborators, items, events] = await Promise.all([
+  const closed = c.status === "closed";
+  const [o, collaborators, items, record, events] = await Promise.all([
     owner(db, c),
     listCollaborators(db, caseId),
-    listCaseEvidence(db, caseId, "reporter"),
+    closed ? [] : listCaseEvidence(db, caseId, "reporter"),
+    closed ? listCaseRecord(db, caseId, "reporter") : null,
     db
       .select({
         id: caseEvents.id,
@@ -229,6 +277,8 @@ export async function getCase(actor: Actor, caseId: string) {
     owner: o,
     collaborators,
     evidence: items,
+    /** Set only on a closed case, in place of `evidence`. */
+    record,
     events,
   };
 }
