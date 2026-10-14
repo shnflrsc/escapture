@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "Terms of Service · SafeTrail" };
 
-// The terms' text is the team's own document, copied as written. Change the wording there first.
+// The team's own document, with two passages corrected to what the app does: removing people
+// after sharing, and how a change to the Terms is announced.
 const CONTACT = "hezekiahchristaldionisio@gmail.com";
 const GUIDANCE = "bulsuguidancecenter@bulsu.edu.ph";
 
@@ -137,7 +138,11 @@ export default function TermsPage() {
           Before sharing evidence or a case, you confirm that you are choosing to share it and accept the risk that the
           recipient could pass it on. We cannot recall copies that people have already saved.
         </li>
-        <li>You can remove a person&apos;s access and revoke password-protected links at any time.</li>
+        <li>
+          You can remove a person&apos;s access to an evidence item and revoke password-protected links at any time.
+          Revoking a link stops it opening; people who already used it keep their access until you remove them too.
+          People you add to a case can be removed only while the case is a draft.
+        </li>
         <li>
           Collaborators can edit a case&apos;s title and description and attach evidence from their own vaults. Invite
           only people you trust with that access.
@@ -147,8 +152,9 @@ export default function TermsPage() {
           including every collaborator and every attached item, and asks for confirmation.
         </li>
         <li>
-          Escalation cannot be undone. The case is locked and cannot be edited or withdrawn, and attached evidence
-          cannot be deleted while the case is open. Reviewers can see the identity of every collaborator.
+          Escalation cannot be undone. The case is locked and cannot be edited or withdrawn, its collaborators cannot
+          be removed, and attached evidence cannot be deleted while the case is open. Reviewers can see the identity of
+          every collaborator.
         </li>
       </ul>
       <p>The Privacy Policy explains who can see what and how long data is kept.</p>
@@ -243,9 +249,9 @@ export default function TermsPage() {
 
       <h2 className={h2}>Changes, governing law and contact</h2>
       <p>
-        We may update these Terms. When we make a material change, we will tell you through an in-app notification and
-        update the date at the top. If you keep using SafeTrail after a change takes effect, you accept it. These Terms
-        take effect on October 14, 2026.
+        We may update these Terms. When we make a material change, we will update the date at the top of this page.
+        SafeTrail cannot yet send a notice to every account, so check this page from time to time. If you keep using
+        SafeTrail after a change takes effect, you accept it. These Terms take effect on October 14, 2026.
       </p>
       <p>
         Philippine law governs these Terms. If a dispute arises, please contact us first so that we can try to resolve
