@@ -98,7 +98,6 @@ export default function LandingPage() {
         <div className="mk-wrap">
           <div className="mk-hero-grid">
             <div>
-              <span className="mk-eyebrow">For students at Bulacan State University</span>
               <h1 className="mk-display-xl">Keep a record of what happened.</h1>
               <p className="mk-lead">
                 Save Facebook posts and messages with tamper checks, build a case in your own time, and share it with
