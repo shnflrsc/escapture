@@ -8,11 +8,17 @@
 //
 // Ported from the DOM Tamper Detector extension's content.js (the channel
 // only; its toasts, popup state and script verification are not used here).
-import type { GuardState } from "./checks";
+import type { GuardAnswer, GuardState } from "./checks";
 
 declare global {
-  var __safetrailBridge: { query(mark: string): Promise<GuardState | null> } | undefined;
+  var __safetrailBridge: { query(mark: string): Promise<GuardAnswer> } | undefined;
 }
+
+// A page that has just woken from the background (Facebook re-renders its feed) can keep the main
+// thread busy for seconds, and the guard answers on that same thread. Wait, and ask again, before
+// calling it unanswered.
+const WAIT_MS = 2500;
+const ATTEMPTS = 3;
 
 if (!globalThis.__safetrailBridge) {
   let chan: MessagePort | null = null;
@@ -46,29 +52,37 @@ if (!globalThis.__safetrailBridge) {
     } catch {}
   }
 
+  function ask(port: MessagePort, mark: string) {
+    return new Promise<GuardState | null>((resolve) => {
+      const id = crypto.randomUUID();
+      const timer = setTimeout(() => {
+        waiting.delete(id);
+        resolve(null);
+      }, WAIT_MS);
+      waiting.set(id, (state) => {
+        clearTimeout(timer);
+        resolve(state);
+      });
+      port.postMessage(JSON.stringify({ op: "query", id, mark }));
+    });
+  }
+
   window.addEventListener("safetrail:need-port", offerPort, true);
   offerPort();
 
   globalThis.__safetrailBridge = {
     /**
      * Asks the guard what happened to the elements carrying the attribute
-     * `mark`. Resolves null when no guard is listening (the extension was
-     * installed or reloaded after this page loaded).
+     * `mark`. Resolves "no-port" when the guard never answered the handshake,
+     * and "slow" when it is connected but didn't answer in time.
      */
-    query(mark: string) {
-      return new Promise<GuardState | null>((resolve) => {
-        if (!chan) return resolve(null);
-        const id = crypto.randomUUID();
-        const timer = setTimeout(() => {
-          waiting.delete(id);
-          resolve(null);
-        }, 800);
-        waiting.set(id, (state) => {
-          clearTimeout(timer);
-          resolve(state);
-        });
-        chan.postMessage(JSON.stringify({ op: "query", id, mark }));
-      });
+    async query(mark: string): Promise<GuardAnswer> {
+      if (!chan) return "no-port";
+      for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+        const answer = await ask(chan, mark);
+        if (answer) return answer;
+      }
+      return "slow";
     },
   };
 }

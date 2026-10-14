@@ -25,10 +25,18 @@ export type GuardState = {
 };
 
 /**
- * Asks the MAIN-world guard, through the isolated-world bridge, what happened
- * to the elements carrying the attribute `mark`. Null if no guard is running.
+ * The guard's state, or why there is none: null if this tab has no connection to a guard at all,
+ * "no-port" if the connection was set up but the guard never answered the handshake, "slow" if it
+ * is connected but didn't answer this question in time. Each gets its own message, so a refusal
+ * says which part failed.
  */
-export function queryGuard(mark: string): Promise<GuardState | null> {
+export type GuardAnswer = GuardState | null | "no-port" | "slow";
+
+/**
+ * Asks the MAIN-world guard, through the isolated-world bridge, what happened
+ * to the elements carrying the attribute `mark`.
+ */
+export function queryGuard(mark: string): Promise<GuardAnswer> {
   return globalThis.__safetrailBridge?.query(mark) ?? Promise.resolve(null);
 }
 
@@ -43,11 +51,18 @@ export const isComposer = (el: Element) => el.getAttribute("role") === "textbox"
 const USERSCRIPT_MARKERS = /tampermonkey|violentmonkey|greasemonkey|userscript/i;
 
 /** 5. Did text in the selection change other than through the page's own scripts? */
-function provenance(guard: GuardState | null, expectedTargets: number): TamperCheck {
+function provenance(answer: GuardAnswer, expectedTargets: number): TamperCheck {
   const id = "dom-provenance";
   const fail = (detail: string): TamperCheck => ({ id, passed: false, detail });
+  if (answer === "slow") {
+    return fail("The page was too busy to finish the tamper check (no answer from the guard). Wait a few seconds and capture again.");
+  }
+  if (answer === "no-port") {
+    return fail("The tamper guard on this page never connected to the extension (no handshake). Reload the page and capture again.");
+  }
+  const guard = answer;
   if (!guard) {
-    return fail("The tamper guard was not running when this page loaded, so changes to it could not be watched. Reload the page and capture again.");
+    return fail("The tamper guard was not running when this page loaded (no bridge in this tab), so changes to it could not be watched. Reload the page and capture again.");
   }
   if (!guard.callSites) return fail("This browser can't tell the page's own scripts from others, so changes can't be checked.");
   if (!guard.armed) return fail("The page is still loading. Wait a moment and capture again.");
@@ -69,7 +84,8 @@ function provenance(guard: GuardState | null, expectedTargets: number): TamperCh
  * These do NOT stop modified Facebook code, local overrides, proxies or
  * in-transit rewriting. Results must never be described as tamper-proof.
  */
-export function runChecks(target: Element, guard: GuardState | null, expectedTargets = 1): TamperReport {
+export function runChecks(target: Element, answer: GuardAnswer, expectedTargets = 1): TamperReport {
+  const guard = answer === "slow" || answer === "no-port" ? null : answer;
   const checks: TamperCheck[] = [];
 
   // 1. Page editing mode.
@@ -125,7 +141,7 @@ export function runChecks(target: Element, guard: GuardState | null, expectedTar
   });
 
   // 5. Changes that did not come from the page's own scripts.
-  checks.push(provenance(guard, expectedTargets));
+  checks.push(provenance(answer, expectedTargets));
   // Sites and other extensions routinely wrap built-in functions, and change other parts of the
   // page. Neither is reported: a wrapper that is not the page's own fails the check above, and
   // one that skips the guard leaves changes unexplained, which also fails it.
@@ -134,7 +150,7 @@ export function runChecks(target: Element, guard: GuardState | null, expectedTar
 }
 
 /** Runs the checks for every selected item. Capture is refused if any item fails any check. */
-export function runChecksAll(targets: Element[], guard: GuardState | null): TamperReport {
+export function runChecksAll(targets: Element[], guard: GuardAnswer): TamperReport {
   const reports = targets.map((t) => runChecks(t, guard, targets.length));
   const checks = reports[0].checks.map((first, i) => {
     const failed = reports.map((r) => r.checks[i]).find((c) => !c.passed);
