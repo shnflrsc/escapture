@@ -299,8 +299,23 @@
   const incidents = [];
   let storm = false, analysisFailures = 0;
   const replacedHooks = [];
+  // SafeTrail: an incident whose element and added nodes have all left the page can no longer
+  // touch anything a student selects (a capture is always of connected elements), so it is
+  // forgotten. Feeds remove and re-render their items all the time, and in a tab left open for
+  // hours the old incidents would otherwise fill the list and refuse every capture until reload.
+  function live(inc) {
+    if (safe(() => getConnected(inc.node))) return true;
+    for (let k = 0; k < inc.added.length; k++) if (safe(() => getConnected(inc.added[k]))) return true;
+    return false;
+  }
+  function prune() {
+    let w = 0;
+    for (let i = 0; i < incidents.length; i++) if (live(incidents[i])) incidents[w++] = incidents[i];
+    incidents.length = w;
+  }
   function record(reason, node, added) {
-    if (incidents.length >= 200) { storm = true; return; }
+    if (incidents.length >= 200) prune();
+    if (incidents.length >= 200) { storm = true; return; }   // still full of live ones: something is not right with this page
     arrPush(incidents, { reason, node, added });
   }
 
@@ -433,6 +448,7 @@
     if (!c || c.op !== 'query' || typeof c.id !== 'string' || c.id.length > 64 || !port) return;
     const targets = [];
     if (validMark(c.mark)) { const found = safe(() => qsa(D, '[' + c.mark + ']')); if (found) for (let i = 0; i < found.length && i < 500; i++) arrPush(targets, found[i]); }
+    prune();
     const intact = checkIntegrity();
     const reasons = []; let elsewhere = 0;
     for (let i = 0; i < incidents.length; i++) {
