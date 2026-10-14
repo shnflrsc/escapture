@@ -6,7 +6,8 @@ import { CaseMenu, EscalateButton, RemovePersonButton } from "@/components/safet
 import { CaseEvidenceTable } from "@/components/safetrail/case-evidence-table";
 import { EvidenceRecord } from "@/components/safetrail/evidence-record";
 import { LinkList } from "@/components/safetrail/sharing-lists";
-import { CaseField, CaseLive } from "@/components/safetrail/case-fields";
+import { CollabField, CollabProvider, LiveTitle, PresenceAvatars } from "@/components/safetrail/case-collab";
+import { CaseLive } from "@/components/safetrail/case-fields";
 import { EvidencePicker } from "@/components/safetrail/evidence-picker";
 import { EmailShareButton, LinkShareButton } from "@/components/safetrail/share-dialogs";
 import { Timeline } from "@/components/safetrail/timeline";
@@ -43,7 +44,14 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       }
     >
       {draft ? (
-        <CaseField caseId={c.id} field="description" value={c.description} />
+        <CollabField
+          field="description"
+          label="What happened"
+          maxLength={10000}
+          placeholder="What happened? Describe it in your own words. You can keep editing until you escalate."
+          // Fills its card edge to edge, so the card itself is the text box; the card shows the focus ring.
+          className="block min-h-32 w-full resize-none rounded-xl border-0 bg-transparent px-[var(--card-pad)] pt-[var(--card-pad)] pb-2 text-base leading-[26px] text-ink [field-sizing:content] placeholder:text-muted focus-visible:outline-none!"
+        />
       ) : (
         <p className="max-w-prose whitespace-pre-wrap">{c.description || "No description was added."}</p>
       )}
@@ -144,7 +152,8 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   );
 
   return (
-    <>
+    // Everyone on the case sees who else has it open, and on a draft each other's edits and carets, live.
+    <CollabProvider caseId={c.id} initial={{ title: c.title, description: c.description }} editable={draft}>
       <PageCrumbs title={c.title} />
       {draft && <CaseLive caseId={c.id} updatedAt={c.updatedAt.toISOString()} />}
       <div>
@@ -158,8 +167,16 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           {draft ? (
             <>
               {/* The title is a field on a draft; the page still needs a heading. */}
-              <h1 className="sr-only">{c.title}</h1>
-              <CaseField caseId={c.id} field="title" value={c.title} />
+              <h1 className="sr-only">
+                <LiveTitle />
+              </h1>
+              <CollabField
+                field="title"
+                label="Title"
+                maxLength={160}
+                placeholder="Title"
+                className="-mx-2 w-[calc(100%+16px)] rounded-md border border-transparent bg-transparent px-2 font-heading text-[32px] leading-10 font-semibold text-ink hover:border-border focus:border-border-strong focus:bg-card"
+              />
             </>
           ) : (
             <h1 className="break-words">{c.title}</h1>
@@ -169,12 +186,15 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             {!owner && `Case by ${c.owner.name}`}
           </p>
         </div>
-        {draft && (
-          <div className="flex shrink-0 items-center gap-2">
-            {owner && <EscalateButton caseId={c.id} hasEvidence={c.evidence.length > 0} />}
-            <CaseMenu caseId={c.id} title={c.title} ownerName={c.owner.name} role={owner ? "owner" : "collaborator"} />
-          </div>
-        )}
+        <div className="flex shrink-0 items-center gap-3">
+          <PresenceAvatars />
+          {draft && (
+            <>
+              {owner && <EscalateButton caseId={c.id} hasEvidence={c.evidence.length > 0} />}
+              <CaseMenu caseId={c.id} title={c.title} ownerName={c.owner.name} role={owner ? "owner" : "collaborator"} />
+            </>
+          )}
+        </div>
       </header>
 
       {!draft && c.escalatedAt && (
@@ -223,6 +243,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           </Section>
         </div>
       )}
-    </>
+    </CollabProvider>
   );
 }

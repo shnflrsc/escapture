@@ -29,6 +29,13 @@
       "when": 1791936071819,
       "tag": "0003_naive_natasha_romanoff",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791949699186,
+      "tag": "0004_fixed_wallop",
+      "breakpoints": true
     }
   ]
 }

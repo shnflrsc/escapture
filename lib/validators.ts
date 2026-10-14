@@ -72,6 +72,17 @@ export const redeemLink = z.object({ password: z.string().min(1).max(200) });
 const title = z.string().trim().min(1, "Give your case a title.").max(160);
 const description = z.string().trim().max(10000);
 export const createCase = z.object({ title, description: description.default("") });
+const liveEdit = z.object({ base: z.string().max(12000), text: z.string().max(12000) });
+const liveFieldName = z.enum(["title", "description"]);
+/** One check-in from an open case page: edits, where the caret is, or leaving. */
+export const liveCase = z.object({
+  edits: z.object({ title: liveEdit.optional(), description: liveEdit.optional() }).optional(),
+  focus: z
+    .object({ field: liveFieldName, start: z.number().int().min(0).max(12000), end: z.number().int().min(0).max(12000) })
+    .nullable()
+    .optional(),
+  leave: z.boolean().optional(),
+});
 export const updateCase = z
   .object({
     title: title.optional(),
