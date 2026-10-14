@@ -1,26 +1,141 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* brand */
+  --brand-50: #F1F7FA;  --brand-100: #E6F1F6; --brand-200: #CDE2EC;
+  --brand-300: #AACADB; --brand-400: #85B8CE; --brand-500: #66A3BF;
+  --brand-600: #4B87A5; --brand-700: #3A6D88; --brand-800: #2D556B;
+  --brand-900: #223F50; --brand-950: #1B3342;
+
+  /* neutrals */
+  --canvas: #F7FAFB; --card: #FFFFFF; --subtle: #EFF4F7;
+  --border: #DCE6EB; --border-strong: #7690A0;
+  --ink: #1E2A32; --muted: #55646E;
+  --disabled-bg: #E6EDF1; --disabled-fg: #7D8B94;
+
+  /* semantic */
+  --escalated-bg: #FDF3E1; --escalated-fg: #8A5A12; --escalated-solid: #E9B350;
+  --review-bg: #E6F1F6;    --review-fg: #2D556B;
+  --closed-bg: #EDF2F5;    --closed-fg: #47565F;   --closed-solid: #9AA9B3;
+  --tamper-bg: #E2F3F0;    --tamper-fg: #1D6359;   --tamper-solid: #4FB3A3;
+  --danger-bg: #FCEDED;    --danger-fg: #9A3B3B;   --danger-solid: #A83F3F;
+
+  /* text and focus on dark bands (brand-900) */
+  --on-dark: #FFFFFF; --on-dark-muted: #CDE2EC; --focus-on-dark: #CDE2EC;
+  /* the decorative trail lines on the landing page */
+  --trail-line: #CDE2EC; --trail-line-dark: #2D556B;
+
+  /* reviewer charts: their own colours, never badge colours and never red */
+  --chart-primary: var(--brand-700); --chart-fill: var(--brand-100);
+  --chart-grid: var(--border); --chart-axis: var(--border-strong);
+  --chart-escalated: #B07A1E; --chart-review: var(--brand-800); --chart-closed: #76858F;
+
+  /* shape and depth */
+  --radius: 10px;
+  --radius-card: 12px;
+  --radius-modal: 16px;
+  --radius-section: 24px;
+  --shadow-soft: 0 1px 2px rgba(30,42,50,0.04), 0 4px 12px rgba(30,42,50,0.05);
+  --shadow-raised: 0 8px 24px rgba(30,42,50,0.10);
+  --shadow-modal: 0 16px 40px rgba(30,42,50,0.14);
+  --shadow-drawer: -8px 0 32px rgba(30,42,50,0.12);
+  --overlay: rgba(30,42,50,0.40);
+
+  /* density (comfortable default) */
+  --control-h: 44px; --card-pad: 24px; --page-pad: 40px; --section-gap: 32px;
+}
+
+[data-density="compact"] {
+  --control-h: 36px; --card-pad: 16px; --page-pad: 32px; --section-gap: 24px;
+}
+
+/* Below the sidebar breakpoint (1024px): the same layout with less air around it. */
+@media (max-width: 1023px) {
+  .app-shell { --page-pad: 24px; --section-gap: 24px; }
+}
+@media (max-width: 639px) {
+  .app-shell { --page-pad: 16px; --card-pad: 16px; }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-card: var(--card);
+  --color-subtle: var(--subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-disabled-bg: var(--disabled-bg);
+  --color-disabled-fg: var(--disabled-fg);
+  --color-brand-50: var(--brand-50);   --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200); --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400); --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600); --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800); --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+  --color-on-dark: var(--on-dark); --color-on-dark-muted: var(--on-dark-muted);
+  --color-chart-primary: var(--chart-primary); --color-chart-fill: var(--chart-fill);
+  --color-chart-grid: var(--chart-grid); --color-chart-axis: var(--chart-axis);
+  --color-chart-escalated: var(--chart-escalated); --color-chart-review: var(--chart-review);
+  --color-chart-closed: var(--chart-closed);
+  --color-escalated-bg: var(--escalated-bg); --color-escalated-fg: var(--escalated-fg);
+  --color-escalated-solid: var(--escalated-solid);
+  --color-review-bg: var(--review-bg); --color-review-fg: var(--review-fg);
+  --color-closed-bg: var(--closed-bg); --color-closed-fg: var(--closed-fg);
+  --color-closed-solid: var(--closed-solid);
+  --color-tamper-bg: var(--tamper-bg); --color-tamper-fg: var(--tamper-fg);
+  --color-tamper-solid: var(--tamper-solid);
+  --color-danger-bg: var(--danger-bg); --color-danger-fg: var(--danger-fg);
+  --color-danger-solid: var(--danger-solid);
+  --radius-md: var(--radius);
+  --radius-xl: var(--radius-card);
+  --radius-2xl: var(--radius-modal);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-modal: var(--shadow-modal);
+  --shadow-drawer: var(--shadow-drawer);
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-heading: var(--font-lora), Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html { height: 100%; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 26px;
+  background: var(--canvas);
+  color: var(--ink);
+}
+/* In the base layer, so a component can give one heading a different size or colour
+   (a 17px panel title, a heading on a dark band). Outside a layer these would win. */
+@layer base {
+  h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; color: var(--ink); }
+  h1 { font-size: 32px; line-height: 40px; }
+  h2 { font-size: 24px; line-height: 32px; }
+  h3 { font-size: 20px; line-height: 28px; }
+  h4 { font-size: 17px; line-height: 24px; }
+}
+
+:focus-visible { outline: 2px solid var(--brand-700); outline-offset: 2px; }
+
+a.link, .link { color: var(--brand-700); font-weight: 600; }
+a.link:hover, .link:hover { color: var(--brand-800); text-decoration: underline; }
+
+.mono { font-family: var(--font-mono); font-size: 13px; line-height: 20px; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+dialog::backdrop { background: var(--overlay); }
+dialog[open] { animation: dialog-in 200ms ease-out; }
+dialog.drawer[open] { animation: drawer-in 200ms ease-out; }
+@keyframes drawer-in { from { transform: translateX(-16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.skeleton { background: var(--subtle); border-radius: var(--radius); animation: soft-pulse 2s ease-in-out infinite; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fade-in 240ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

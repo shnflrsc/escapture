@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Case page, draft</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0;background:#F7FAFB}</style>
+</helmet>
+<div class="app st-root" data-density="comfortable">
+  <dc-import name="Sidebar" role="student" active="Cases" hint-size="248px,900px"></dc-import>
+  <div class="app-col">
+    <dc-import name="Topbar" role="student" section="Cases" section-href="StudentCases.dc.html" page="Comments on my post" hint-size="100%,64px"></dc-import>
+    <main class="page page-student">
+      <div class="ph">
+        <div>
+          <h1>Comments on my post</h1>
+          <div class="meta-row">
+            <span class="pill pill-draft"><span class="pdot" aria-hidden="true"></span>Draft</span>
+            <span>Private. Only you and the people you added can see this case.</span>
+          </div>
+        </div>
+        <div class="ph-actions">
+          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Share case</x-import>
+          <a class="btn btn-weighty" href="EscalateDialog.dc.html">Escalate to reviewers</a>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="stack" style="gap: var(--section-gap);">
+          <section class="panel" aria-labelledby="det-h">
+            <div class="panel-head">
+              <h2 id="det-h" class="h4">Details</h2>
+              <span class="saved"><x-import component-from-global-scope="SafeTrail.Icon" name="check" size="sm"></x-import>Saved 2 minutes ago</span>
+            </div>
+            <div class="field">
+              <label for="c-title">Title</label>
+              <input id="c-title" class="input" value="Comments on my post">
+            </div>
+            <div class="field">
+              <label for="c-desc">What happened</label>
+              <textarea id="c-desc" class="textarea" aria-describedby="c-desc-help">After an argument in class on 10 October, a classmate posted about me on the BulSU Freedom Wall. Others joined in the comments. The original post was edited the next day. Paolo saw the post before it changed and saved what he could.</textarea>
+              <p id="c-desc-help" class="help">Reviewers will read this together with the evidence. Write it in your own words.</p>
+            </div>
+          </section>
+
+          <section class="stack" aria-labelledby="ev-h">
+            <div class="spread">
+              <h2 id="ev-h" class="h3">Attached evidence</h2>
+              <x-import component-from-global-scope="SafeTrail.Button" variant="soft" icon="paperclip">Attach from vault</x-import>
+            </div>
+            <div class="tablebox">
+              <table class="st-table">
+                <caption style="position: absolute; left: -9999px;">Evidence attached to this case</caption>
+                <thead><tr><th scope="col">Evidence</th><th scope="col">Added by</th><th scope="col">Captured</th><th scope="col">Tamper checks</th><th scope="col"><span style="position: absolute; left: -9999px;">Actions</span></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{evidence}}" as="e" hint-placeholder-count="3">
+                    <tr tabindex="0">
+                      <td><a class="cell-title" href="StudentEvidence.dc.html" style="text-decoration: none; color: inherit;"><span><b>{{e.title}}</b><span>{{e.kind}}</span></span></a></td>
+                      <td class="nowrap small">{{e.by}}</td>
+                      <td class="nowrap"><span class="mono num">{{e.captured}}</span></td>
+                      <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck"></x-import></td>
+                      <td class="nowrap" style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <p class="cap" style="margin: 0;">Only evidence you attach is visible in the case. The rest of your vault stays private.</p>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel" aria-labelledby="col-h">
+            <div class="panel-head"><h2 id="col-h" class="h4">People on this case</h2><span class="cap">2 people</span></div>
+            <ul class="people">
+              <li><span class="avatar">MS</span><span><b>Maya Santos (you)</b><span>Created the case</span></span></li>
+              <li><span class="avatar">PC</span><span><b>Paolo Cruz</b><span>Added 2 evidence items</span></span><button type="button" class="btn btn-ghost btn-sm end">Remove access</button></li>
+            </ul>
+            <div class="row">
+              <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Invite by email</x-import>
+              <x-import component-from-global-scope="SafeTrail.Button" variant="ghost" icon="lock">Password link</x-import>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="next-h">
+            <h2 id="next-h" class="h4">What happens next</h2>
+            <ol class="tl">
+              <li><span class="mk mk-now" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"></circle></svg></span><div><b>Draft</b><p>You and the people you added build the case. Nothing reaches reviewers yet.</p></div></li>
+              <li><span class="mk" aria-hidden="true"></span><div><b>Escalated</b><p>You review exactly what reviewers will see, then confirm. The case locks.</p></div></li>
+              <li><span class="mk" aria-hidden="true"></span><div><b>Under Review</b><p>A designated case reviewer looks at the case.</p></div></li>
+              <li><span class="mk" aria-hidden="true"></span><div><b>Closed</b><p>The reviewer records the actions taken. You'll see the note here.</p></div></li>
+            </ol>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      evidence: [
+        { title: 'Post on BulSU Freedom Wall', kind: 'Facebook post', by: 'You', captured: '12 Oct 2026, 9:41 PM' },
+        { title: 'Comments on my profile photo', kind: 'Facebook post', by: 'You', captured: '10 Oct 2026, 7:02 PM' },
+        { title: 'Original post, before the edit', kind: 'Facebook post', by: 'Paolo Cruz', captured: '10 Oct 2026, 8:20 PM' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

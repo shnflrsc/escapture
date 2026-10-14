@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "SafeTrail Escrow Capture",
+  "version": "0.0.0",
+  "description": "Save a tamper-checked copy of a Facebook post or conversation to your SafeTrail vault.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SafeTrail Escrow Capture"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "activeTab", "scripting", "offscreen"],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://web.facebook.com/*",
+    "https://www.messenger.com/*",
+    "https://*.fbcdn.net/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/*", "https://web.facebook.com/*", "https://www.messenger.com/*"],
+      "js": ["page-guard.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.facebook.com/*", "https://web.facebook.com/*", "https://www.messenger.com/*"],
+      "js": ["guard-bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

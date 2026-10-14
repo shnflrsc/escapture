@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Create your SafeTrail account</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="auth.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0;background:#FFFFFF}</style>
+</helmet>
+<div class="auth">
+  <aside class="brand" aria-label="About SafeTrail">
+    <a class="logo" href="#">
+      <svg width="36" height="36" viewBox="0 0 32 32" fill="none" role="img" aria-label="SafeTrail logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
+      <b>SafeTrail</b>
+    </a>
+
+    <figure class="illus" style="margin: 0;">
+    <svg viewBox="0 0 520 520" width="100%" aria-hidden="true" focusable="false" style="display: block; max-width: 520px; height: auto; margin: 0 auto;">
+      <circle cx="370" cy="170" r="120" fill="#E6F1F6"></circle>
+      <path d="M0 430 C 120 400, 240 460, 520 410" stroke="#CDE2EC" stroke-width="1.5" fill="none"></path>
+      <path d="M0 470 C 140 445, 300 500, 520 455" stroke="#CDE2EC" stroke-width="1.5" fill="none"></path>
+      <path d="M0 505 C 160 485, 320 530, 520 495" stroke="#CDE2EC" stroke-width="1.5" fill="none"></path>
+      <path d="M60 480 C 110 410, 220 440, 240 360" stroke="#AACADB" stroke-width="18" stroke-linecap="round" fill="none"></path>
+      <path d="M60 480 C 110 410, 220 440, 240 360" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 12" fill="none"></path>
+      <path d="M240 360 C 260 280, 340 260, 370 246" stroke="#AACADB" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 12" fill="none"></path>
+      <rect x="310" y="150" width="120" height="96" rx="14" fill="none" stroke="#AACADB" stroke-width="2.5" stroke-dasharray="6 6"></rect>
+      <rect x="300" y="126" width="140" height="34" rx="12" fill="none" stroke="#AACADB" stroke-width="2.5" stroke-dasharray="6 6"></rect>
+      <path d="M60 480 V 404" stroke="#223F50" stroke-width="3" stroke-linecap="round"></path>
+      <path d="M60 406 L 104 419 L 60 432 Z" fill="#66A3BF"></path>
+      <circle cx="60" cy="482" r="7" fill="#85B8CE"></circle>
+      <circle cx="161" cy="424" r="9" fill="#FFFFFF" stroke="#66A3BF" stroke-width="3"></circle>
+      <circle cx="240" cy="360" r="9" fill="#FFFFFF" stroke="#66A3BF" stroke-width="3"></circle>
+      <rect x="150" y="300" width="100" height="64" rx="10" fill="#FFFFFF" stroke="#CDE2EC" stroke-width="1.5" transform="rotate(-4 200 332)"></rect>
+      <g transform="rotate(-4 200 332)">
+        <circle cx="170" cy="320" r="8" fill="#CDE2EC"></circle>
+        <path d="M186 318 H230" stroke="#85B8CE" stroke-width="4" stroke-linecap="round"></path>
+        <path d="M162 340 H236 M162 350 H210" stroke="#CDE2EC" stroke-width="4" stroke-linecap="round"></path>
+      </g>
+      <circle cx="250" cy="300" r="13" fill="#3A6D88"></circle>
+      <path d="M250 293 V 307 M243 300 H 257" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"></path>
+    </svg>
+  </figure>
+
+    
+  </aside>
+
+  <main class="main">
+    <div class="topline">
+      <a class="logo mlogo" href="#">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" role="img" aria-label="SafeTrail logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
+        <b style="font-size: 20px;">SafeTrail</b>
+      </a>
+      <a class="link" href="#" style="display: inline-flex; align-items: center; gap: 4px;">
+        <x-import component-from-global-scope="SafeTrail.Icon" name="chevron-left" size="sm"></x-import>Home
+      </a>
+      <span><span class="tl-text">Already have an account? </span><a class="link" href="Main.dc.html">Sign in</a></span>
+    </div>
+
+    <div class="formwrap">
+      <form class="form" method="post" onSubmit="{{submit}}" novalidate="novalidate">
+        <div>
+          <h1>Create your account</h1>
+          
+        </div>
+
+        <div class="fields">
+          <div class="field">
+            <label class="label" for="r-name">Your name</label>
+            <input id="r-name" class="input" name="name" autocomplete="name" maxlength="80" value="{{name}}" onChange="{{onName}}" aria-invalid="{{nameInvalid}}" aria-describedby="r-name-help">
+            <sc-if value="{{nameMissing}}" hint-placeholder-val="{{false}}">
+              <p class="err"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-alert" size="sm"></x-import>Enter your name.</p>
+            </sc-if>
+            
+          </div>
+
+          <div class="field">
+            <label class="label" for="r-email">BulSU email</label>
+            
+            <sc-if value="{{emailError}}" hint-placeholder-val="{{false}}">
+              <p id="r-email-msg" class="err"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-alert" size="sm"></x-import>{{emailErrorText}}</p>
+            </sc-if>
+            <sc-if value="{{emailHint}}" hint-placeholder-val="{{true}}">
+              <input id="r-email" class="input" type="email" name="email" autocomplete="email" placeholder="2025000001@ms.bulsu.edu.ph" value="{{email}}" onChange="{{onEmail}}" aria-invalid="{{emailInvalid}}" aria-describedby="r-email-msg"><p id="r-email-msg" class="help">Must end in @ms.bulsu.edu.ph</p>
+            </sc-if>
+          </div>
+
+          <div class="field">
+            <label class="label" for="r-pw">Password</label>
+            <div class="pw">
+              <input id="r-pw" class="input" type="{{pwType}}" name="password" autocomplete="new-password" value="{{password}}" onChange="{{onPassword}}" aria-invalid="{{pwInvalid}}" aria-describedby="r-pw-rules">
+              <button type="button" class="eye" aria-label="{{eyeLabel}}" aria-pressed="{{eyePressed}}" onClick="{{toggleEye}}">
+                <sc-if value="{{showPw}}" hint-placeholder-val="{{false}}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.73 5.08A10.4 10.4 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.7 9.7 0 0 0 5.39-1.61"></path><path d="M14.08 14.16a3 3 0 0 1-4.18-4.24"></path><path d="m2 2 20 20"></path></svg>
+                </sc-if>
+                <sc-if value="{{hidePw}}" hint-placeholder-val="{{true}}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </sc-if>
+              </button>
+            </div>
+            <div id="r-pw-rules" class="stack" style="display: flex; flex-direction: column; gap: 4px;" aria-live="polite">
+              <span class="{{lenCls}}">
+                <sc-if value="{{lenOk}}" hint-placeholder-val="{{false}}"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-check" size="sm"></x-import></sc-if>
+                <sc-if value="{{lenNotOk}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle></svg></sc-if>
+                At least 8 characters
+              </span>
+              
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="check"><input type="checkbox" checked="{{agreed}}" onChange="{{onAgree}}" aria-invalid="{{agreeInvalid}}"> <span>I agree to the <a class="link" href="#">Terms of Service</a> and <a class="link" href="#">Privacy Policy</a>.</span></label>
+            <sc-if value="{{agreeMissing}}" hint-placeholder-val="{{false}}">
+              <p class="err" style="margin-left: 32px;"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-alert" size="sm"></x-import>Please agree to the terms to create an account.</p>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+          <div class="banner banner-info" role="status">
+            <x-import component-from-global-scope="SafeTrail.Icon" name="circle-check"></x-import>
+            <p>Everything looks right. In the app, this opens your empty vault with a short guide to your first capture.</p>
+          </div>
+        </sc-if>
+
+        <button type="submit" class="btn btn-primary">Create account</button>
+
+        
+      </form>
+    </div>
+
+    <nav class="foot" aria-label="Legal">
+      <a href="#">Privacy Policy</a><a href="#">Terms of Service</a><a href="#">Contact the team</a>
+    </nav>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var s = this.state || {};
+    var name = s.name || '';
+    var email = s.email || '';
+    var password = s.password || '';
+    var agreed = !!s.agreed;
+    var tried = !!s.tried;
+    var showPw = !!s.showPw;
+    var e = email.trim().toLowerCase();
+    var wrongDomain = e.indexOf('@') > -1 && !/@bulsu\.edu\.ph$/.test(e) && (tried || e.split('@')[1].indexOf('.') > -1);
+    var emailMissing = tried && !e;
+    var emailError = wrongDomain || emailMissing;
+    var lenOk = password.length >= 8;
+    var nameMissing = tried && !name.trim();
+    var pwBad = tried && !lenOk;
+    var agreeMissing = tried && !agreed;
+    var valid = name.trim() && e && !wrongDomain && lenOk && agreed;
+    return {
+      name: name, email: email, password: password, agreed: agreed,
+      onName: function (ev) { self.setState({ name: ev.target.value }); },
+      onEmail: function (ev) { self.setState({ email: ev.target.value }); },
+      onPassword: function (ev) { self.setState({ password: ev.target.value }); },
+      onAgree: function (ev) { self.setState({ agreed: ev.target.checked }); },
+      submit: function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); self.setState({ tried: true }); },
+      nameMissing: nameMissing, nameInvalid: nameMissing ? 'true' : 'false',
+      emailError: emailError, emailHint: !emailError, emailInvalid: emailError ? 'true' : 'false',
+      emailErrorText: emailMissing ? 'Enter your BulSU email.' : 'Please enter an email that ends in @bulsu.edu.ph.',
+      lenOk: lenOk, lenNotOk: !lenOk, lenCls: lenOk ? 'rule rule-ok' : (pwBad ? 'rule err' : 'rule'),
+      pwInvalid: pwBad ? 'true' : 'false',
+      agreeMissing: agreeMissing, agreeInvalid: agreeMissing ? 'true' : 'false',
+      done: tried && !!valid,
+      showPw: showPw, hidePw: !showPw, pwType: showPw ? 'text' : 'password',
+      eyeLabel: showPw ? 'Hide password' : 'Show password', eyePressed: showPw ? 'true' : 'false',
+      toggleEye: function () { self.setState({ showPw: !showPw }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

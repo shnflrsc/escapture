@@ -1,0 +1,23 @@
+# The local development database. Production uses Supabase Postgres via DATABASE_URL.
+#   pnpm db:local   start it in the background and wait until it accepts connections
+#   pnpm db:stop    stop it; the data stays in the safetrail-pg volume
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: safetrail
+    ports:
+      # Only this machine can reach it. The port matches DATABASE_URL in .env.example.
+      - "127.0.0.1:${LOCAL_DB_PORT:-54329}:5432"
+    volumes:
+      - safetrail-pg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d safetrail"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  safetrail-pg:

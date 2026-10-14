@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev data (local evidence storage; the database lives in a Docker volume)
+/.data/
+!.env.example
+
+# extension build output
+/extension/dist/
+
+# real page samples for tuning capture (contain personal data, never commit)
+/fixtures/real/

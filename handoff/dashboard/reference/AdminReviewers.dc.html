@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reviewer accounts</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0;background:#F7FAFB}</style>
+</helmet>
+<div class="app st-root" data-density="compact">
+  <dc-import name="Sidebar" role="admin" active="Reviewer accounts" hint-size="248px,900px"></dc-import>
+  <div class="app-col">
+    <dc-import name="Topbar" role="admin" section="Reviewer accounts" section-href="AdminReviewers.dc.html" hint-size="100%,64px"></dc-import>
+    <main class="page page-reviewer">
+      <div class="ph">
+        <div>
+          <h1>Reviewer accounts</h1>
+          <p>Create accounts for the university's designated case reviewers. Students sign up on their own with a BulSU email.</p>
+        </div>
+      </div>
+
+      <div class="split-wide" style="grid-template-columns: minmax(0, 1fr) 400px;">
+        <div class="stack">
+          <div class="st-toolbar">
+            <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter accounts" items="{{tabs}}" selected="{{zero}}"></x-import>
+            <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search reviewers" placeholder="Search by name or email"></x-import>
+          </div>
+          <div class="tablebox">
+            <table class="st-table">
+              <caption style="position: absolute; left: -9999px;">Reviewer accounts</caption>
+              <thead><tr>
+                <th scope="col">Reviewer</th><th scope="col">Office</th><th scope="col">Status</th><th scope="col">Created</th><th scope="col">Last sign-in</th><th scope="col"><span style="position: absolute; left: -9999px;">Actions</span></th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                  <tr tabindex="0">
+                    <td><span class="cell-title" style="min-width: 220px;"><span class="avatar" aria-hidden="true">{{r.initials}}</span><span><b>{{r.name}}</b><span>{{r.email}}</span></span></span></td>
+                    <td class="small">{{r.office}}</td>
+                    <td class="nowrap"><span class="{{r.pillCls}}"><span class="pdot" aria-hidden="true"></span>{{r.status}}</span></td>
+                    <td class="nowrap st-muted num">{{r.created}}</td>
+                    <td class="nowrap st-muted num">{{r.last}}</td>
+                    <td class="nowrap" style="text-align: right;">
+                      <sc-if value="{{r.pending}}" hint-placeholder-val="{{false}}"><button type="button" class="btn btn-ghost btn-sm">Resend setup link</button></sc-if>
+                      <sc-if value="{{r.active}}" hint-placeholder-val="{{true}}"><button type="button" class="btn btn-ghost btn-sm">Deactivate</button></sc-if>
+                      <sc-if value="{{r.off}}" hint-placeholder-val="{{false}}"><button type="button" class="btn btn-ghost btn-sm">Reactivate</button></sc-if>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <p class="cap" style="margin: 0;">Deactivating an account signs the reviewer out. Cases and closing notes they wrote stay on record.</p>
+        </div>
+
+        <section class="panel" aria-labelledby="new-h">
+          <div>
+            <h2 id="new-h" class="h3">Create a reviewer account</h2>
+            <p class="small muted" style="margin: 4px 0 0;">We'll email a one-time setup link. The link expires in 7 days.</p>
+          </div>
+          <div class="field">
+            <label for="r-name">Full name</label>
+            <input id="r-name" class="input" placeholder="e.g. Liza Reyes">
+          </div>
+          <div class="field">
+            <label for="r-email">University email</label>
+            <input id="r-email" class="input" type="email" aria-describedby="r-email-help" placeholder="name@bulsu.edu.ph">
+            <p id="r-email-help" class="help">Use the reviewer's bulsu.edu.ph address.</p>
+          </div>
+          <div class="field">
+            <label for="r-office">Office</label>
+            <select id="r-office" class="select">
+              <option>Office of Student Affairs</option>
+              <option>Discipline committee</option>
+              <option>Guidance and counselling</option>
+              <option>Other designated office</option>
+            </select>
+          </div>
+          <div class="st-note-panel small">
+            Reviewers can see every escalated case on the shared Review Board, including who reported it and every collaborator.
+          </div>
+          <x-import component-from-global-scope="SafeTrail.Button" variant="primary">Create account and send link</x-import>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":950}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var S = {
+      Active: 'pill pill-active',
+      'Setup link sent': 'pill pill-pending',
+      Deactivated: 'pill pill-off'
+    };
+    var rows = [
+      { name: 'Liza Reyes', initials: 'LR', email: 'liza.reyes@bulsu.edu.ph', office: 'Office of Student Affairs', status: 'Active', created: '1 Aug 2026', last: 'Today, 9:20 AM' },
+      { name: 'Marco Cruz', initials: 'MC', email: 'marco.cruz@bulsu.edu.ph', office: 'Discipline committee', status: 'Active', created: '1 Aug 2026', last: 'Yesterday' },
+      { name: 'Lorna Bautista', initials: 'LB', email: 'lorna.bautista@bulsu.edu.ph', office: 'Guidance and counselling', status: 'Active', created: '11 Oct 2026', last: 'Today, 9:12 AM' },
+      { name: 'Rafael Aquino', initials: 'RA', email: 'rafael.aquino@bulsu.edu.ph', office: 'Discipline committee', status: 'Setup link sent', created: '8 Oct 2026', last: 'Not yet' },
+      { name: 'Teresa Dizon', initials: 'TD', email: 'teresa.dizon@bulsu.edu.ph', office: 'Office of Student Affairs', status: 'Deactivated', created: '1 Aug 2026', last: '30 Sep 2026' }
+    ].map(function (r) {
+      return Object.assign({}, r, { pillCls: S[r.status], pending: r.status === 'Setup link sent', active: r.status === 'Active', off: r.status === 'Deactivated' });
+    });
+    return { rows: rows, zero: 0, tabs: [{ label: 'All', count: 5 }, { label: 'Active', count: 3 }, { label: 'Pending', count: 1 }, { label: 'Deactivated', count: 1 }] };
+  }
+}
+</script>
+</body>
+</html>

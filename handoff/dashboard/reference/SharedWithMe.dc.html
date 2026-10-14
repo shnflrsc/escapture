@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shared with me</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/safetrail/components/bundle.css">
+<link rel="stylesheet" href="app.css">
+<script src="ds/safetrail/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600&amp;family=Nunito:wght@400;600;700&amp;display=swap">
+<style>body{margin:0;background:#F7FAFB}</style>
+</helmet>
+<div class="app st-root" data-density="compact">
+  <dc-import name="Sidebar" role="reviewer" active="Shared with me" hint-size="248px,900px"></dc-import>
+  <div class="app-col">
+    <dc-import name="Topbar" role="reviewer" section="Shared with me" section-href="SharedWithMe.dc.html" hint-size="100%,64px"></dc-import>
+    <main class="page page-reviewer">
+      <div class="ph">
+        <div>
+          <h1>Shared with me</h1>
+          <p>Evidence other SafeTrail users shared with you by email or password link. Attach it to a case to keep it with the review.</p>
+        </div>
+        <div class="ph-actions">
+          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary" icon="lock">Open a password link</x-import>
+        </div>
+      </div>
+
+      <x-import component-from-global-scope="SafeTrail.Banner" tone="info">When you attach shared evidence to a case, it goes in “Added by reviewers”. The student who reported never sees it.</x-import>
+
+      <div class="stack">
+        <div class="st-toolbar">
+          <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter shared evidence" items="{{tabs}}" selected="{{zero}}"></x-import>
+          <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search shared evidence" placeholder="Search by title or person"></x-import>
+        </div>
+        <div class="tablebox">
+          <table class="st-table">
+            <caption style="position: absolute; left: -9999px;">Evidence shared with you</caption>
+            <thead><tr>
+              <th scope="col">Evidence</th><th scope="col">Shared by</th><th scope="col">Via</th><th scope="col">Captured</th><th scope="col">Tamper checks</th><th scope="col">Attached to</th><th scope="col"><span style="position: absolute; left: -9999px;">Actions</span></th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                <tr tabindex="0">
+                  <td><span class="cell-title"><span><b>{{r.title}}</b><span>{{r.kind}}</span></span></span></td>
+                  <td class="nowrap">{{r.by}}</td>
+                  <td class="nowrap"><span class="share"><x-import component-from-global-scope="SafeTrail.Icon" name="{{r.viaIcon}}" size="sm"></x-import>{{r.via}}</span></td>
+                  <td class="nowrap"><span class="mono num">{{r.captured}}</span></td>
+                  <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck" reviewer="{{yes}}"></x-import></td>
+                  <td><span class="{{r.caseCls}}">{{r.attached}}</span></td>
+                  <td class="nowrap" style="text-align: right;">
+                    <sc-if value="{{r.canAttach}}" hint-placeholder-val="{{true}}"><button type="button" class="btn btn-secondary btn-sm">Attach to case</button></sc-if>
+                    <sc-if value="{{r.isAttached}}" hint-placeholder-val="{{false}}"><a class="link small" href="ReviewCase.dc.html">Open case</a></sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <x-import component-from-global-scope="SafeTrail.Pagination" page="{{one}}" page-size="{{five}}" total="{{five}}"></x-import>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":950}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var rows = [
+      { title: 'Full group chat, 3 to 11 Oct', kind: 'Facebook messages', by: 'J. Ramos', via: 'Password link', captured: '12 Oct 2026, 1:40 PM', attached: 'Group chat after org meeting' },
+      { title: 'Original caption, before the edit', kind: 'Facebook post', by: 'C. Bautista', via: 'Email', captured: '13 Oct 2026, 8:55 AM', attached: '' },
+      { title: 'Conversation with B. Mendoza', kind: 'Facebook messages', by: 'D. Navarro', via: 'Password link', captured: '13 Oct 2026, 7:30 AM', attached: '' },
+      { title: 'Org page post, 4 Oct', kind: 'Facebook post', by: 'P. Aquino', via: 'Email', captured: '6 Oct 2026, 5:12 PM', attached: 'Posts in the org page' },
+      { title: 'Reply thread on fake account', kind: 'Facebook post', by: 'K. Ramos', via: 'Email', captured: '5 Oct 2026, 9:01 PM', attached: 'Fake account using my photos' }
+    ].map(function (r) {
+      var a = !!r.attached;
+      return Object.assign({}, r, {
+        viaIcon: r.via === 'Email' ? 'inbox' : 'lock',
+        attached: a ? r.attached : 'Not attached',
+        caseCls: a ? 'small' : 'small muted',
+        canAttach: !a, isAttached: a
+      });
+    });
+    return { rows: rows, yes: true, zero: 0, one: 1, five: 5, tabs: [{ label: 'Not attached', count: 2 }, { label: 'All', count: 5 }] };
+  }
+}
+</script>
+</body>
+</html>
