@@ -91,7 +91,6 @@ async function renderReady(auth: Extract<AuthState, { signedIn: true }>, status:
     void render();
   });
   const help = checksHelp();
-  const failed = status.lastCapture && !status.lastCapture.ok ? status.lastCapture.message : null;
 
   app.replaceChildren(
     h("div", { class: "title" }, h("h1", {}, "Capture evidence"), help.button),
@@ -101,7 +100,6 @@ async function renderReady(auth: Extract<AuthState, { signedIn: true }>, status:
       ? []
       : [h("p", { class: "note info" }, "Open the Facebook post or Messenger conversation you want to keep, then open this again.")]),
     capture,
-    ...(failed ? [h("p", { class: "note attention" }, failed)] : []),
     ...historyList(status.history),
     h("div", { class: "account" }, h("span", { class: "helper" }, auth.email), signOut),
   );
