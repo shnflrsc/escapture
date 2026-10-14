@@ -26,8 +26,8 @@ function useRemoval() {
   return { busy, remove };
 }
 
-const row = "flex flex-wrap items-center justify-between gap-x-3 gap-y-1";
-const small = "h-9 px-3 text-sm";
+const row = "flex items-center justify-between gap-3";
+const small = "h-9 shrink-0 px-3 text-sm";
 
 export type SharedWith = { id: string; name: string; email: string; role: string; via: "email" | "link" };
 
@@ -38,10 +38,10 @@ export function AccessList({ evidenceId, people }: { evidenceId: string; people:
     <ul className="flex flex-col gap-2 text-sm leading-[22px]">
       {people.map((p) => (
         <li key={p.id} className={row}>
-          <span className="min-w-0 break-words">
+          <span className="min-w-0 flex-1 break-words">
             <span className="font-semibold">{p.name}</span>
             {p.role !== "student" && " (reviewer)"}
-            <span className="block text-[13px] leading-[18px] text-muted">
+            <span className="block text-[13px] leading-[18px] break-all text-muted">
               {p.email} · {p.via === "link" ? "Password link" : "Email"}
             </span>
           </span>
@@ -73,7 +73,7 @@ export function LinkList({ endpoint, links }: { endpoint: string; links: ActiveL
     <ul className="flex flex-col gap-2 text-sm leading-[22px]">
       {links.map((l) => (
         <li key={l.id} className={row}>
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             Created <span className="tnum">{formatDateTime(l.createdAt)}</span>
             {l.locked && <span className="block text-[13px] leading-[18px] text-muted">Locked after wrong passwords</span>}
           </span>

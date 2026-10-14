@@ -363,7 +363,7 @@ async function main() {
   const mayaRec = closedView.reporterRecord?.find((r) => r.evidenceId === mayaEv);
   check("a closed case gives reviewers the record, not the evidence", closedView.reporterEvidence.length === 0 && closedView.reviewerEvidence.length === 0 && closedView.reporterRecord.length === 2 && closedView.reviewerRecord.length === 1, closedView);
   check("the record has each item's title, owner and SHA-256", Boolean(mayaRec) && mayaRec!.sha256 === sha256Hex(mayaBytes) && mayaRec!.label.length > 0 && mayaRec!.ownerName === "Maya Smoke" && closedView.reviewerRecord[0].sha256 === sha256Hex(alexBytes), mayaRec);
-  check("reviewers can no longer open the student's evidence or its file", (await call(R, "GET", `/api/evidence/${mayaEv}`)).status === 404 && (await call(R, "GET", `/api/evidence/${mayaEv}/file`)).status === 404 && (await call(R, "GET", `/api/evidence/${julesEv}`)).status === 404 && (await call(R, "POST", `/api/evidence/${mayaEv}/verify`, {})).status === 404);
+  check("reviewers can no longer open the student's evidence or its file", (await call(R, "GET", `/api/evidence/${mayaEv}`)).status === 404 && (await call(R, "GET", `/api/evidence/${mayaEv}/file`)).status === 404 && (await call(R, "GET", `/api/evidence/${julesEv}`)).status === 404 && (await call(R, "GET", `/api/evidence/${mayaEv}/verify`)).status === 404);
   check("evidence shared with a reviewer directly stays shared after closure", (await call(R, "GET", `/api/evidence/${alexEv}`)).status === 200);
   check("the student and collaborator still open their case's evidence", (await call(M, "GET", `/api/evidence/${julesEv}`)).status === 200 && (await call(J, "GET", `/api/evidence/${mayaEv}`)).status === 200);
 
