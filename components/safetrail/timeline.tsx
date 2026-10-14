@@ -40,7 +40,7 @@ export function Timeline({ events }: { events: Event[] }) {
             {e.note && e.type === "closed" && (
               <div className="mt-2 rounded-md bg-subtle p-4">
                 <p className="text-sm font-semibold">Closing note</p>
-                <p className="max-w-prose whitespace-pre-wrap">{e.note}</p>
+                <p className="max-w-prose whitespace-pre-wrap wrap-anywhere">{e.note}</p>
               </div>
             )}
           </div>
