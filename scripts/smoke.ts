@@ -534,6 +534,33 @@ async function main() {
   await call(AD, "PATCH", `/api/admin/reviewers/${reviewerId}`, { active: true });
   check("an administrator closes the case; a closed case's reviewers can't be changed", (await call(AD, "POST", `/api/review/cases/${open2}/close`, { note: "Closed by the administrator in the smoke run." })).status === 200 && (await call(AD, "POST", `/api/review/cases/${open2}/assignees`, { reviewerId })).status === 409);
   await call(M, "DELETE", `/api/cases/${adminDraft}`);
+  step("15. Flagged words");
+  type Word = { id: string; word: string; cases: number };
+  const bankList = async () => (await call(AD, "GET", "/api/admin/word-bank")).body.items as Word[];
+  const startBank = await bankList();
+  check("the word bank starts with a list, in English and Filipino", startBank.length >= 20 && startBank.some((w) => w.word === "suicide") && startBank.some((w) => w.word === "magpakamatay"));
+  check("only administrators can see or change the word bank", (await call(R, "GET", "/api/admin/word-bank")).status === 403 && (await call(M, "POST", "/api/admin/word-bank", { word: "zzz" })).status === 403 && (await call(null, "GET", "/api/admin/word-bank")).status === 401);
+  const flagBytes = tag(chat);
+  const flagEv = (await call(M, "POST", "/api/evidence", uploadForm(flagBytes, sha256Hex(flagBytes), "facebook_message"))).body.id as string;
+  const flagCase = (await call(M, "POST", "/api/cases", { title: `Group chat ${run}`, description: `They kept threatening me in the groupchat${run} and said I should kill   myself.` })).body.id as string;
+  await call(M, "POST", `/api/cases/${flagCase}/evidence`, { evidenceId: flagEv });
+  type Flagged = { id: string; flaggedWords: string[] };
+  const rowOf = async (id: string, query = `q=${encodeURIComponent(run)}`) => ((await call(R, "GET", `/api/review/cases?${query}`)).body.items as Flagged[]).find((c) => c.id === id);
+  check("a draft is not flagged before escalation", !(await call(M, "GET", `/api/cases/${flagCase}`)).body.flaggedWords);
+  const fpv = await call(M, "GET", `/api/cases/${flagCase}/escalation-preview`);
+  await call(M, "POST", `/api/cases/${flagCase}/escalate`, { digest: fpv.body.digest, confirm: true });
+  const flaggedRow = await rowOf(flagCase);
+  check("escalation flags the words the title and description contain", JSON.stringify(flaggedRow?.flaggedWords) === JSON.stringify(["kill myself", "threaten"]), flaggedRow);
+  check("Has flagged words keeps flagged cases and drops the rest", Boolean(await rowOf(flagCase, `q=${encodeURIComponent(run)}&flagged=1`)) && ((await call(R, "GET", "/api/review/cases?flagged=1")).body.items as Flagged[]).every((c) => c.flaggedWords.length > 0));
+  check("the reviewer's case page has the same words", JSON.stringify((await call(R, "GET", `/api/review/cases/${flagCase}`)).body.flaggedWords) === JSON.stringify(["kill myself", "threaten"]));
+  const studentFlagView = await call(M, "GET", `/api/cases/${flagCase}`);
+  check("the student never sees the flags", studentFlagView.status === 200 && !("flaggedWords" in studentFlagView.body) && !JSON.stringify(studentFlagView.body).includes("kill myself\""));
+  const added = await call(AD, "POST", "/api/admin/word-bank", { word: `  GroupChat${run} ` });
+  check("adding a word stores it normalized and checks escalated cases again", added.status === 201 && added.body.word === `groupchat${run}` && (await rowOf(flagCase))?.flaggedWords.includes(`groupchat${run}`) === true, added.body);
+  check("a word already in the bank, or too short, is refused", (await call(AD, "POST", "/api/admin/word-bank", { word: `GROUPCHAT${run}` })).status === 409 && (await call(AD, "POST", "/api/admin/word-bank", { word: "x" })).status === 400);
+  check("the bank counts how many cases each word flags", (await bankList()).find((w) => w.word === `groupchat${run}`)?.cases === 1);
+  check("removing a word removes its flags", (await call(AD, "DELETE", `/api/admin/word-bank/${added.body.id}`)).status === 200 && !(await rowOf(flagCase))?.flaggedWords.includes(`groupchat${run}`) && (await call(AD, "DELETE", `/api/admin/word-bank/${added.body.id}`)).status === 404);
+
   const gateStillOn = await signUp("Outsider Two", `outsider2.${run}@gmail.com`);
   check("the public sign-up gate is unaffected", gateStillOn.res.status >= 400 && !gateStillOn.token);
 

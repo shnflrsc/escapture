@@ -5,6 +5,7 @@ import { bodyRow, headRow, rowLink, TableBox, td, th } from "@/components/dashbo
 import { PageCrumbs } from "@/components/safetrail/app-shell";
 import { AssignReviewers } from "@/components/safetrail/assign-reviewers";
 import { EvidenceRecord } from "@/components/safetrail/evidence-record";
+import { FlaggedWords } from "@/components/safetrail/flagged-words";
 import { CloseCaseButton, StartReviewButton } from "@/components/safetrail/review-actions";
 import { TamperCheck } from "@/components/safetrail/tamper-check";
 import { Timeline } from "@/components/safetrail/timeline";
@@ -57,6 +58,12 @@ export default async function ReviewCasePage({ params }: PageProps<"/review/[id]
               Locked by the student
             </span>
           </p>
+          {c.flaggedWords.length > 0 && (
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm leading-[22px] text-muted">
+              Flagged words
+              <FlaggedWords words={c.flaggedWords} max={20} />
+            </p>
+          )}
         </div>
         {/* One step at a time: start the review, then the same spot offers closing it. */}
         {c.status === "escalated" && <StartReviewButton caseId={c.id} />}

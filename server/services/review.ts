@@ -14,6 +14,7 @@ import { db } from "../db";
 import {
   caseAssignments,
   caseCollaborators,
+  caseFlags,
   caseEvents,
   caseEvidence,
   cases,
@@ -23,6 +24,7 @@ import {
 } from "../db/schema";
 import { badRequest, conflict, notFound } from "../errors";
 import { listCaseEvidence, listCaseRecord, listCollaborators, loadCase } from "./cases";
+import { flagsFor } from "./flags";
 import { excerpt, notify } from "./notifications";
 
 async function counts(caseIds: string[]) {
@@ -104,6 +106,8 @@ export type BoardQuery = {
   unassigned?: boolean;
   /** Only cases escalated within this many days. */
   days?: number;
+  /** Only cases whose title or description contains a word from the word bank. */
+  flagged?: boolean;
 };
 
 const likeTerm = (q: string) => `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -130,6 +134,7 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
       ? sql`not exists (select 1 from ${caseAssignments} where ${caseAssignments.caseId} = ${cases.id})`
       : undefined,
     query.days ? gte(cases.escalatedAt, new Date(Date.now() - query.days * 24 * 60 * 60 * 1000)) : undefined,
+    query.flagged ? sql`exists (select 1 from ${caseFlags} where ${caseFlags.caseId} = ${cases.id})` : undefined,
   );
   const open = inArray(cases.status, ["escalated", "under_review"]);
   const where = and(open, query.status ? eq(cases.status, query.status) : undefined, search);
@@ -167,9 +172,10 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
   for (const r of byStatus) if (r.status === "escalated" || r.status === "under_review") tally[r.status] = r.n;
   const total = query.status ? tally[query.status] : tally.escalated + tally.under_review;
   const ids = rows.map((r) => r.id);
-  const [c, assignees, latest] = await Promise.all([
+  const [c, assignees, flags, latest] = await Promise.all([
     counts(ids),
     assigneesOf(ids),
+    flagsFor(ids),
     // The newest event of each case on this page, for the "Last update" column.
     ids.length
       ? db
@@ -191,6 +197,7 @@ export async function boardPage(actor: Actor, query: BoardQuery = {}) {
       evidenceCount: c.evidence.get(r.id) ?? 0,
       collaboratorCount: c.collaborators.get(r.id) ?? 0,
       assignees: assignees.get(r.id) ?? [],
+      flaggedWords: flags.get(r.id) ?? [],
     })),
     counts: { all: tally.escalated + tally.under_review, ...tally },
     total,
@@ -353,6 +360,7 @@ export async function getReviewCase(actor: Actor, caseId: string) {
     reporterRecord,
     reviewerRecord,
     assignees,
+    flaggedWords: (await flagsFor([caseId])).get(caseId) ?? [],
     events,
   };
 }

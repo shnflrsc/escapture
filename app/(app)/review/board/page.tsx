@@ -13,6 +13,7 @@ import {
   th,
 } from "@/components/dashboard/data-table";
 import { FilterChip, ParamSelect } from "@/components/dashboard/filters";
+import { FlaggedWords } from "@/components/safetrail/flagged-words";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonClass } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/card";
@@ -45,6 +46,7 @@ type View = {
   rev?: boolean;
   mine?: boolean;
   unassigned?: boolean;
+  flagged?: boolean;
   range?: BoardRange;
 };
 
@@ -61,6 +63,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     rev: first(params.rev) || undefined,
     mine: first(params.mine) || undefined,
     unassigned: first(params.unassigned) || undefined,
+    flagged: first(params.flagged) || undefined,
     range: first(params.range) || undefined,
   });
   const raw = parsed.success ? parsed.data : {};
@@ -75,6 +78,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     // Only reviewers are assigned, so "assigned to me" means nothing for an administrator.
     mine: Boolean(raw.mine) && user.role === "reviewer",
     unassigned: Boolean(raw.unassigned),
+    flagged: Boolean(raw.flagged),
     days: RANGE_DAYS[range] ?? undefined,
   };
   const board = await boardPage(user, query);
@@ -88,6 +92,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     if (next.rev) s.set("rev", "1");
     if (next.mine) s.set("mine", "1");
     if (next.unassigned) s.set("unassigned", "1");
+    if (next.flagged) s.set("flagged", "1");
     if (next.sort && next.sort !== "escalated") s.set("sort", next.sort);
     if (next.range && next.range !== "all") s.set("range", next.range);
     if (next.page && next.page > 1) s.set("page", String(next.page));
@@ -101,7 +106,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     return { direction, href: href({ sort: to, page: 1 }) };
   };
   const filtered = Boolean(
-    query.status || query.q || query.collab || query.rev || query.mine || query.unassigned || range !== "all",
+    query.status || query.q || query.collab || query.rev || query.mine || query.unassigned || query.flagged || range !== "all",
   );
   const clear = href({
     status: undefined,
@@ -110,6 +115,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
     rev: false,
     mine: false,
     unassigned: false,
+    flagged: false,
     range: "all",
     page: 1,
   });
@@ -154,6 +160,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                 rev: query.rev ? "1" : undefined,
                 mine: query.mine ? "1" : undefined,
                 unassigned: query.unassigned ? "1" : undefined,
+                flagged: query.flagged ? "1" : undefined,
                 range: range !== "all" ? range : undefined,
               }}
               className="w-full sm:w-[280px]"
@@ -172,6 +179,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
               href={href({ unassigned: !query.unassigned, mine: false, page: 1 })}
               on={query.unassigned}
             />
+            <FilterChip label="Has flagged words" href={href({ flagged: !query.flagged, page: 1 })} on={query.flagged} />
             <FilterChip label="Has collaborators" href={href({ collab: !query.collab, page: 1 })} on={query.collab} />
             <FilterChip label="Has reviewer attachments" href={href({ rev: !query.rev, page: 1 })} on={query.rev} />
             <ParamSelect
@@ -202,7 +210,7 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
             />
           ) : (
             <>
-              <TableBox caption="Open cases" minWidth={960}>
+              <TableBox caption="Open cases" minWidth={1120}>
                 <thead>
                   <tr className={headRow}>
                     <th scope="col" className={th}>
@@ -212,6 +220,9 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                     <SortHeader label="Reporter" {...sortable("reporter")} />
                     <th scope="col" className={th}>
                       Assigned
+                    </th>
+                    <th scope="col" className={th}>
+                      Flagged Words
                     </th>
                     <th scope="col" className={`${th} text-right`}>
                       Collaborators
@@ -248,6 +259,9 @@ export default async function ReviewBoardPage({ searchParams }: PageProps<"/revi
                             )}
                           </span>
                         )}
+                      </td>
+                      <td className={`${td} max-w-[240px]`}>
+                        <FlaggedWords words={c.flaggedWords} />
                       </td>
                       <td className={`${td} tnum text-right`}>{c.collaboratorCount}</td>
                       <td className={`${td} tnum text-right`}>{c.evidenceCount}</td>

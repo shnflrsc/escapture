@@ -72,6 +72,17 @@ export const redeemLink = z.object({ password: z.string().min(1).max(200) });
 const title = z.string().trim().min(1, "Give your case a title.").max(160);
 const description = z.string().trim().max(10000);
 export const createCase = z.object({ title, description: description.default("") });
+const liveEdit = z.object({ base: z.string().max(12000), text: z.string().max(12000) });
+const liveFieldName = z.enum(["title", "description"]);
+/** One check-in from an open case page: edits, where the caret is, or leaving. */
+export const liveCase = z.object({
+  edits: z.object({ title: liveEdit.optional(), description: liveEdit.optional() }).optional(),
+  focus: z
+    .object({ field: liveFieldName, start: z.number().int().min(0).max(12000), end: z.number().int().min(0).max(12000) })
+    .nullable()
+    .optional(),
+  leave: z.boolean().optional(),
+});
 export const updateCase = z
   .object({
     title: title.optional(),
@@ -100,8 +111,11 @@ export const boardQuery = z.object({
   rev: z.literal("1").optional(),
   mine: z.literal("1").optional(),
   unassigned: z.literal("1").optional(),
+  flagged: z.literal("1").optional(),
   range: z.enum(["30d", "90d", "all"]).optional(),
 });
+/** A word or phrase for the word bank. */
+export const flaggedWord = z.object({ word: z.string().trim().min(2, "Enter a word or phrase of at least 2 characters.").max(60) });
 export const assignReviewer = z.object({ reviewerId: z.string().min(1).max(64) });
 export const reviewStatus = z.object({ status: z.literal("under_review") });
 export const closeCase = z.object({

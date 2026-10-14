@@ -146,6 +146,49 @@ export const caseCollaborators = pgTable(
   (t) => [primaryKey({ columns: [t.caseId, t.userId] })],
 );
 
+// The words administrators keep for flagging escalated cases (see lib/flags.ts). Stored normalized:
+// lowercase, without accents, single spaces.
+export const flaggedWords = pgTable("flagged_words", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  word: text("word").notNull().unique(),
+  // Null for the words SafeTrail starts with.
+  createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+// Which bank words a case's title or description contains. Worked out at escalation, and again for
+// every escalated or closed case whenever the bank changes. Drafts are never checked.
+export const caseFlags = pgTable(
+  "case_flags",
+  {
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    word: text("word").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.caseId, t.word] })],
+);
+
+// Who has a case open right now, and where their caret is. A row older than a few seconds means
+// they have left; rows are overwritten, never accumulated.
+export const casePresence = pgTable(
+  "case_presence",
+  {
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // The field their caret is in ("title" or "description"), or empty when they are only looking.
+    field: text("field"),
+    selectionStart: integer("selection_start"),
+    selectionEnd: integer("selection_end"),
+    seenAt: ts("seen_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.caseId, t.userId] })],
+);
+
 // Reviewers an administrator has asked to take a case. It routes work; it does not limit who can review.
 export const caseAssignments = pgTable(
   "case_assignments",

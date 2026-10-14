@@ -20,6 +20,7 @@ import {
 import { db, type Db, type Tx } from "../db";
 import { caseCollaborators, caseEvents, caseEvidence, cases, evidence, user } from "../db/schema";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../errors";
+import { flagCase } from "./flags";
 import { notify } from "./notifications";
 import { noAccount } from "./shares";
 
@@ -553,6 +554,7 @@ export async function escalate(actor: Actor, caseId: string, digest: string) {
       fromStatus: "draft",
       toStatus: "escalated",
     });
+    await flagCase(tx, caseId);
     // Administrators hear too: they decide who takes the case.
     const reviewers = await tx
       .select({ id: user.id })
