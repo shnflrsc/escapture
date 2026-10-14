@@ -43,6 +43,8 @@ if (isLocal) {
 writeFileSync(path.join(dist, "manifest.json"), JSON.stringify(manifest, null, 2));
 
 for (const f of ["popup.html", "popup.css"]) cpSync(path.join(here, "src/popup", f), path.join(dist, f));
+// The logo, made from public/brand/logo-mark.png: toolbar, Extensions page and popup header.
+cpSync(path.join(here, "icons"), path.join(dist, "icons"), { recursive: true });
 cpSync(path.join(here, "src/offscreen/offscreen.html"), path.join(dist, "offscreen.html"));
 const fonts = [
   ["lora", "lora-latin-600-normal.woff2"],
