@@ -17,7 +17,7 @@ export type TamperReport = {
   size?: { width: number; height: number; fit?: { w: number; h: number }[] };
 };
 
-/** Frame widths the capture is measured at, covering the SafeTrail viewer on small and large windows. */
+/** Frame widths the capture is measured at, covering the Escapture viewer on small and large windows. */
 export const FIT_WIDTHS = [360, 480, 600];
 
 export type LastCapture =

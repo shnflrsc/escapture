@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Lora:wght@600&family=Nunito:wght@400;600;700&display=swap");
 
-/* SafeTrail components. Values come from tokens.css; only density overrides live here. */
+/* Escapture components. Values come from tokens.css; only density overrides live here. */
 [data-density="compact"] { --control-h: 36px; --card-pad: 16px; --page-pad: 32px; --section-gap: 24px; }
 
 .st-root, body { font-family: var(--font-sans); color: var(--ink); background: var(--canvas); font-size: 16px; line-height: 26px; margin: 0; }

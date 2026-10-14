@@ -46,7 +46,7 @@ Rebuild `reference/auth.css` with Tailwind tokens.
   - `card` background, padding 32px 48px, a column with a 32px gap.
   - Top line: space-between, 15px `muted`.
     - Left: a "Home" link with a `ChevronLeft` icon, in `brand-700` 600.
-    - Right: "New to SafeTrail? **Create an account**" on sign in, or "Already have an account? **Sign in**" on register. The question text is `muted`, the link `brand-700`.
+    - Right: "New to Escapture? **Create an account**" on sign in, or "Already have an account? **Sign in**" on register. The question text is `muted`, the link `brand-700`.
   - The form is centred vertically and horizontally, max 420px, with a 24px gap between groups.
   - Footer: "Privacy Policy · Terms of Service · Contact the team", 13px `muted`, centred.
 - **Below 1040px:** the left panel becomes a full-width strip (24px padding, bottom border) with the logo only, and the illustration hides. The right side's padding drops to 24px.

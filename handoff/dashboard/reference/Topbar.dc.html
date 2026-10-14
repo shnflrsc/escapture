@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SafeTrail header</title>
+<title>Escapture header</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="ds/safetrail/components/bundle.css">
 <link rel="stylesheet" href="app.css">
@@ -57,7 +57,7 @@
         <sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
           <li>
             <a href="{{n.href}}" class="{{n.cls}}">
-              <span class="{{n.iconCls}}"><x-import component-from-global-scope="SafeTrail.Icon" name="{{n.icon}}" size="sm"></x-import></span>
+              <span class="{{n.iconCls}}"><x-import component-from-global-scope="Escapture.Icon" name="{{n.icon}}" size="sm"></x-import></span>
               <span>
                 <p>{{n.text}}</p>
                 <time>{{n.time}}</time>

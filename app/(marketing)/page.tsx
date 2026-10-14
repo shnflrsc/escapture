@@ -25,7 +25,7 @@ import {
 import { Banner } from "@/components/ui/feedback";
 
 export const metadata: Metadata = {
-  title: "SafeTrail: keep a record of what happened",
+  title: "Escapture: keep a record of what happened",
 };
 
 const steps = [
@@ -80,7 +80,7 @@ const faq = [
     a: "The capture passed our checks when it was taken and the saved file hasn't changed since. It doesn't prove the capture shows the whole conversation.",
   },
   {
-    q: "Does SafeTrail replace the university's process?",
+    q: "Does Escapture replace the university's process?",
     a: "No. It supplements Bulacan State University's existing process.",
   },
   {
@@ -140,7 +140,7 @@ export default function LandingPage() {
         <FeatureRow
           eyebrow="Escrow Capture extension"
           title="Save it the moment you see it"
-          body="Open the post or conversation on Facebook and click Capture. SafeTrail saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
+          body="Open the post or conversation on Facebook and click Capture. Escapture saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
           points={[
             "Works on Facebook posts and Messenger conversations",
             "Each capture is saved with tamper checks",
@@ -165,7 +165,7 @@ export default function LandingPage() {
         <FeatureRow
           eyebrow="Escalating a case"
           title="See everything before you send it"
-          body="When you're ready, SafeTrail shows you exactly what reviewers will see. Nothing is sent until you confirm, and you can go back as many times as you need."
+          body="When you're ready, Escapture shows you exactly what reviewers will see. Nothing is sent until you confirm, and you can go back as many times as you need."
           points={[
             "A full preview of your case, as reviewers will see it",
             "A clear note about what locking means",
@@ -210,7 +210,7 @@ export default function LandingPage() {
         tone="card"
         eyebrow="Made for students"
         title="Built for hard days"
-        lead="Going through this is tiring enough. SafeTrail keeps every step calm, clear and in your hands."
+        lead="Going through this is tiring enough. Escapture keeps every step calm, clear and in your hands."
       >
         <ul className="mk-grid-4">
           {hardDays.map(({ Icon, title, text }) => (
@@ -252,7 +252,7 @@ export default function LandingPage() {
           <div className="flex flex-col gap-6">
             <StartForm domain={emailDomain()} />
             <Banner tone="info">
-              SafeTrail isn&apos;t an emergency service. If you feel unsafe right now, reach out to your
+              Escapture isn&apos;t an emergency service. If you feel unsafe right now, reach out to your
               university&apos;s guidance office or local emergency services.
             </Banner>
           </div>

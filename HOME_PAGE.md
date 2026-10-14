@@ -1,6 +1,6 @@
-# Task: Implement the SafeTrail student landing page
+# Task: Implement the Escapture student landing page
 
-Build the public landing page at `app/(marketing)/page.tsx` in our Next.js app. It must match the approved design exactly. All styling comes from SafeTrail design tokens: no raw hex in components, no gradients, no other UI kit, icon set or font.
+Build the public landing page at `app/(marketing)/page.tsx` in our Next.js app. It must match the approved design exactly. All styling comes from Escapture design tokens: no raw hex in components, no gradients, no other UI kit, icon set or font.
 
 References (read them if you can open claude.ai links):
 - Design canvas: https://claude.ai/artifact/3EipGYwmt3kzYaFvXReXic
@@ -48,7 +48,7 @@ App (`components/safetrail/`):
 - **Card** (card bg, 1px border, shadow-soft, radius-card, 24px padding), **EmptyState** (64px brand-100 icon circle, title, text, action), **Dialog** (radius-modal, shadow-modal; overlay rgba(30,42,50,.4) with no blur), **Toast** (ink bg, white text, shadow-raised, aria-live polite).
 
 Marketing (`components/marketing/`):
-- **SiteNav**: sticky, canvas bg with a bottom border. Wordmark "SafeTrail" in Lora 22px. Links: How it works (#how), Privacy (#privacy), For reviewers (#reviewers), FAQ (#faq). On the right: ghost "Sign in" and primary "Start your vault". Below 1024px the links hide; below 640px "Sign in" hides too.
+- **SiteNav**: sticky, canvas bg with a bottom border. Wordmark "Escapture" in Lora 22px. Links: How it works (#how), Privacy (#privacy), For reviewers (#reviewers), FAQ (#faq). On the right: ghost "Sign in" and primary "Start your vault". Below 1024px the links hide; below 640px "Sign in" hides too.
 - **TrailPattern**: absolutely positioned decorative SVG, aria-hidden. 7 open, flowing cubic curves across a 1200-wide viewBox (each `M-40 y+a C 220 y-a, 420 y+a*1.3, 660 y S 1040 y-a*.9, 1240 y+a*.4`, where y steps by 26 and a = 60 + i*9). Stroke 1.5: trail-line on light backgrounds, trail-line-dark on dark. Never concentric loops. Use it only behind the hero, the dark band and the CTA band.
 - **Hero**: 128px top padding, 96px bottom, canvas bg, TrailPattern behind. Grid 5fr/6fr with 48px gap. Left column: eyebrow, H1, lead, two lg buttons, a privacy note with an EyeOff icon. Right column: a product visual.
 - **ProductFrame**: card with radius-section and shadow-raised. Top bar 40px, subtle bg, three 10px dots, a URL pill. Body has canvas bg and 24px padding.
@@ -69,7 +69,7 @@ Marketing (`components/marketing/`):
    - Lead: "Save Facebook posts and messages with tamper checks, build a case in your own time, and share it with university reviewers only when you're ready."
    - Buttons: primary "Start your vault" (#start), secondary "See how it works" (#how)
    - Note: "Only you can see your vault. Nothing reaches reviewers until you escalate."
-   - Visual: a ProductFrame (url `safetrail.app/vault`) showing a "Your vault" h3 with a primary "Capture evidence" button, then 3 rows, each with a TamperCheck: "Group chat, 3 Oct · Messenger · 42 messages", "Comments on my post · Facebook post · 18 comments", "Shared photo thread · Facebook post · 6 comments".
+   - Visual: a ProductFrame (url `escapture.app/vault`) showing a "Your vault" h3 with a primary "Capture evidence" button, then 3 rows, each with a TamperCheck: "Group chat, 3 Oct · Messenger · 42 messages", "Comments on my post · Facebook post · 18 comments", "Shared photo thread · Facebook post · 6 comments".
 3. **PilotStrip**: "Piloting at Bulacan State University" · "Supplements the university's existing process" · "Facebook posts and Messenger"
 4. **Section** (card tone, id `how`)
    - Eyebrow "How it works", title "Three steps, at your pace", lead "You decide when, and whether, anything goes further."
@@ -79,15 +79,15 @@ Marketing (`components/marketing/`):
      - Escalate when you're ready: "Review exactly what reviewers will see. Once you escalate, the case is locked and reviewers can see it."
 5. **Section** (canvas tone) with 3 FeatureRows:
    - a. Eyebrow "Escrow Capture extension", title "Save it the moment you see it".
-     - Body: "Open the post or conversation on Facebook and click Capture. SafeTrail saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
+     - Body: "Open the post or conversation on Facebook and click Capture. Escapture saves a copy of the page, its time and a hash, then checks it hasn't been changed in the browser."
      - Points: "Works on Facebook posts and Messenger conversations" / "Each capture is saved with tamper checks" / "Goes straight to your private vault"
-     - Visual: a ProductFrame (url "Escrow Capture extension") holding a 360px extension popup (16px padding, radius-card, shadow-raised). The popup contains: "SafeTrail" in Lora with "Signed in as you" in muted text, the item "Comments on my post / Facebook post · 18 comments loaded", a TamperCheck with "13 Oct 2026, 7:42 PM", a success Banner "Saved to your vault." with an "Open in vault" link, and a full-width secondary button "Capture another page". Below the popup, a Toast "Saved to your vault".
+     - Visual: a ProductFrame (url "Escrow Capture extension") holding a 360px extension popup (16px padding, radius-card, shadow-raised). The popup contains: "Escapture" in Lora with "Signed in as you" in muted text, the item "Comments on my post / Facebook post · 18 comments loaded", a TamperCheck with "13 Oct 2026, 7:42 PM", a success Banner "Saved to your vault." with an "Open in vault" link, and a full-width secondary button "Capture another page". Below the popup, a Toast "Saved to your vault".
    - b. (reverse) Eyebrow "Your vault", title "Private until you choose".
      - Body: "Everything you capture stays in your vault. You can ask a friend, counselor or family member to help, and you can take their access away at any time."
      - Points: "Only you can see your vault" / "Share with a password-protected link" / "See who has access, and remove it anytime"
-     - Visual: a ProductFrame (url `safetrail.app/cases/comments-on-my-post`) with an info Banner "Only you can see your vault. Nothing reaches reviewers until you escalate." Below it, a Card titled "Comments on my post" with meta "3 captures · Shared with 1 person". The Card holds a TamperCheck (time "3 Oct 2026, 8:12 PM" plus a sample hash) and a `subtle` access row: Lock icon, "Ana R. · password-protected link", ghost "Remove access" with an X icon.
+     - Visual: a ProductFrame (url `escapture.app/cases/comments-on-my-post`) with an info Banner "Only you can see your vault. Nothing reaches reviewers until you escalate." Below it, a Card titled "Comments on my post" with meta "3 captures · Shared with 1 person". The Card holds a TamperCheck (time "3 Oct 2026, 8:12 PM" plus a sample hash) and a `subtle` access row: Lock icon, "Ana R. · password-protected link", ghost "Remove access" with an X icon.
    - c. Eyebrow "Escalating a case", title "See everything before you send it".
-     - Body: "When you're ready, SafeTrail shows you exactly what reviewers will see. Nothing is sent until you confirm, and you can go back as many times as you need."
+     - Body: "When you're ready, Escapture shows you exactly what reviewers will see. Nothing is sent until you confirm, and you can go back as many times as you need."
      - Points: "A full preview of your case, as reviewers will see it" / "A clear note about what locking means" / "A simple status afterwards: Escalated, Under Review, Closed"
      - Visual: the Dialog rendered inline, open, with no overlay. Title "Review what reviewers will see", description "This is everything reviewers will receive when you escalate." Then 2 evidence rows with FileCheck2 icons, a brand-50 panel "Once you escalate, this case is locked. You can't edit or withdraw it, and attached evidence can't be deleted.", then ghost "Go back" and weighty "Escalate to reviewers".
 6. **Section** (dark tone, inset, pattern, id `privacy`)
@@ -96,7 +96,7 @@ Marketing (`components/marketing/`):
      - "What tamper checks tell you": "A capture passed our checks when it was taken" / "The saved file hasn't changed since" / "Each capture keeps its time and a hash you can copy"
      - "What they don't claim": "That a capture shows the whole conversation" / "What a reviewer will decide" / "That reporting will stop what's happening"
 7. **Section** (card tone, id `students`)
-   - Eyebrow "Made for students", title "Built for hard days", lead "Going through this is tiring enough. SafeTrail keeps every step calm, clear and in your hands."
+   - Eyebrow "Made for students", title "Built for hard days", lead "Going through this is tiring enough. Escapture keeps every step calm, clear and in your hands."
    - 4-column grid (2 columns below 1024px, 1 below 640px). Each item has a 64px brand-100 icon circle, an h3 and muted text:
      - Lock, "Private by default": "Your vault is yours alone. No one else sees it unless you share it."
      - EyeOff, "No pressure to act": "Capture now and decide later. Nothing moves forward until you choose."
@@ -106,19 +106,19 @@ Marketing (`components/marketing/`):
    - Eyebrow "For case reviewers", title "One shared Review Board".
    - Body: "Reviewers see escalated cases in a clear board, with the student's evidence kept apart from their own notes."
    - Points: "Triage by status, reporter and escalated date" / "Passed tamper checks shown on every item" / "Reviewer attachments are never shown to the student"
-   - Visual: a ProductFrame (url `safetrail.app/review`) with a "Review Board" h3 and "3 cases" in muted text, then 3 rows with StatusBadges: "Comments on my post · Escalated 8 Oct 2026" escalated / "Group chat, 3 Oct · Escalated 5 Oct 2026" review / "Edited photo caption · Escalated 22 Sep 2026" closed. Below them, a reviewer TamperCheck "Passed tamper checks" with "3 Oct 2026, 8:12 PM".
+   - Visual: a ProductFrame (url `escapture.app/review`) with a "Review Board" h3 and "3 cases" in muted text, then 3 rows with StatusBadges: "Comments on my post · Escalated 8 Oct 2026" escalated / "Group chat, 3 Oct · Escalated 5 Oct 2026" review / "Edited photo caption · Escalated 22 Sep 2026" closed. Below them, a reviewer TamperCheck "Passed tamper checks" with "3 Oct 2026, 8:12 PM".
 9. **Section** (card tone, id `start`)
    - Eyebrow "Get started", title "Set up your vault", lead "Sign in with your university email, add the Escrow Capture extension, and you're set."
    - 2 columns.
-   - Left: a canvas-bg panel (radius 16, 32px padding) with an Input labelled "University email", placeholder "yourname@bulsu.edu.ph", helper "Use the email that ends in bulsu.edu.ph." Then primary "Create your vault" (ArrowRight after the label) and soft "Get the extension", then an EyeOff note "Only you can see your vault." Under the panel, an info Banner: "SafeTrail isn't an emergency service. If you feel unsafe right now, reach out to your university's guidance office or local emergency services."
-   - Right: a ProductFrame (url `safetrail.app/vault`) holding an EmptyState with an Inbox icon, "Your vault is ready", "When you capture a post or conversation, it appears here with its tamper checks and capture time.", and a soft "Install Escrow Capture" button.
+   - Left: a canvas-bg panel (radius 16, 32px padding) with an Input labelled "University email", placeholder "yourname@bulsu.edu.ph", helper "Use the email that ends in bulsu.edu.ph." Then primary "Create your vault" (ArrowRight after the label) and soft "Get the extension", then an EyeOff note "Only you can see your vault." Under the panel, an info Banner: "Escapture isn't an emergency service. If you feel unsafe right now, reach out to your university's guidance office or local emergency services."
+   - Right: a ProductFrame (url `escapture.app/vault`) holding an EmptyState with an Inbox icon, "Your vault is ready", "When you capture a post or conversation, it appears here with its tamper checks and capture time.", and a soft "Install Escrow Capture" button.
 10. **Section** (canvas tone, id `faq`), centered
     - Eyebrow "Questions", title "Common questions". Faq items:
       - Who can see my vault? → Only you. Nothing reaches reviewers until you escalate a case, and you choose who else can see it.
       - Do I have to report anything? → No. You can keep captures in your vault and never escalate. It's your decision, on your timeline.
       - Can I withdraw a case? → Before you escalate, you can edit or delete anything. Once you escalate, the case is locked and can't be withdrawn.
       - What does "captured with tamper checks" mean? → The capture passed our checks when it was taken and the saved file hasn't changed since. It doesn't prove the capture shows the whole conversation.
-      - Does SafeTrail replace the university's process? → No. It supplements Bulacan State University's existing process.
+      - Does Escapture replace the university's process? → No. It supplements Bulacan State University's existing process.
       - Which platforms are supported? → Facebook posts and Messenger conversations for now. Messenger captures include only the messages loaded on screen.
 11. **CtaBand** (inside a canvas section, 32px top and 96px bottom padding)
     - Title "Start your vault today", lead "Capture what happened now, and decide what to do with it later. It's private until you choose to share."
@@ -126,7 +126,7 @@ Marketing (`components/marketing/`):
 12. **SiteFooter**
     - Blurb: "Keep evidence of what happened online and share it with your university when you're ready."
     - Columns: Product (How it works, Escrow Capture extension, For reviewers) · Help (FAQ, Contact the team) · Legal (Privacy, Terms)
-    - Note: "SafeTrail supplements Bulacan State University's existing process. It does not replace it."
+    - Note: "Escapture supplements Bulacan State University's existing process. It does not replace it."
 
 ## Responsive (below 1024px)
 - All grids stack. display-xl becomes 36/44 and display-lg 32/40.

@@ -137,7 +137,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <LinkShareButton
               endpoint={`/api/cases/${c.id}/links`}
               title="Create a password link to this case"
-              risk="Any student who has this link, its password and a SafeTrail account can join this case, see its evidence and add their own. Reviewers will see their name and email."
+              risk="Any student who has this link, its password and a Escapture account can join this case, see its evidence and add their own. Reviewers will see their name and email."
             />
           </div>
         )}

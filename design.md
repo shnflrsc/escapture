@@ -1,10 +1,10 @@
-# SafeTrail Design Guidelines
+# Escapture Design Guidelines
 
-Rules for AI agents and developers building the SafeTrail frontend (Next.js). Follow this file over personal taste and over generic UI defaults. If a rule here conflicts with a library default, this file wins.
+Rules for AI agents and developers building the Escapture frontend (Next.js). Follow this file over personal taste and over generic UI defaults. If a rule here conflicts with a library default, this file wins.
 
 ## 1. Product context
 
-SafeTrail helps students who are being cyberbullied keep evidence of what happened, build a case from it, and escalate it to university case reviewers. The MVP covers Facebook posts and messages, pilots at Bulacan State University, and supplements the university's existing process.
+Escapture helps students who are being cyberbullied keep evidence of what happened, build a case from it, and escalate it to university case reviewers. The MVP covers Facebook posts and messages, pilots at Bulacan State University, and supplements the university's existing process.
 
 Three kinds of people use it:
 
@@ -272,7 +272,7 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
 ### Skeletons and loading
 - Use `subtle` skeleton blocks with a slow, subtle pulse. No full-page spinners.
 
-## 10. SafeTrail-specific patterns
+## 10. Escapture-specific patterns
 
 ### 10.1 Tamper-check label
 - Text must be exactly **"Captured with tamper checks"**. Pill badge, teal tokens (`#E2F3F0` / `#1D6359`), leading check-style file icon (for example Lucide `FileCheck2`). Not a shield.
@@ -284,7 +284,7 @@ Build on shadcn/ui and Radix primitives, restyled with the tokens above. Keep co
 - Use the amber attention tokens with an info-style icon, never red. State what happened and what to try, in plain language. Example: "We couldn't capture this page because it looks like it was changed in the browser. Reload the page and try again."
 
 ### 10.3 Evidence viewer
-- Captured pages render in a sandboxed frame that cannot run scripts, inside a `card` with a 1px `border` and a neutral `subtle` margin so it is visually clear that this is captured content, not part of SafeTrail's UI. Hash and capture time sit in a header strip above the frame.
+- Captured pages render in a sandboxed frame that cannot run scripts, inside a `card` with a 1px `border` and a neutral `subtle` margin so it is visually clear that this is captured content, not part of Escapture's UI. Hash and capture time sit in a header strip above the frame.
 
 ### 10.4 Sharing
 - Before any share (email or link), show a short acknowledgment dialog: the student confirms they are choosing to share and that shared evidence can be passed on. Use a checkbox-free confirm button labelled "I understand, share". Links protected by a password show a small lock icon (Lucide `Lock`).
@@ -351,7 +351,7 @@ The extension must feel like the same product.
 
 - Same tokens, radii, fonts and voice. **Bundle Lora and Nunito as packaged files**; Manifest V3 extension pages cannot rely on remote font loading.
 - Popup width 360px. One column, comfortable density, 16px padding.
-- States, each with one primary action: signed out ("Sign in to SafeTrail"), ready ("Capture this page"), capturing (calm progress, no percentages needed), saved ("Saved to your vault" with the tamper-check badge and a "Open in vault" link), refused (amber banner, plain explanation), and error (amber banner with a retry).
+- States, each with one primary action: signed out ("Sign in to Escapture"), ready ("Capture this page"), capturing (calm progress, no percentages needed), saved ("Saved to your vault" with the tamper-check badge and a "Open in vault" link), refused (amber banner, plain explanation), and error (amber banner with a retry).
 - Remind the student when capturing messages that this is meant for conversations they took part in, in one short line, not a modal.
 - Show a note that Messenger captures include only the messages loaded on screen. Keep it as helper text, not a warning.
 

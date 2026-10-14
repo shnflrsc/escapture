@@ -1,4 +1,4 @@
-// SafeTrail components (window.SafeTrail). Types are documentation.
+// Escapture components (window.Escapture). Types are documentation.
 import * as React from "react";
 type IconName = "check" | "file-check-2" | "lock" | "info" | "circle-alert" | "circle-check" | "chevron-down" | "arrow-right" | "copy" | "inbox" | "eye-off" | "x" | "minus" | "search" | "archive" | "bell" | "users" | "menu" | "arrow-up-down" | "arrow-down" | "arrow-up" | "chevron-left" | "chevron-right" | "clipboard-list" | "message-square" | "paperclip" | "calendar";
 export interface IconProps { name: IconName; size?: "sm"; label?: string; className?: string }

@@ -23,13 +23,13 @@
         <div>
           <h1>Group chat after org meeting</h1>
           <div class="meta-row">
-            <x-import component-from-global-scope="SafeTrail.StatusBadge" status="review"></x-import>
+            <x-import component-from-global-scope="Escapture.StatusBadge" status="review"></x-import>
             <span class="num">Escalated 11 Oct 2026, 10:32 PM</span><span aria-hidden="true">·</span>
-            <span class="share"><x-import component-from-global-scope="SafeTrail.Icon" name="lock" size="sm"></x-import>Locked by the student</span>
+            <span class="share"><x-import component-from-global-scope="Escapture.Icon" name="lock" size="sm"></x-import>Locked by the student</span>
           </div>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Select" label="Change status" prefix="Status" options="{{statuses}}"></x-import>
+          <x-import component-from-global-scope="Escapture.Select" label="Change status" prefix="Status" options="{{statuses}}"></x-import>
         </div>
       </div>
 
@@ -55,7 +55,7 @@
                       <td><span class="cell-title"><span><b>{{e.title}}</b><span>{{e.kind}}</span></span></span></td>
                       <td class="nowrap small">{{e.by}}</td>
                       <td class="nowrap"><span class="mono num">{{e.captured}}</span></td>
-                      <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck" reviewer="{{yes}}"></x-import></td>
+                      <td class="nowrap"><x-import component-from-global-scope="Escapture.TamperCheck" reviewer="{{yes}}"></x-import></td>
                       <td class="nowrap" style="text-align: right;"><a class="link small" href="#">Open</a></td>
                     </tr>
                   </sc-for>
@@ -68,14 +68,14 @@
             <div class="spread">
               <div>
                 <h2 id="rev-h" class="h3">Added by reviewers</h2>
-                <p class="small muted" style="margin: 2px 0 0; display: flex; gap: 6px; align-items: center;"><x-import component-from-global-scope="SafeTrail.Icon" name="eye-off" size="sm"></x-import>Only reviewers can see this section. The student who reported and collaborators can't.</p>
+                <p class="small muted" style="margin: 2px 0 0; display: flex; gap: 6px; align-items: center;"><x-import component-from-global-scope="Escapture.Icon" name="eye-off" size="sm"></x-import>Only reviewers can see this section. The student who reported and collaborators can't.</p>
               </div>
               <a class="btn btn-soft" href="SharedWithMe.dc.html">Attach shared evidence</a>
             </div>
             <div class="panel" style="padding: 16px;">
               <div class="ev-row">
                 <div class="ev-main"><span><b>Full group chat, 3 to 11 Oct</b><span class="num">Facebook messages · Shared by J. Ramos by password link · Attached by L. Reyes, 12 Oct 2026</span></span></div>
-                <x-import component-from-global-scope="SafeTrail.TamperCheck" reviewer="{{yes}}"></x-import>
+                <x-import component-from-global-scope="Escapture.TamperCheck" reviewer="{{yes}}"></x-import>
                 <a class="link small" href="#">Open</a>
               </div>
             </div>
@@ -107,7 +107,7 @@
               <textarea id="close-note" class="textarea" aria-describedby="close-help" placeholder="What the university did, and any next steps for the student"></textarea>
               <p id="close-help" class="help">The student who reported and collaborators will see this note. The case then moves to Case Archives.</p>
             </div>
-            <x-import component-from-global-scope="SafeTrail.Button" variant="primary" icon="circle-check">Close case</x-import>
+            <x-import component-from-global-scope="Escapture.Button" variant="primary" icon="circle-check">Close case</x-import>
           </section>
         </div>
       </div>

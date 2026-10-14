@@ -25,15 +25,15 @@
           <p>Closed cases, so you can look up how earlier cases were handled. Archived cases can't be changed.</p>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Select" label="Closed date" prefix="Closed" options="{{ranges}}"></x-import>
+          <x-import component-from-global-scope="Escapture.Select" label="Closed date" prefix="Closed" options="{{ranges}}"></x-import>
         </div>
       </div>
 
       <div class="stack">
         <div class="st-toolbar">
-          <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search archives" placeholder="Search cases, reporters or closing notes"></x-import>
-          <x-import component-from-global-scope="SafeTrail.FilterChip">Closed by me</x-import>
-          <x-import component-from-global-scope="SafeTrail.FilterChip">Has reviewer attachments</x-import>
+          <x-import component-from-global-scope="Escapture.SearchInput" label="Search archives" placeholder="Search cases, reporters or closing notes"></x-import>
+          <x-import component-from-global-scope="Escapture.FilterChip">Closed by me</x-import>
+          <x-import component-from-global-scope="Escapture.FilterChip">Has reviewer attachments</x-import>
           <span class="cap num" style="margin-left: auto;">13 closed cases</span>
         </div>
         <div class="tablebox">
@@ -43,7 +43,7 @@
               <th scope="col">Case</th>
               <th scope="col">Reporter</th>
               <th scope="col">Escalated</th>
-              <th scope="col" aria-sort="descending"><button type="button">Closed <x-import component-from-global-scope="SafeTrail.Icon" name="arrow-down" size="sm"></x-import></button></th>
+              <th scope="col" aria-sort="descending"><button type="button">Closed <x-import component-from-global-scope="Escapture.Icon" name="arrow-down" size="sm"></x-import></button></th>
               <th scope="col">Closed by</th>
               <th scope="col">Closing note</th>
               <th scope="col" class="st-num">Evidence</th>
@@ -62,7 +62,7 @@
               </sc-for>
             </tbody>
           </table>
-          <x-import component-from-global-scope="SafeTrail.Pagination" page="{{one}}" page-size="{{seven}}" total="{{thirteen}}"></x-import>
+          <x-import component-from-global-scope="Escapture.Pagination" page="{{one}}" page-size="{{seven}}" total="{{thirteen}}"></x-import>
         </div>
       </div>
     </main>

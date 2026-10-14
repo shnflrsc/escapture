@@ -11,7 +11,7 @@ import { createEvidence } from "@/server/services/evidence";
 import { ensureBucket, storageDriver } from "@/server/storage";
 import { ensureUser } from "./lib/users";
 
-const PASSWORD = process.env.SEED_PASSWORD ?? "SafeTrail-demo-2026";
+const PASSWORD = process.env.SEED_PASSWORD ?? "Escapture-demo-2026";
 const DOMAIN = allowedEmailDomain();
 
 const report = {

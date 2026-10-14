@@ -7,7 +7,7 @@ import { loadManageable } from "./evidence";
 import { notify } from "./notifications";
 
 export const noAccount = () =>
-  new AppError("recipient_not_found", 404, "There's no SafeTrail account with that email.");
+  new AppError("recipient_not_found", 404, "There's no Escapture account with that email.");
 
 /** Owner only, with the risk acknowledged (I10). Recipients cannot re-share. */
 export async function shareEvidenceByEmail(actor: Actor, evidenceId: string, email: string) {

@@ -22,19 +22,19 @@
       <div class="ph">
         <div>
           <h1>Shared with me</h1>
-          <p>Evidence other SafeTrail users shared with you by email or password link. Attach it to a case to keep it with the review.</p>
+          <p>Evidence other Escapture users shared with you by email or password link. Attach it to a case to keep it with the review.</p>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary" icon="lock">Open a password link</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="secondary" icon="lock">Open a password link</x-import>
         </div>
       </div>
 
-      <x-import component-from-global-scope="SafeTrail.Banner" tone="info">When you attach shared evidence to a case, it goes in “Added by reviewers”. The student who reported never sees it.</x-import>
+      <x-import component-from-global-scope="Escapture.Banner" tone="info">When you attach shared evidence to a case, it goes in “Added by reviewers”. The student who reported never sees it.</x-import>
 
       <div class="stack">
         <div class="st-toolbar">
-          <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter shared evidence" items="{{tabs}}" selected="{{zero}}"></x-import>
-          <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search shared evidence" placeholder="Search by title or person"></x-import>
+          <x-import component-from-global-scope="Escapture.Tabs" label="Filter shared evidence" items="{{tabs}}" selected="{{zero}}"></x-import>
+          <x-import component-from-global-scope="Escapture.SearchInput" label="Search shared evidence" placeholder="Search by title or person"></x-import>
         </div>
         <div class="tablebox">
           <table class="st-table">
@@ -47,9 +47,9 @@
                 <tr tabindex="0">
                   <td><span class="cell-title"><span><b>{{r.title}}</b><span>{{r.kind}}</span></span></span></td>
                   <td class="nowrap">{{r.by}}</td>
-                  <td class="nowrap"><span class="share"><x-import component-from-global-scope="SafeTrail.Icon" name="{{r.viaIcon}}" size="sm"></x-import>{{r.via}}</span></td>
+                  <td class="nowrap"><span class="share"><x-import component-from-global-scope="Escapture.Icon" name="{{r.viaIcon}}" size="sm"></x-import>{{r.via}}</span></td>
                   <td class="nowrap"><span class="mono num">{{r.captured}}</span></td>
-                  <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck" reviewer="{{yes}}"></x-import></td>
+                  <td class="nowrap"><x-import component-from-global-scope="Escapture.TamperCheck" reviewer="{{yes}}"></x-import></td>
                   <td><span class="{{r.caseCls}}">{{r.attached}}</span></td>
                   <td class="nowrap" style="text-align: right;">
                     <sc-if value="{{r.canAttach}}" hint-placeholder-val="{{true}}"><button type="button" class="btn btn-secondary btn-sm">Attach to case</button></sc-if>
@@ -59,7 +59,7 @@
               </sc-for>
             </tbody>
           </table>
-          <x-import component-from-global-scope="SafeTrail.Pagination" page="{{one}}" page-size="{{five}}" total="{{five}}"></x-import>
+          <x-import component-from-global-scope="Escapture.Pagination" page="{{one}}" page-size="{{five}}" total="{{five}}"></x-import>
         </div>
       </div>
     </main>

@@ -18,7 +18,7 @@ const Row = ({ title, meta, children }: { title: string; meta: string; children:
 
 export function VaultVisual() {
   return (
-    <ProductFrame url="safetrail.app/vault" label="The SafeTrail vault, showing three saved captures">
+    <ProductFrame url="escapture.app/vault" label="The Escapture vault, showing three saved captures">
       <div className="mk-mock">
         <div className="mk-mock-head">
           <p className="mk-h3">Your vault</p>
@@ -47,7 +47,7 @@ export function ExtensionVisual() {
       <div className="mk-popup-wrap">
         <div className="mk-popup">
           <div className="flex items-center justify-between">
-            <span className="font-heading text-[18px] leading-6 font-semibold">SafeTrail</span>
+            <span className="font-heading text-[18px] leading-6 font-semibold">Escapture</span>
             <span className="text-[13px] leading-[18px] text-muted">Signed in as you</span>
           </div>
           <div className="flex flex-col gap-1">
@@ -73,7 +73,7 @@ export function ExtensionVisual() {
 
 export function SharingVisual() {
   return (
-    <ProductFrame url="safetrail.app/cases/comments-on-my-post" label="A case shared with one person through a password-protected link">
+    <ProductFrame url="escapture.app/cases/comments-on-my-post" label="A case shared with one person through a password-protected link">
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-3 rounded-xl bg-brand-100 p-4 text-[15px] leading-6 text-brand-800">
           <Lock size={20} strokeWidth={1.75} className="mt-0.5 shrink-0" />
@@ -143,7 +143,7 @@ const board: [string, string, CaseStatus][] = [
 
 export function ReviewBoardVisual() {
   return (
-    <ProductFrame url="safetrail.app/review" label="The Review Board, listing three cases with their statuses">
+    <ProductFrame url="escapture.app/review" label="The Review Board, listing three cases with their statuses">
       <div className="mk-mock">
         <div className="mk-mock-head">
           <p className="mk-h3">Review Board</p>
@@ -162,7 +162,7 @@ export function ReviewBoardVisual() {
 
 export function EmptyVaultVisual() {
   return (
-    <ProductFrame url="safetrail.app/vault" label="A new, empty vault">
+    <ProductFrame url="escapture.app/vault" label="A new, empty vault">
       <div className="mx-auto flex max-w-[480px] flex-col items-center gap-3 px-6 py-12 text-center">
         <div className="mk-icon-circle">
           <Inbox size={28} strokeWidth={1.75} />

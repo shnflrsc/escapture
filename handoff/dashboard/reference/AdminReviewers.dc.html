@@ -29,8 +29,8 @@
       <div class="split-wide" style="grid-template-columns: minmax(0, 1fr) 400px;">
         <div class="stack">
           <div class="st-toolbar">
-            <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter accounts" items="{{tabs}}" selected="{{zero}}"></x-import>
-            <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search reviewers" placeholder="Search by name or email"></x-import>
+            <x-import component-from-global-scope="Escapture.Tabs" label="Filter accounts" items="{{tabs}}" selected="{{zero}}"></x-import>
+            <x-import component-from-global-scope="Escapture.SearchInput" label="Search reviewers" placeholder="Search by name or email"></x-import>
           </div>
           <div class="tablebox">
             <table class="st-table">
@@ -85,7 +85,7 @@
           <div class="st-note-panel small">
             Reviewers can see every escalated case on the shared Review Board, including who reported it and every collaborator.
           </div>
-          <x-import component-from-global-scope="SafeTrail.Button" variant="primary">Create account and send link</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="primary">Create account and send link</x-import>
         </section>
       </div>
     </main>

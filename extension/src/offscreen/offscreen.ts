@@ -1,4 +1,4 @@
-// Offscreen document: lays a finished capture out at the widths the SafeTrail
+// Offscreen document: lays a finished capture out at the widths the Escapture
 // viewer uses and reports how tall it comes out. The viewer may not run
 // scripts or look inside its frame, so the capture's height has to be known
 // in advance; this is the only place it can be measured exactly.

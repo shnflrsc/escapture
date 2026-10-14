@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * SafeTrail page guard (MAIN world, document_start): DOM provenance.
+ * Escapture page guard (MAIN world, document_start): DOM provenance.
  *
  * Ported from the DOM Tamper Detector extension's main-world-guard.js (v2,
  * "default-deny provenance"). The detection logic is kept as close to the
@@ -130,7 +130,7 @@
       let file, isEval, fn, eo, line;
       try { file = csFile(frames[i]); isEval = csEval(frames[i]); fn = csFn(frames[i]); eo = isEval ? csEvalOrigin(frames[i]) : ''; line = csLine(frames[i]); } catch (_) { return bad('stack-forged'); }
       if (file === ownFile) continue;
-      // SafeTrail fix: a frame with no file AND no position is one of the engine's own built-ins
+      // Escapture fix: a frame with no file AND no position is one of the engine's own built-ins
       // (Array.forEach, Promise.then, JSON.parse...), which every real app has on its stacks. It is
       // not code anyone wrote, so it neither clears nor condemns the call. Anything written in
       // JavaScript, including console input, always has a line number. A call reached ONLY through
@@ -236,7 +236,7 @@
   hookMethod(Element.prototype, 'setAttribute', 'self', (self, args, info) => { if (info && !info.ok && str.lower(S(args[0])) === 'contenteditable') wsAdd(suspectEditable, self); });
   hookSetter(HTMLElement.prototype, 'contentEditable', 'self', noteEditable);
   hookSetter(Document.prototype, 'designMode', 'doc', (self, args, info) => {
-    if (str.lower(S(args[0])) === 'on') designModeEverOn = true;      // SafeTrail: remembered even if it is switched off again
+    if (str.lower(S(args[0])) === 'on') designModeEverOn = true;      // Escapture: remembered even if it is switched off again
     if (info && !info.ok) designModeSuspect = true;
   });
   // attachShadow: observe every shadow root (including closed ones) from this private observer
@@ -299,7 +299,7 @@
   const incidents = [];
   let storm = false, analysisFailures = 0;
   const replacedHooks = [];
-  // SafeTrail: an incident whose element and added nodes have all left the page can no longer
+  // Escapture: an incident whose element and added nodes have all left the page can no longer
   // touch anything a student selects (a capture is always of connected elements), so it is
   // forgotten. Feeds remove and re-render their items all the time, and in a tab left open for
   // hours the old incidents would otherwise fill the list and refuse every capture until reload.
@@ -385,7 +385,7 @@
         if (!sHas(warned, key)) {
           sAdd(warned, key);
           if (replacedHooks.length < 12) arrPush(replacedHooks, key);
-          // SafeTrail: the replacement is left in place and is NOT treated as tampering by itself.
+          // Escapture: the replacement is left in place and is NOT treated as tampering by itself.
           // Real sites and other extensions wrap these functions routinely, and putting our hook back
           // (as the original detector did) would silently break their wrapper. Nothing is lost:
           //  - a wrapper that still calls through reaches our hook, with the wrapper on the call stack,
