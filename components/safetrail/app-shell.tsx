@@ -213,11 +213,11 @@ export function AppShell({
           })}
         </ul>
       </nav>
-      <nav aria-label="Help and legal" className="mt-auto flex gap-4 px-3 text-[13px] leading-[18px]">
+      <nav aria-label="Help and legal" className="mt-auto flex flex-wrap gap-x-4 px-3 text-[13px] leading-[18px]">
         {[
           ["Help", "/contact"],
-          ["Privacy", "/privacy"],
-          ["Terms", "/terms"],
+          ["Privacy Policy", "/privacy"],
+          ["Terms of Service", "/terms"],
         ].map(([label, href]) => (
           <Link key={href} href={href} className="py-1 text-muted hover:text-brand-800 hover:underline">
             {label}

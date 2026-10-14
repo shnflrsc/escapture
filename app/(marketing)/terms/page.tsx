@@ -258,12 +258,6 @@ export default function TermsPage() {
         </a>
         .
       </p>
-
-      <p className="mt-4">
-        <Link href="/" className="link">
-          Back to the home page
-        </Link>
-      </p>
     </article>
   );
 }

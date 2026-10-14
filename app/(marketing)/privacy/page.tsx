@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { TableBox } from "@/components/dashboard/data-table";
 
 export const metadata: Metadata = { title: "Privacy Policy · SafeTrail" };
 
-// The policy's text is the team's own document, copied as written. Change the wording there first.
+// The team's own document, with four passages corrected to what the app does: removing people
+// from a case, sharing after escalation, how a change to the policy is announced, and getting a copy of your data.
 const CONTACT = "hezekiahchristaldionisio@gmail.com";
 
 const h2 = "mt-6 text-[24px] leading-8";
@@ -21,11 +21,15 @@ const Mail = () => (
 
 const WHO: [string, string, string][] = [
   ["You", "Your vault, your cases, status changes and closing notes", "Always"],
-  ["People you share an evidence item with", "That evidence item", "Until you remove their access or revoke the link"],
+  [
+    "People you share an evidence item with",
+    "That evidence item",
+    "Until you remove their access. Revoking a link stops new people from using it",
+  ],
   [
     "Collaborators on a case",
-    "The case title, description and attached evidence, plus status changes and the closing note. They can edit the title and description and attach evidence from their own vaults",
-    "Until you remove their access or revoke the link",
+    "The case title, description and attached evidence, plus status changes and the closing note. While the case is a draft they can edit the title and description and attach evidence from their own vaults",
+    "Until you remove them or they leave, which is possible only while the case is a draft. After escalation they stay on the case",
   ],
   [
     "Designated case reviewers",
@@ -61,8 +65,9 @@ export default function PrivacyPage() {
         <li>You decide which evidence goes into a case. Reviewers see only what you attached.</li>
         <li>Evidence you capture stays in your private vault. Nobody else can see it unless you share it.</li>
         <li>
-          Sharing can be undone: you can remove a person&apos;s access and revoke links at any time. We cannot take back
-          a copy someone has already saved.
+          Sharing evidence can be undone: you can remove a person&apos;s access to an item and revoke links at any time.
+          People you add to a case can be removed only while it is a draft. We cannot take back a copy someone has
+          already saved.
         </li>
         <li>
           Escalation cannot be undone. After you escalate, the case is locked, and designated reviewers and
@@ -196,8 +201,9 @@ export default function PrivacyPage() {
       <p>
         Only the person who created a case can escalate it. Before it goes through, SafeTrail shows a preview of exactly
         what reviewers will see, including every collaborator and every attached item, and asks you to confirm. After
-        escalation the case is locked: it cannot be edited or withdrawn, and attached evidence cannot be deleted while
-        the case is open. You can still remove a person&apos;s access or revoke a link.
+        escalation the case is locked: it cannot be edited or withdrawn, its collaborators cannot be removed, and
+        attached evidence cannot be deleted while the case is open. You can still stop sharing an evidence item with a
+        person and revoke its links, but reviewers keep seeing that item in the case until the case closes.
       </p>
 
       <h3 className={h3}>Reviewer attachments</h3>
@@ -224,9 +230,10 @@ export default function PrivacyPage() {
           accept the risk that it could spread.
         </li>
         <li>
-          You can remove a person&apos;s access and revoke password-protected links at any time. This stops further
-          access through SafeTrail. It does not delete anything the person has already copied, screenshotted or
-          forwarded.
+          You can remove a person&apos;s access to an evidence item and revoke password-protected links at any time.
+          Revoking a link stops it opening; people who already used it keep their access until you remove them too.
+          Collaborators on a case can be removed only while the case is a draft. None of this deletes anything a person
+          has already copied, screenshotted or forwarded.
         </li>
         <li>
           Anyone who has a password-protected link and its password can open what you shared. Send the password
@@ -301,7 +308,10 @@ export default function PrivacyPage() {
         <li>
           Ask us to erase or block data that is incomplete, outdated, false, unlawfully obtained or no longer needed.
         </li>
-        <li>Receive a copy of your data in a structured, commonly used format.</li>
+        <li>
+          Receive a copy of your data in a structured, commonly used format. SafeTrail has no download for this yet, so
+          we prepare it by hand when you ask.
+        </li>
         <li>Claim compensation for damages caused by inaccurate, unlawful or unauthorized use of your data.</li>
       </ul>
       <p>
@@ -351,18 +361,13 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Changes and contact</h2>
       <p>
-        When we make a material change to this policy, we will tell you through an in-app notification and update the
-        date at the top. This policy takes effect on October 14, 2026.
+        When we make a material change to this policy, we will update the date at the top of this page. SafeTrail
+        cannot yet send a notice to every account, so check this page from time to time. This policy takes effect on
+        October 14, 2026.
       </p>
       <p>
         For questions, requests or complaints about your personal data, contact Team Echelon at <Mail />. Our Data
         Protection Officer is Hezekiah Christal Dionisio, <Mail />.
-      </p>
-
-      <p className="mt-4">
-        <Link href="/" className="link">
-          Back to the home page
-        </Link>
       </p>
     </article>
   );
