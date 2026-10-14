@@ -42,8 +42,16 @@ export function HowToCapture({
       >
         <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-[22px] text-ink">
           <li>
-            Install the Escapture extension in Chrome. Open <span className="mono">chrome://extensions</span>, turn
-            on Developer mode, choose Load unpacked and select the <span className="mono">extension/dist</span> folder.
+            Get the Escapture extension from the{" "}
+            <a
+              href="https://github.com/shnflrsc/escapture#3-build-and-load-the-extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link"
+            >
+              Escapture repository on GitHub
+            </a>{" "}
+            and follow its steps to build it and load it in Chrome.
           </li>
           <li>Open the Facebook post or Messenger conversation, then open the extension and sign in.</li>
           <li>Choose Capture this page and click the post or conversation you want to keep.</li>
