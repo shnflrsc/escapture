@@ -78,8 +78,8 @@ These steps run Escapture on your own computer with demo accounts and data. No S
 ### 1. Install and configure
 
 ```bash
-git clone <this repository>
-cd <the cloned folder>
+git clone https://github.com/shnflrsc/escapture.git
+cd escapture
 pnpm install
 ```
 
