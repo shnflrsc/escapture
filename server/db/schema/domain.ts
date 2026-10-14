@@ -59,7 +59,7 @@ export const evidence = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("evidence_owner_idx").on(t.ownerId)],
-);
+).enableRLS();
 
 export const evidenceShares = pgTable(
   "evidence_shares",
@@ -79,7 +79,7 @@ export const evidenceShares = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.evidenceId, t.userId] })],
-);
+).enableRLS();
 
 export const cases = pgTable(
   "cases",
@@ -99,7 +99,7 @@ export const cases = pgTable(
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [index("cases_owner_idx").on(t.ownerId), index("cases_status_idx").on(t.status)],
-);
+).enableRLS();
 
 export const shareLinks = pgTable(
   "share_links",
@@ -124,7 +124,7 @@ export const shareLinks = pgTable(
       sql`(${t.resourceType} = 'evidence' AND ${t.evidenceId} IS NOT NULL AND ${t.caseId} IS NULL) OR (${t.resourceType} = 'case' AND ${t.caseId} IS NOT NULL AND ${t.evidenceId} IS NULL)`,
     ),
   ],
-);
+).enableRLS();
 
 // The owner is NOT in this table.
 export const caseCollaborators = pgTable(
@@ -144,7 +144,7 @@ export const caseCollaborators = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.caseId, t.userId] })],
-);
+).enableRLS();
 
 // The words administrators keep for flagging escalated cases (see lib/flags.ts). Stored normalized:
 // lowercase, without accents, single spaces.
@@ -154,7 +154,7 @@ export const flaggedWords = pgTable("flagged_words", {
   // Null for the words SafeTrail starts with.
   createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
   createdAt: ts("created_at").notNull().defaultNow(),
-});
+}).enableRLS();
 
 // Which bank words a case's title or description contains. Worked out at escalation, and again for
 // every escalated or closed case whenever the bank changes. Drafts are never checked.
@@ -167,7 +167,7 @@ export const caseFlags = pgTable(
     word: text("word").notNull(),
   },
   (t) => [primaryKey({ columns: [t.caseId, t.word] })],
-);
+).enableRLS();
 
 // Who has a case open right now, and where their caret is. A row older than a few seconds means
 // they have left; rows are overwritten, never accumulated.
@@ -187,7 +187,7 @@ export const casePresence = pgTable(
     seenAt: ts("seen_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.caseId, t.userId] })],
-);
+).enableRLS();
 
 // Reviewers an administrator has asked to take a case. It routes work; it does not limit who can review.
 export const caseAssignments = pgTable(
@@ -205,7 +205,7 @@ export const caseAssignments = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.caseId, t.reviewerId] }), index("case_assignments_reviewer_idx").on(t.reviewerId)],
-);
+).enableRLS();
 
 // While a case is a draft, escalated or under review, evidence_id is always set
 // and the evidence service refuses to delete the item (I3). When the case is
@@ -233,7 +233,7 @@ export const caseEvidence = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [unique("case_evidence_unique").on(t.caseId, t.evidenceId)],
-);
+).enableRLS();
 
 export const caseEvents = pgTable(
   "case_events",
@@ -252,7 +252,7 @@ export const caseEvents = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("case_events_case_idx").on(t.caseId)],
-);
+).enableRLS();
 
 export const notifications = pgTable(
   "notifications",
@@ -270,4 +270,4 @@ export const notifications = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("notifications_user_read_idx").on(t.userId, t.readAt)],
-);
+).enableRLS();

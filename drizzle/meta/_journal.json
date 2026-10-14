@@ -43,6 +43,13 @@
       "when": 1791962187162,
       "tag": "0005_superb_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791965160893,
+      "tag": "0006_sturdy_skullbuster",
+      "breakpoints": true
     }
   ]
 }
