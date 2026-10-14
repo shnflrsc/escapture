@@ -487,7 +487,7 @@ class Session {
     // Once something is selected the instructions have done their job: the bar shrinks to
     // one row so it covers as little of the page as possible.
     const slim = n > 0;
-    const bar = h("div", { class: `bar ${dock}${slim ? " slim" : ""}`, role: "dialog", "aria-label": "SafeTrail capture" });
+    const bar = h("div", { class: `bar ${dock}${slim ? " slim" : ""}`, role: "dialog", "aria-label": "Escapture capture" });
     if (slim) {
       const count = h("p", { class: "count", "aria-live": "polite" }, messages ? `${n} selected` : "Post selected");
       count.title = messages
@@ -506,7 +506,7 @@ class Session {
     if (n > 0) {
       // Support tool: saves how the selection is built and styled, without its content.
       const diag = button("Save diagnostics", "ghost", () => void this.diagnose());
-      diag.title = "Saves a file describing the layout and styling of your selection, without any text, names or images. Send it to SafeTrail support when a capture looks wrong.";
+      diag.title = "Saves a file describing the layout and styling of your selection, without any text, names or images. Send it to Escapture support when a capture looks wrong.";
       bar.append(diag);
     }
     const label = n === 0 ? "Capture" : messages ? `Capture ${n} ${n === 1 ? "message" : "messages"}` : "Capture this post";

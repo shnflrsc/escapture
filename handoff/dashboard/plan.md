@@ -1,12 +1,12 @@
 # Implementation Plan: Dashboard shell, notifications, reviewer dashboard and admin page
 
-Status: **ready to implement.** Tasks are tracked in [todo.md](todo.md). Design source: [reference/](reference/) (the "SafeTrail Dashboard" canvas, 14 artboards).
+Status: **ready to implement.** Tasks are tracked in [todo.md](todo.md). Design source: [reference/](reference/) (the "Escapture Dashboard" canvas, 14 artboards).
 
 This replaces the case-page plan, which is finished and committed. **Its decisions still stand** (autosave and conflicts, no section subtitles or header sentence on the case page, delete, remove and leave, ready-to-escalate check).
 
 ## Problem
 
-How might we make SafeTrail feel like a conventional, predictable web dashboard for all three roles (side menu, header, notifications always within reach), and give reviewers and administrators the screens they are missing, without making student screens busier?
+How might we make Escapture feel like a conventional, predictable web dashboard for all three roles (side menu, header, notifications always within reach), and give reviewers and administrators the screens they are missing, without making student screens busier?
 
 ## Overview
 
@@ -66,7 +66,7 @@ Reference: `reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, and the `.sb
 - Nav items stay as today, plus **admin: Reviewer accounts (`Users` icon) and Notifications**. Items are 44px tall with a 10px radius. Active: `brand-100` background and `brand-800` text. Notifications shows the unread dot.
 - Help card at the bottom, `brand-50` with a 12px radius:
   - Student: "Escrow Capture", "Capture a Facebook post or conversation with the Chrome extension. It goes straight to your vault.", and a link "How to capture" that opens the existing `HowToCapture`.
-  - Reviewer: "Reviewing cases", "SafeTrail supplements the university's own process. Record the outcome when you close a case."
+  - Reviewer: "Reviewing cases", "Escapture supplements the university's own process. Record the outcome when you close a case."
   - Admin: "Administrator", "You create reviewer accounts. You can't see cases or evidence."
 - Footer links: Help, Privacy (`/privacy`), Terms (`/terms`), 13px `muted`.
 - The name, email and Sign out block is **removed** from the sidebar (it moves to the header).
@@ -93,7 +93,7 @@ Reference: `reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, and the `.sb
 - PageHeader: "Notifications", "Updates about your cases and evidence people share with you. Notifications never show the contents of your evidence." Secondary button "Mark all as read" (keep `notification-actions.tsx`).
 - Tabs "All N" / "Unread N", using a `?tab=unread` search param.
 - Group the list by day: Today, Earlier this week, Earlier. Each group is a bordered `card` list with the same row anatomy as the popover. Unread rows have 600-weight text and a dot.
-- Footer caption: "SafeTrail sends notifications in the app only. Nothing is sent by email or text."
+- Footer caption: "Escapture sends notifications in the app only. Nothing is sent by email or text."
 
 ### `/review`: Review Board (P0 table, P1 chart and feed)
 - PageHeader: "Review Board", "Cases students have escalated. Open a case to review it. Closed cases move to Case Archives." Right: a date-range select (P1; P0 can omit it).
@@ -131,7 +131,7 @@ Reference: `reference/Sidebar.dc.html`, `reference/Topbar.dc.html`, and the `.sb
 - Once closed, the close panel is replaced by the closing note.
 
 ### `/review/shared` (P0 copy and columns)
-- PageHeader: "Shared with me", "Evidence other SafeTrail users shared with you by email or password link. Attach it to a case to keep it with the review." Secondary button "Open a password link" (P1; the redeem flow already exists at `/s/[token]`).
+- PageHeader: "Shared with me", "Evidence other Escapture users shared with you by email or password link. Attach it to a case to keep it with the review." Secondary button "Open a password link" (P1; the redeem flow already exists at `/s/[token]`).
 - One info banner: "When you attach shared evidence to a case, it goes in “Added by reviewers”. The student who reported never sees it."
 - Tabs: "Not attached N" / "All N".
 - Columns: Evidence, Shared by, Via (an inbox icon with "Email", or a lock icon with "Password link"), Captured, Tamper checks, Attached to (the case name, or "Not attached" in `muted`), and an action. The action is "Attach to case" (secondary, small, using the existing `attach-to-case.tsx`) or "Open case".

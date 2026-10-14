@@ -28,7 +28,7 @@
           </div>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Share case</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="secondary">Share case</x-import>
           <a class="btn btn-weighty" href="EscalateDialog.dc.html">Escalate to reviewers</a>
         </div>
       </div>
@@ -38,7 +38,7 @@
           <section class="panel" aria-labelledby="det-h">
             <div class="panel-head">
               <h2 id="det-h" class="h4">Details</h2>
-              <span class="saved"><x-import component-from-global-scope="SafeTrail.Icon" name="check" size="sm"></x-import>Saved 2 minutes ago</span>
+              <span class="saved"><x-import component-from-global-scope="Escapture.Icon" name="check" size="sm"></x-import>Saved 2 minutes ago</span>
             </div>
             <div class="field">
               <label for="c-title">Title</label>
@@ -54,7 +54,7 @@
           <section class="stack" aria-labelledby="ev-h">
             <div class="spread">
               <h2 id="ev-h" class="h3">Attached evidence</h2>
-              <x-import component-from-global-scope="SafeTrail.Button" variant="soft" icon="paperclip">Attach from vault</x-import>
+              <x-import component-from-global-scope="Escapture.Button" variant="soft" icon="paperclip">Attach from vault</x-import>
             </div>
             <div class="tablebox">
               <table class="st-table">
@@ -66,7 +66,7 @@
                       <td><a class="cell-title" href="StudentEvidence.dc.html" style="text-decoration: none; color: inherit;"><span><b>{{e.title}}</b><span>{{e.kind}}</span></span></a></td>
                       <td class="nowrap small">{{e.by}}</td>
                       <td class="nowrap"><span class="mono num">{{e.captured}}</span></td>
-                      <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck"></x-import></td>
+                      <td class="nowrap"><x-import component-from-global-scope="Escapture.TamperCheck"></x-import></td>
                       <td class="nowrap" style="text-align: right;"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td>
                     </tr>
                   </sc-for>
@@ -85,8 +85,8 @@
               <li><span class="avatar">PC</span><span><b>Paolo Cruz</b><span>Added 2 evidence items</span></span><button type="button" class="btn btn-ghost btn-sm end">Remove access</button></li>
             </ul>
             <div class="row">
-              <x-import component-from-global-scope="SafeTrail.Button" variant="secondary">Invite by email</x-import>
-              <x-import component-from-global-scope="SafeTrail.Button" variant="ghost" icon="lock">Password link</x-import>
+              <x-import component-from-global-scope="Escapture.Button" variant="secondary">Invite by email</x-import>
+              <x-import component-from-global-scope="Escapture.Button" variant="ghost" icon="lock">Password link</x-import>
             </div>
           </section>
 

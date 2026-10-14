@@ -864,7 +864,7 @@ const LINK_PANEL_CSS =
 /**
  * Captured links never leave the capture. Clicking one opens a small panel at
  * the bottom saying where it pointed; one click on the address selects all of
- * it for copying. The panels are marked as added by SafeTrail and are not part
+ * it for copying. The panels are marked as added by Escapture and are not part
  * of what was on screen. Returns the panels' markup, or "" if there are no links.
  */
 function linkPanels(root: Element): string {
@@ -879,7 +879,7 @@ function linkPanels(root: Element): string {
     a.setAttribute("href", `#${id}`);
   }
   return [...ids]
-    .map(([url, id]) => `<div class="st-tip" id="${id}"><a href="#st-close">Close</a>Added by SafeTrail. This link pointed to:<b>${esc(url)}</b>Click the address to select it, then copy.</div>`)
+    .map(([url, id]) => `<div class="st-tip" id="${id}"><a href="#st-close">Close</a>Added by Escapture. This link pointed to:<b>${esc(url)}</b>Click the address to select it, then copy.</div>`)
     .join("");
 }
 
@@ -905,7 +905,7 @@ export function serialize(snap: Snapshot, meta: { sourceUrl: string; clientCaptu
     `<meta name="safetrail:source-url" content="${esc(meta.sourceUrl)}">` +
     `<meta name="safetrail:client-captured-at" content="${esc(meta.clientCapturedAt)}">` +
     `<meta name="safetrail:kind" content="${esc(meta.kind)}">` +
-    `<title>SafeTrail capture</title><style>${css}${links ? LINK_PANEL_CSS : ""}</style></head>` +
+    `<title>Escapture capture</title><style>${css}${links ? LINK_PANEL_CSS : ""}</style></head>` +
     `<body style="margin:0;padding:16px;background:${esc(snap.background)}">` +
     `<div style="width:${Math.round(snap.width)}px;max-width:100%;${esc(snap.backdrop)};${esc(context)}">${root.outerHTML}</div>${links}</body></html>\n`
   );

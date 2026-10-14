@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SafeTrail Escrow Capture",
+  "name": "Escapture Escrow Capture",
   "version": "0.0.0",
-  "description": "Save a tamper-checked copy of a Facebook post or conversation to your SafeTrail vault.",
+  "description": "Save a tamper-checked copy of a Facebook post or conversation to your Escapture vault.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -11,7 +11,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "SafeTrail Escrow Capture",
+    "default_title": "Escapture Escrow Capture",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"

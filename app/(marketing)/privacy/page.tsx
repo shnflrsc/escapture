@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { TableBox } from "@/components/dashboard/data-table";
 
-export const metadata: Metadata = { title: "Privacy Policy · SafeTrail" };
+export const metadata: Metadata = { title: "Privacy Policy · Escapture" };
 
 // The team's own document, with four passages corrected to what the app does: removing people
 // from a case, sharing after escalation, how a change to the policy is announced, and getting a copy of your data.
@@ -47,18 +47,18 @@ const WHO: [string, string, string][] = [
 export default function PrivacyPage() {
   return (
     <article className="mk-wrap flex flex-col gap-4 py-16 [&>*]:max-w-[72ch]">
-      <h1>SafeTrail Privacy Policy</h1>
+      <h1>Escapture Privacy Policy</h1>
       <p className="text-muted">
         Last updated: <time dateTime="2026-10-14">14 October 2026</time>
       </p>
       <p className="rounded-xl bg-escalated-bg p-4 text-escalated-fg">
-        SafeTrail is a prototype built for a hackathon. Please do not upload real evidence or personal data while it is
+        Escapture is a prototype built for a hackathon. Please do not upload real evidence or personal data while it is
         in demonstration.
       </p>
 
       <h2 className={h2}>In plain terms</h2>
       <p>
-        SafeTrail keeps your evidence private until you choose to share it, and only the person who created a case can
+        Escapture keeps your evidence private until you choose to share it, and only the person who created a case can
         escalate it to the university.
       </p>
       <ul className={list}>
@@ -81,15 +81,15 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>About this policy</h2>
       <p>
-        This policy explains what personal data SafeTrail collects, why we collect it, and who can see it. SafeTrail is
+        This policy explains what personal data Escapture collects, why we collect it, and who can see it. Escapture is
         a case management and evidence safekeeping service for students and designated staff of Bulacan State
         University (BulSU), piloted with the College of Information and Communications Technology. It is operated by
-        Team Echelon (SafeTrail hackathon project).
+        Team Echelon (Escapture hackathon project).
       </p>
       <p>
-        SafeTrail supplements the university&apos;s own process for handling cyberbullying cases and does not replace
+        Escapture supplements the university&apos;s own process for handling cyberbullying cases and does not replace
         it. We handle personal data in line with the Data Privacy Act of 2012 (Republic Act No. 10173) and its
-        implementing rules. This policy covers the SafeTrail web application and the Escrow Capture browser extension.
+        implementing rules. This policy covers the Escapture web application and the Escrow Capture browser extension.
         It does not cover Facebook, or the university&apos;s own investigation, hearing and sanction procedures, which
         follow their own rules.
       </p>
@@ -140,7 +140,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className={h2}>How we use it</h2>
-      <p>We use your data to run SafeTrail and to keep evidence checkable, and for nothing else.</p>
+      <p>We use your data to run Escapture and to keep evidence checkable, and for nothing else.</p>
       <ul className={list}>
         <li>Create your account and keep you signed in.</li>
         <li>Store your evidence in your vault and show it back to you.</li>
@@ -154,10 +154,10 @@ export default function PrivacyPage() {
           outcome.
         </li>
         <li>Send you in-app notifications.</li>
-        <li>Protect SafeTrail against misuse and meet legal obligations.</li>
+        <li>Protect Escapture against misuse and meet legal obligations.</li>
       </ul>
       <p>
-        We do not sell personal data or use it for advertising. SafeTrail does not decide whether a report is true:
+        We do not sell personal data or use it for advertising. Escapture does not decide whether a report is true:
         that stays with the university&apos;s process.
       </p>
       <p>
@@ -199,7 +199,7 @@ export default function PrivacyPage() {
 
       <h3 className={h3}>Escalation</h3>
       <p>
-        Only the person who created a case can escalate it. Before it goes through, SafeTrail shows a preview of exactly
+        Only the person who created a case can escalate it. Before it goes through, Escapture shows a preview of exactly
         what reviewers will see, including every collaborator and every attached item, and asks you to confirm. After
         escalation the case is locked: it cannot be edited or withdrawn, its collaborators cannot be removed, and
         attached evidence cannot be deleted while the case is open. You can still stop sharing an evidence item with a
@@ -212,7 +212,7 @@ export default function PrivacyPage() {
         For example, if the accused says a message was taken out of context, they can capture the full conversation and
         share it with the reviewers, who attach it next to the original. These attachments are kept separate from your
         evidence, and you cannot see them. The accused never sees your case, and you never interact with the accused in
-        SafeTrail.
+        Escapture.
       </p>
 
       <h3 className={h3}>When a case closes</h3>
@@ -223,10 +223,10 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className={h2}>Sharing, and what we cannot control</h2>
-      <p>Once someone you share with has seen or saved evidence, SafeTrail cannot take that copy back.</p>
+      <p>Once someone you share with has seen or saved evidence, Escapture cannot take that copy back.</p>
       <ul className={list}>
         <li>
-          Before you share evidence or a case, SafeTrail asks you to confirm that you are choosing to share it and
+          Before you share evidence or a case, Escapture asks you to confirm that you are choosing to share it and
           accept the risk that it could spread.
         </li>
         <li>
@@ -240,24 +240,24 @@ export default function PrivacyPage() {
           separately, and only to people you trust.
         </li>
         <li>
-          A case or evidence item that reaches the accused or anyone else outside SafeTrail, whether you shared it or it
+          A case or evidence item that reaches the accused or anyone else outside Escapture, whether you shared it or it
           leaked, is outside our control.
         </li>
       </ul>
 
       <h2 className={h2}>Service providers and the university</h2>
       <p>
-        We share personal data only with the providers that run SafeTrail, with BulSU&apos;s designated reviewers after
+        We share personal data only with the providers that run Escapture, with BulSU&apos;s designated reviewers after
         you escalate, and where the law requires it.
       </p>
       <ul className={list}>
         <li>
           <strong>Hosting and storage.</strong> Supabase provides the hosted Postgres database and the file storage for
-          captured evidence. Only the SafeTrail server talks to Supabase. Our application is hosted by Vercel. Supabase
+          captured evidence. Only the Escapture server talks to Supabase. Our application is hosted by Vercel. Supabase
           stores the data in its Singapore region, so your data is processed outside the Philippines.
         </li>
         <li>
-          <strong>Sign-in.</strong> SafeTrail uses Better Auth, software that runs inside our own application, to handle
+          <strong>Sign-in.</strong> Escapture uses Better Auth, software that runs inside our own application, to handle
           accounts and sign-in.
         </li>
         <li>
@@ -272,7 +272,7 @@ export default function PrivacyPage() {
       <p>We do not sell personal data, and we do not share it with advertisers.</p>
 
       <h2 className={h2}>Keeping and deleting data</h2>
-      <p>SafeTrail never deletes your evidence automatically, and you decide when it goes.</p>
+      <p>Escapture never deletes your evidence automatically, and you decide when it goes.</p>
       <ul className={list}>
         <li>
           <strong>Evidence in your vault</strong> stays until you delete it. You can delete an item at any time, except
@@ -309,7 +309,7 @@ export default function PrivacyPage() {
           Ask us to erase or block data that is incomplete, outdated, false, unlawfully obtained or no longer needed.
         </li>
         <li>
-          Receive a copy of your data in a structured, commonly used format. SafeTrail has no download for this yet, so
+          Receive a copy of your data in a structured, commonly used format. Escapture has no download for this yet, so
           we prepare it by hand when you ask.
         </li>
         <li>Claim compensation for damages caused by inaccurate, unlawful or unauthorized use of your data.</li>
@@ -329,12 +329,12 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Security</h2>
       <p>
-        We protect your data by keeping the database and file storage behind the SafeTrail server, and no system is
+        We protect your data by keeping the database and file storage behind the Escapture server, and no system is
         completely secure.
       </p>
       <ul className={list}>
         <li>
-          Only the SafeTrail server talks to the database and file storage. Your browser and the extension never connect
+          Only the Escapture server talks to the database and file storage. Your browser and the extension never connect
           to them directly.
         </li>
         <li>
@@ -354,14 +354,14 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Eligibility and children</h2>
       <p>
-        SafeTrail is for BulSU students and designated university staff. Creating a student account requires a BulSU
+        Escapture is for BulSU students and designated university staff. Creating a student account requires a BulSU
         email address ending in @ms.bulsu.edu.ph, and the service is not designed for children. If you believe an
         account belongs to someone who should not have one, tell us and we will review it.
       </p>
 
       <h2 className={h2}>Changes and contact</h2>
       <p>
-        When we make a material change to this policy, we will update the date at the top of this page. SafeTrail
+        When we make a material change to this policy, we will update the date at the top of this page. Escapture
         cannot yet send a notice to every account, so check this page from time to time. This policy takes effect on
         October 14, 2026.
       </p>

@@ -151,7 +151,7 @@ export const caseCollaborators = pgTable(
 export const flaggedWords = pgTable("flagged_words", {
   id: uuid("id").primaryKey().defaultRandom(),
   word: text("word").notNull().unique(),
-  // Null for the words SafeTrail starts with.
+  // Null for the words Escapture starts with.
   createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
   createdAt: ts("created_at").notNull().defaultNow(),
 }).enableRLS();

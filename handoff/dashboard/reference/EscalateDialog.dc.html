@@ -47,7 +47,7 @@
           <sc-for list="{{items}}" as="e" hint-placeholder-count="3">
             <div class="ev-row">
               <div class="ev-main"><span><b>{{e.title}}</b><span class="num">{{e.meta}}</span></span></div>
-              <x-import component-from-global-scope="SafeTrail.TamperCheck"></x-import>
+              <x-import component-from-global-scope="Escapture.TamperCheck"></x-import>
             </div>
           </sc-for>
         </div>
@@ -55,7 +55,7 @@
     </div>
 
     <div class="st-note-panel" style="display: flex; gap: 12px; align-items: flex-start;">
-      <x-import component-from-global-scope="SafeTrail.Icon" name="lock"></x-import>
+      <x-import component-from-global-scope="Escapture.Icon" name="lock"></x-import>
       <p class="small" style="margin: 0;">Once you escalate, this case is locked. You can't edit or withdraw it, and attached evidence can't be deleted. Sharing of that evidence with reviewers can't be undone.</p>
     </div>
 

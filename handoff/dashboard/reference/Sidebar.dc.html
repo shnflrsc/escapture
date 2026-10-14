@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SafeTrail sidebar</title>
+<title>Escapture sidebar</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="ds/safetrail/components/bundle.css">
 <link rel="stylesheet" href="app.css">
@@ -16,7 +16,7 @@
 </helmet>
 <aside class="sb" aria-label="Sidebar" style="font-family: var(--font-sans); color: var(--ink);">
   <a class="sb-brand" href="{{homeHref}}">
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" role="img" aria-label="SafeTrail logo">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" role="img" aria-label="Escapture logo">
       <g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path>
         <path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path>
@@ -26,7 +26,7 @@
         <path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path>
       </g>
     </svg>
-    <b>SafeTrail</b>
+    <b>Escapture</b>
   </a>
   <span class="sb-role">{{roleLabel}}</span>
 
@@ -36,7 +36,7 @@
       <sc-for list="{{items}}" as="item" hint-placeholder-count="3">
         <li>
           <a href="{{item.href}}" aria-current="{{item.current}}">
-            <x-import component-from-global-scope="SafeTrail.Icon" name="{{item.icon}}"></x-import>
+            <x-import component-from-global-scope="Escapture.Icon" name="{{item.icon}}"></x-import>
             <span>{{item.label}}</span>
             <sc-if value="{{item.hasCount}}" hint-placeholder-val="{{false}}"><span class="sb-count">{{item.count}}</span></sc-if>
             <sc-if value="{{item.unread}}" hint-placeholder-val="{{false}}"><span class="sb-dot" role="img" aria-label="Unread"></span></sc-if>
@@ -56,7 +56,7 @@
   <sc-if value="{{isReviewer}}" hint-placeholder-val="{{false}}">
     <div class="sb-help">
       <b>Reviewing cases</b>
-      <p>SafeTrail supplements the university's own process. Record the outcome when you close a case.</p>
+      <p>Escapture supplements the university's own process. Record the outcome when you close a case.</p>
       <a class="link" href="#" style="font-size: 14px; line-height: 20px;">Reviewer guide</a>
     </div>
   </sc-if>

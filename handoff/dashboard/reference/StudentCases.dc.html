@@ -25,12 +25,12 @@
           <p>A case gathers your evidence in one place. Nothing reaches reviewers until you escalate.</p>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Button" variant="primary">New case</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="primary">New case</x-import>
         </div>
       </div>
 
       <div class="stack">
-        <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter cases" items="{{tabs}}" selected="{{zero}}"></x-import>
+        <x-import component-from-global-scope="Escapture.Tabs" label="Filter cases" items="{{tabs}}" selected="{{zero}}"></x-import>
         <ul class="list">
           <sc-for list="{{cases}}" as="c" hint-placeholder-count="4">
             <li>
@@ -43,10 +43,10 @@
                   <p class="num">{{c.meta}}</p>
                 </span>
                 <sc-if value="{{c.isDraft}}" hint-placeholder-val="{{false}}"><span class="pill pill-draft"><span class="pdot" aria-hidden="true"></span>Draft</span></sc-if>
-                <sc-if value="{{c.hasBadge}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="SafeTrail.StatusBadge" status="{{c.status}}"></x-import></sc-if>
+                <sc-if value="{{c.hasBadge}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="Escapture.StatusBadge" status="{{c.status}}"></x-import></sc-if>
                 <sc-if value="{{c.locked}}" hint-placeholder-val="{{false}}">
                   <span class="share" title="Locked">
-                    <x-import component-from-global-scope="SafeTrail.Icon" name="lock" size="sm" label="Locked"></x-import>
+                    <x-import component-from-global-scope="Escapture.Icon" name="lock" size="sm" label="Locked"></x-import>
                   </span>
                 </sc-if>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#55646E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>

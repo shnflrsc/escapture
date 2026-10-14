@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"SafeTrail","components":[{"name":"Button"},{"name":"Input"},{"name":"StatusBadge"},{"name":"TamperCheck"},{"name":"Banner"},{"name":"Card"},{"name":"EmptyState"},{"name":"Dialog"},{"name":"Toast"},{"name":"Icon"},{"name":"SiteNav"},{"name":"Hero"},{"name":"ProductFrame"},{"name":"TrailPattern"},{"name":"Section"},{"name":"Steps"},{"name":"FeatureRow"},{"name":"TrustPanel"},{"name":"PilotStrip"},{"name":"Faq"},{"name":"CtaBand"},{"name":"SiteFooter"},{"name":"AppShell"},{"name":"Sidebar"},{"name":"PageHeader"},{"name":"StatTile"},{"name":"SearchInput"},{"name":"Select"},{"name":"FilterChip"},{"name":"Tabs"},{"name":"DataTable"},{"name":"Pagination"},{"name":"Panel"},{"name":"BarChart"},{"name":"StatusBreakdown"},{"name":"ActivityFeed"},{"name":"DetailDrawer"},{"name":"Skeleton"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Escapture","components":[{"name":"Button"},{"name":"Input"},{"name":"StatusBadge"},{"name":"TamperCheck"},{"name":"Banner"},{"name":"Card"},{"name":"EmptyState"},{"name":"Dialog"},{"name":"Toast"},{"name":"Icon"},{"name":"SiteNav"},{"name":"Hero"},{"name":"ProductFrame"},{"name":"TrailPattern"},{"name":"Section"},{"name":"Steps"},{"name":"FeatureRow"},{"name":"TrustPanel"},{"name":"PilotStrip"},{"name":"Faq"},{"name":"CtaBand"},{"name":"SiteFooter"},{"name":"AppShell"},{"name":"Sidebar"},{"name":"PageHeader"},{"name":"StatTile"},{"name":"SearchInput"},{"name":"Select"},{"name":"FilterChip"},{"name":"Tabs"},{"name":"DataTable"},{"name":"Pagination"},{"name":"Panel"},{"name":"BarChart"},{"name":"StatusBreakdown"},{"name":"ActivityFeed"},{"name":"DetailDrawer"},{"name":"Skeleton"}]} */
 (function () {
   var React = window.React, h = React.createElement;
   function cx() { return Array.prototype.filter.call(arguments, Boolean).join(" "); }
@@ -120,7 +120,7 @@
   function SiteNav(p) {
     var links = p.links || [{ label: "How it works", href: "#how" }, { label: "For reviewers", href: "#reviewers" }, { label: "Privacy", href: "#privacy" }, { label: "FAQ", href: "#faq" }];
     return h("header", { className: "st-nav" }, h("nav", { className: "st-wrap", "aria-label": "Main" },
-      h("a", { className: "st-wordmark", href: "#" }, p.name || "SafeTrail"),
+      h("a", { className: "st-wordmark", href: "#" }, p.name || "Escapture"),
       h("ul", { className: "st-nav-links" }, links.map(function (l) { return h("li", { key: l.label }, h("a", { href: l.href }, l.label)); })),
       h("div", { className: "st-nav-actions" }, h(Button, { variant: "ghost" }, "Sign in"), h(Button, { variant: "primary" }, p.cta || "Get started"))));
   }
@@ -139,7 +139,7 @@
 
   function ProductFrame(p) {
     return h("figure", { className: "st-frame", style: { margin: 0 }, "aria-label": p.label },
-      h("div", { className: "st-frame-bar", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("span", { className: "st-frame-url" }, p.url || "safetrail.app/vault")),
+      h("div", { className: "st-frame-bar", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("span", { className: "st-frame-url" }, p.url || "escapture.app/vault")),
       h("div", { className: "st-frame-body" }, p.children));
   }
 
@@ -206,9 +206,9 @@
       { title: "Legal", links: ["Privacy", "Terms"] }];
     return h("footer", { className: "st-footer" }, h("div", { className: "st-wrap" },
       h("div", { className: "st-footer-grid" },
-        h("div", null, h("a", { className: "st-wordmark", href: "#" }, "SafeTrail"), h("p", { className: "st-helper", style: { marginTop: "12px", maxWidth: "36ch", fontSize: "15px", lineHeight: "24px" } }, p.blurb || "Keep evidence of what happened online and share it with your university when you're ready.")),
+        h("div", null, h("a", { className: "st-wordmark", href: "#" }, "Escapture"), h("p", { className: "st-helper", style: { marginTop: "12px", maxWidth: "36ch", fontSize: "15px", lineHeight: "24px" } }, p.blurb || "Keep evidence of what happened online and share it with your university when you're ready.")),
         cols.map(function (c) { return h("div", { key: c.title }, h("h4", null, c.title), h("ul", null, c.links.map(function (l) { return h("li", { key: l }, h("a", { href: "#" }, l)); }))); })),
-      h("p", { className: "st-footer-note" }, p.note || "SafeTrail supplements Bulacan State University's existing process. It does not replace it.")));
+      h("p", { className: "st-footer-note" }, p.note || "Escapture supplements Bulacan State University's existing process. It does not replace it.")));
   }
 
 
@@ -222,7 +222,7 @@
     var items = p.items || NAV[p.role || "reviewer"];
     var active = p.active || items[0].label;
     return h("aside", { className: "st-sidebar" },
-      h("a", { className: "st-wordmark", href: "#" }, "SafeTrail"),
+      h("a", { className: "st-wordmark", href: "#" }, "Escapture"),
       h("nav", { "aria-label": "Main" }, h("ul", { className: "st-sidenav" }, items.map(function (it) {
         return h("li", { key: it.label }, h("a", { href: "#", "aria-current": it.label === active ? "page" : undefined }, h(Icon, { name: it.icon }), it.label,
           (p.unread || []).indexOf(it.label) > -1 ? h("span", { className: "st-unread", role: "img", "aria-label": "Unread" }) : null));
@@ -235,7 +235,7 @@
     return h("div", { className: "st-shell st-root", "data-density": p.density || (role === "student" ? "comfortable" : "compact") },
       h(Sidebar, { role: role, active: p.active, unread: p.unread, user: p.user, userRole: p.userRole, initials: p.initials }),
       h("div", null,
-        h("div", { className: "st-topbar" }, h("button", { className: "st-iconbtn", type: "button", "aria-label": "Open menu" }, h(Icon, { name: "menu" })), h("span", { className: "st-wordmark", style: { fontSize: "18px" } }, "SafeTrail")),
+        h("div", { className: "st-topbar" }, h("button", { className: "st-iconbtn", type: "button", "aria-label": "Open menu" }, h(Icon, { name: "menu" })), h("span", { className: "st-wordmark", style: { fontSize: "18px" } }, "Escapture")),
         h("main", { className: "st-main" }, h("div", { className: "st-main-inner", style: role === "student" ? { maxWidth: "var(--maxw-student)" } : null }, p.children))));
   }
   function PageHeader(p) {
@@ -352,7 +352,7 @@
     return h("div", { className: "st-skel", "aria-hidden": "true", style: { width: p.width || "100%", height: p.height || "14px" } });
   }
 
-  window.SafeTrail = Object.assign(window.SafeTrail || {}, {
+  window.Escapture = Object.assign(window.Escapture || {}, {
     Icon: Icon, Button: Button, Input: Input, StatusBadge: StatusBadge, TamperCheck: TamperCheck, Banner: Banner, Card: Card,
     EmptyState: EmptyState, Dialog: Dialog, Toast: Toast, TrailPattern: TrailPattern, SiteNav: SiteNav, Hero: Hero,
     ProductFrame: ProductFrame, Section: Section, Steps: Steps, FeatureRow: FeatureRow, TrustPanel: TrustPanel,

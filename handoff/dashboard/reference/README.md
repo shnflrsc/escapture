@@ -1,16 +1,16 @@
 # Design reference
 
-These are the source files of the "SafeTrail Dashboard" design canvas. Read them for **layout, copy, hierarchy and token use**. They are not meant to run here. They depend on the canvas runtime (`support.js`, `<x-dc>`, `<x-import>`, `<sc-for>`, `<sc-if>`, `<dc-import>`), which this repo doesn't have, so rebuild each screen with the repo's own components.
+These are the source files of the "Escapture Dashboard" design canvas. Read them for **layout, copy, hierarchy and token use**. They are not meant to run here. They depend on the canvas runtime (`support.js`, `<x-dc>`, `<x-import>`, `<sc-for>`, `<sc-if>`, `<dc-import>`), which this repo doesn't have, so rebuild each screen with the repo's own components.
 
 ## How to read a `.dc.html` file
 
 - The markup inside `<x-dc>` is the screen. `class="…"` names refer to `app.css` (dashboard patterns) and `ds/components/bundle.css` (`st-*` design-system classes).
-- `<x-import component-from-global-scope="SafeTrail.X" …>` is a design-system component. Attributes are its props, as documented in `ds/components/index.d.ts`. Map them like this:
-  - `SafeTrail.StatusBadge` becomes `StatusBadge` in `components/ui/badge.tsx`.
-  - `SafeTrail.TamperCheck` becomes `components/safetrail/tamper-check.tsx`.
-  - `SafeTrail.Button` becomes `components/ui/button.tsx`.
-  - `SafeTrail.Banner` and `SafeTrail.EmptyState` become `components/ui/feedback.tsx`.
-  - `SafeTrail.Icon name="x"` becomes the matching `lucide-react` icon.
+- `<x-import component-from-global-scope="Escapture.X" …>` is a design-system component. Attributes are its props, as documented in `ds/components/index.d.ts`. Map them like this:
+  - `Escapture.StatusBadge` becomes `StatusBadge` in `components/ui/badge.tsx`.
+  - `Escapture.TamperCheck` becomes `components/safetrail/tamper-check.tsx`.
+  - `Escapture.Button` becomes `components/ui/button.tsx`.
+  - `Escapture.Banner` and `Escapture.EmptyState` become `components/ui/feedback.tsx`.
+  - `Escapture.Icon name="x"` becomes the matching `lucide-react` icon.
   - `StatTile`, `Tabs`, `SearchInput`, `FilterChip`, `Select`, `Pagination`, `Panel`, `BarChart`, `StatusBreakdown` and `ActivityFeed` are new. Build them in `components/dashboard/` (or `components/ui/` for Tabs and Select), following `ds/components/bundle.js` and `bundle.css`.
 - `<dc-import name="Sidebar" …>` and `<dc-import name="Topbar" …>` are the shared shell (`Sidebar.dc.html`, `Topbar.dc.html`).
 - `{{…}}` values come from the `renderVals()` script at the bottom of each file. That's where the sample rows live. **Sample data is fictional.** Use it only to see which fields a row shows.
@@ -33,7 +33,7 @@ These are the source files of the "SafeTrail Dashboard" design canvas. Read them
 | `Archives.dc.html` | Reviewer · Case Archives |
 | `AdminReviewers.dc.html` | Admin · Reviewer accounts. Adapt as plan.md says: temporary password instead of a setup link, and no Office or Deactivate in P0 |
 | `app.css` | Tokens (same values as DESIGN.md) and the shell and page patterns used by the mockups |
-| `ds/` | Copy of the SafeTrail design system: `README.md` (rules, including dashboards), `tokens.json`, component bundle and types |
+| `ds/` | Copy of the Escapture design system: `README.md` (rules, including dashboards), `tokens.json`, component bundle and types |
 
 ## Where the mockups knowingly differ from the plan
 

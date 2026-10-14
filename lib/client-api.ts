@@ -24,7 +24,7 @@ export async function api<T = unknown>(
       credentials: "same-origin",
     });
   } catch {
-    throw new ApiError(0, "network", "We couldn't reach SafeTrail. Check your connection and try again.");
+    throw new ApiError(0, "network", "We couldn't reach Escapture. Check your connection and try again.");
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {

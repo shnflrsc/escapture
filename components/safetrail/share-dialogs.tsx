@@ -63,13 +63,13 @@ export function EmailShareDialog({
     <Dialog open={open} onClose={close} title={title} description={risk}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Input
-          label="Their SafeTrail email"
+          label="Their Escapture email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={error}
-          hint="They need to have a SafeTrail account already."
+          hint="They need to have a Escapture account already."
         />
         <div className="flex justify-end gap-3">
           <Button variant="ghost" onClick={close}>
@@ -160,7 +160,7 @@ export function LinkShareDialog({ open, onClose, endpoint, title, risk }: LinkSh
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={error}
-            hint="At least 8 characters. Anyone with the link also needs this password and a SafeTrail account."
+            hint="At least 8 characters. Anyone with the link also needs this password and a Escapture account."
           />
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={close}>

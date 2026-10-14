@@ -1,7 +1,7 @@
 import { SiteFooter, SiteNav } from "@/components/marketing/site-chrome";
 import "./marketing.css";
 
-/** The public pages that explain SafeTrail: the landing page and the legal and contact pages. */
+/** The public pages that explain Escapture: the landing page and the legal and contact pages. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mk-root flex min-h-screen flex-col">

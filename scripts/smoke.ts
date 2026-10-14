@@ -80,7 +80,7 @@ function uploadForm(bytes: Uint8Array, sha256: string, kind: string) {
 }
 
 async function main() {
-  console.log(`SafeTrail smoke test against ${BASE} (run ${run})`);
+  console.log(`Escapture smoke test against ${BASE} (run ${run})`);
   const post = new Uint8Array(await readFile("fixtures/fake-facebook-post.html"));
   const chat = new Uint8Array(await readFile("fixtures/fake-messenger.html"));
   // Unique bytes per run so storage paths and hashes never collide with old runs.

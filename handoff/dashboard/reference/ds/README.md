@@ -1,4 +1,4 @@
-SafeTrail helps students who are being cyberbullied keep evidence of what happened, build a case from it, and escalate it to university case reviewers. The MVP covers Facebook posts and messages, pilots at Bulacan State University, and supplements the university's existing process.
+Escapture helps students who are being cyberbullied keep evidence of what happened, build a case from it, and escalate it to university case reviewers. The MVP covers Facebook posts and messages, pilots at Bulacan State University, and supplements the university's existing process.
 
 This system has two contexts that share one set of tokens, fonts and voice:
 
@@ -78,7 +78,7 @@ Verified contrast (WCAG 2.2 AA): ink on card / canvas / brand-50 14.66 / 13.98 /
 - Lucide (`lucide-react`) only, 20px (16px inline), stroke 1.75, color from the surrounding text, always with a text label or accessible name. The bundle carries a few Lucide paths so previews run without the package.
 - **No shield or fingerprint icons anywhere.** Those shapes belong to the logo. The tamper-check badge uses a file-check icon.
 - Illustration: flat, rounded, built from `brand-100`–`brand-500`, white and `ink` lines; only in empty states and onboarding, about 200px tall at most. No people, faces, depictions of distress, 3D or stock art. If none fits, use an icon in a `brand-100` circle.
-- Marketing imagery is **real SafeTrail UI** in a ProductFrame. The one decorative device is the TrailPattern.
+- Marketing imagery is **real Escapture UI** in a ProductFrame. The one decorative device is the TrailPattern.
 
 ## Logo
 

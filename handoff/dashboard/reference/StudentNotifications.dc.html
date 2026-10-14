@@ -25,12 +25,12 @@
           <p>Updates about your cases and evidence people share with you. Notifications never show the contents of your evidence.</p>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Button" variant="secondary" icon="check">Mark all as read</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="secondary" icon="check">Mark all as read</x-import>
         </div>
       </div>
 
       <div class="stack">
-        <x-import component-from-global-scope="SafeTrail.Tabs" label="Filter notifications" items="{{tabs}}" selected="{{zero}}"></x-import>
+        <x-import component-from-global-scope="Escapture.Tabs" label="Filter notifications" items="{{tabs}}" selected="{{zero}}"></x-import>
 
         <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
           <section class="stack-sm" aria-label="{{g.label}}">
@@ -39,7 +39,7 @@
               <sc-for list="{{g.items}}" as="n" hint-placeholder-count="2">
                 <li>
                   <a class="list-link" href="{{n.href}}" style="align-items: flex-start;">
-                    <span class="{{n.iconCls}}" aria-hidden="true"><x-import component-from-global-scope="SafeTrail.Icon" name="{{n.icon}}" size="sm"></x-import></span>
+                    <span class="{{n.iconCls}}" aria-hidden="true"><x-import component-from-global-scope="Escapture.Icon" name="{{n.icon}}" size="sm"></x-import></span>
                     <span style="flex: 1; min-width: 0;">
                       <span style="display: block; font-size: 15px; line-height: 24px; font-weight: {{n.weight}};">{{n.text}}</span>
                       <span class="cap num" style="display: block;">{{n.time}}</span>
@@ -51,7 +51,7 @@
             </ul>
           </section>
         </sc-for>
-        <p class="cap" style="margin: 0;">SafeTrail sends notifications in the app only. Nothing is sent by email or text.</p>
+        <p class="cap" style="margin: 0;">Escapture sends notifications in the app only. Nothing is sent by email or text.</p>
       </div>
     </main>
   </div>

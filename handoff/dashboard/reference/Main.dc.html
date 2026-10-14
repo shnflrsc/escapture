@@ -25,17 +25,17 @@
           <p>Evidence you capture is saved here. Only you can see your vault unless you choose to share something.</p>
         </div>
         <div class="ph-actions">
-          <x-import component-from-global-scope="SafeTrail.Button" variant="primary" icon="arrow-right">Capture evidence</x-import>
+          <x-import component-from-global-scope="Escapture.Button" variant="primary" icon="arrow-right">Capture evidence</x-import>
         </div>
       </div>
 
       <div class="stack">
         <div class="spread">
-          <x-import component-from-global-scope="SafeTrail.Tabs" label="Vault views" items="{{tabs}}" selected="{{zero}}"></x-import>
+          <x-import component-from-global-scope="Escapture.Tabs" label="Vault views" items="{{tabs}}" selected="{{zero}}"></x-import>
           <div class="row">
-            <x-import component-from-global-scope="SafeTrail.SearchInput" label="Search evidence" placeholder="Search by title or person"></x-import>
-            <x-import component-from-global-scope="SafeTrail.Select" label="Type" prefix="Type" options="{{types}}"></x-import>
-            <x-import component-from-global-scope="SafeTrail.Select" label="Sort" prefix="Sort" options="{{sorts}}"></x-import>
+            <x-import component-from-global-scope="Escapture.SearchInput" label="Search evidence" placeholder="Search by title or person"></x-import>
+            <x-import component-from-global-scope="Escapture.Select" label="Type" prefix="Type" options="{{types}}"></x-import>
+            <x-import component-from-global-scope="Escapture.Select" label="Sort" prefix="Sort" options="{{sorts}}"></x-import>
           </div>
         </div>
 
@@ -69,10 +69,10 @@
                     </a>
                   </td>
                   <td class="nowrap"><span class="mono num">{{r.captured}}</span></td>
-                  <td class="nowrap"><x-import component-from-global-scope="SafeTrail.TamperCheck"></x-import></td>
+                  <td class="nowrap"><x-import component-from-global-scope="Escapture.TamperCheck"></x-import></td>
                   <td><span class="{{r.caseCls}}">{{r.cases}}</span></td>
                   <td class="nowrap"><span class="share">
-                    <x-import component-from-global-scope="SafeTrail.Icon" name="{{r.shareIcon}}" size="sm"></x-import>{{r.sharing}}</span></td>
+                    <x-import component-from-global-scope="Escapture.Icon" name="{{r.shareIcon}}" size="sm"></x-import>{{r.sharing}}</span></td>
                   <td class="nowrap" style="text-align: right;">
                     <button type="button" class="iconbtn" aria-label="More actions for {{r.title}}">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
@@ -86,7 +86,7 @@
         </div>
 
         <p class="cap" style="display: flex; align-items: center; gap: 6px; margin: 0;">
-          <x-import component-from-global-scope="SafeTrail.Icon" name="eye-off" size="sm"></x-import>
+          <x-import component-from-global-scope="Escapture.Icon" name="eye-off" size="sm"></x-import>
           Only you can see your vault. Nothing reaches reviewers until you escalate a case.
         </p>
       </div>

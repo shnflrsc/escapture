@@ -7,7 +7,7 @@ const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap"
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "SafeTrail",
+  title: "Escapture",
   description: "Keep evidence of what happened, build a case, and escalate it to university reviewers.",
 };
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Sign in to SafeTrail</title>
+<title>Sign in to Escapture</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="ds/safetrail/components/bundle.css">
 <link rel="stylesheet" href="auth.css">
@@ -15,10 +15,10 @@
 <style>body{margin:0;background:#FFFFFF}</style>
 </helmet>
 <div class="auth">
-  <aside class="brand" aria-label="About SafeTrail">
+  <aside class="brand" aria-label="About Escapture">
     <a class="logo" href="#">
-      <svg width="36" height="36" viewBox="0 0 32 32" fill="none" role="img" aria-label="SafeTrail logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
-      <b>SafeTrail</b>
+      <svg width="36" height="36" viewBox="0 0 32 32" fill="none" role="img" aria-label="Escapture logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
+      <b>Escapture</b>
     </a>
 
     <figure class="illus" style="margin: 0;">
@@ -59,13 +59,13 @@
   <main class="main">
     <div class="topline">
       <a class="logo mlogo" href="#">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" role="img" aria-label="SafeTrail logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
-        <b style="font-size: 20px;">SafeTrail</b>
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" role="img" aria-label="Escapture logo"><g stroke="#66A3BF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3 5 7v8.5c0 6.4 4.4 11.2 11 13.5 6.6-2.3 11-7.1 11-13.5V7L16 3Z"></path><path d="M11 17.5v-2.2a5 5 0 0 1 10 0v3.2"></path><path d="M13.6 20.5v-5.2a2.4 2.4 0 0 1 4.8 0v6.2"></path><path d="M16 15.8v6.7"></path><path d="M11.2 20.5c.3 1.2.9 2.2 1.7 3"></path><path d="M20.8 21.5c-.2.8-.6 1.5-1.1 2.1"></path></g></svg>
+        <b style="font-size: 20px;">Escapture</b>
       </a>
       <a class="link" href="#" style="display: inline-flex; align-items: center; gap: 4px;">
-        <x-import component-from-global-scope="SafeTrail.Icon" name="chevron-left" size="sm"></x-import>Home
+        <x-import component-from-global-scope="Escapture.Icon" name="chevron-left" size="sm"></x-import>Home
       </a>
-      <span><span class="tl-text">New to SafeTrail? </span><a class="link" href="Register.dc.html">Create an account</a></span>
+      <span><span class="tl-text">New to Escapture? </span><a class="link" href="Register.dc.html">Create an account</a></span>
     </div>
 
     <div class="formwrap">
@@ -77,7 +77,7 @@
 
         <sc-if value="{{showError}}" hint-placeholder-val="{{false}}">
           <div class="banner banner-attn" role="alert">
-            <x-import component-from-global-scope="SafeTrail.Icon" name="info"></x-import>
+            <x-import component-from-global-scope="Escapture.Icon" name="info"></x-import>
             <p>That email or password isn't right. Check them and try again.</p>
           </div>
         </sc-if>
@@ -87,7 +87,7 @@
             <label class="label" for="si-email">Email</label>
             <input id="si-email" class="input" type="email" name="email" autocomplete="email" placeholder="you@ms.bulsu.edu.ph" value="{{email}}" onChange="{{onEmail}}" aria-invalid="{{emailInvalid}}" aria-describedby="si-email-err">
             <sc-if value="{{emailMissing}}" hint-placeholder-val="{{false}}">
-              <p id="si-email-err" class="err"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-alert" size="sm"></x-import>Enter the email you signed up with.</p>
+              <p id="si-email-err" class="err"><x-import component-from-global-scope="Escapture.Icon" name="circle-alert" size="sm"></x-import>Enter the email you signed up with.</p>
             </sc-if>
           </div>
 
@@ -108,7 +108,7 @@
               </button>
             </div>
             <sc-if value="{{pwMissing}}" hint-placeholder-val="{{false}}">
-              <p id="si-pw-err" class="err"><x-import component-from-global-scope="SafeTrail.Icon" name="circle-alert" size="sm"></x-import>Enter your password.</p>
+              <p id="si-pw-err" class="err"><x-import component-from-global-scope="Escapture.Icon" name="circle-alert" size="sm"></x-import>Enter your password.</p>
             </sc-if>
           </div>
 

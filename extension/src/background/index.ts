@@ -1,4 +1,4 @@
-// Service worker: sign-in, token storage, every network call to the SafeTrail
+// Service worker: sign-in, token storage, every network call to the Escapture
 // app (it has host permission, so no CORS issue), image fetching, hashing, upload.
 import {
   captureHost,
@@ -27,7 +27,7 @@ const store = {
 async function appFetch(path: string, init: RequestInit = {}, token?: string) {
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  // Never send the browser's SafeTrail cookies: the extension has its own session.
+  // Never send the browser's Escapture cookies: the extension has its own session.
   return fetch(`${APP_URL}${path}`, { ...init, headers, credentials: "omit" });
 }
 
@@ -62,7 +62,7 @@ async function signIn(email: string, password: string): Promise<Reply<{ auth: Au
       body: JSON.stringify({ email, password }),
     });
   } catch {
-    return { ok: false, error: "We couldn't reach SafeTrail. Check your connection and try again." };
+    return { ok: false, error: "We couldn't reach Escapture. Check your connection and try again." };
   }
   if (!res.ok) {
     return {
@@ -94,7 +94,7 @@ async function startCapture(): Promise<Reply> {
       error: "Open the Facebook post or Messenger conversation you want to keep, then try again.",
     };
   }
-  if (!(await store.get()).token) return { ok: false, error: "Sign in to SafeTrail first." };
+  if (!(await store.get()).token) return { ok: false, error: "Sign in to Escapture first." };
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
     await chrome.tabs.sendMessage(tab.id, { type: "picker:start" });
@@ -171,7 +171,7 @@ async function measureCapture(html: string): Promise<Reply<{ fit: { w: number; h
       await chrome.offscreen.createDocument({
         url: "offscreen.html",
         reasons: [chrome.offscreen.Reason.DOM_PARSER],
-        justification: "Measure how tall a finished capture is, so the SafeTrail viewer can size itself to it.",
+        justification: "Measure how tall a finished capture is, so the Escapture viewer can size itself to it.",
       });
     }
     const reply = (await Promise.race([
@@ -193,7 +193,7 @@ async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promis
   };
 
   const { token } = await store.get();
-  if (!token) return fail("Sign in to SafeTrail in the extension, then capture again.");
+  if (!token) return fail("Sign in to Escapture in the extension, then capture again.");
 
   // The hash is of the exact bytes the server will store: the HTML itself.
   const bytes = new TextEncoder().encode(msg.html);
@@ -218,11 +218,11 @@ async function upload(msg: Extract<Message, { type: "capture:upload" }>): Promis
   try {
     res = await appFetch("/api/evidence", { method: "POST", body: form }, token);
   } catch {
-    return fail("We couldn't reach SafeTrail, so nothing was saved. Check your connection and capture again.");
+    return fail("We couldn't reach Escapture, so nothing was saved. Check your connection and capture again.");
   }
   if (res.status === 401) {
     await store.clearAuth();
-    return fail("Your SafeTrail session ended. Sign in again in the extension, then capture again.");
+    return fail("Your Escapture session ended. Sign in again in the extension, then capture again.");
   }
   if (!res.ok) return fail(await errorText(res, "We couldn't save this capture. Please try again."));
   const saved = await res.json();

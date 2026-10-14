@@ -18,8 +18,8 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, 
 function renderSignedOut(error?: string) {
   const email = h("input", { type: "email", name: "email", autocomplete: "username", required: "" });
   const password = h("input", { type: "password", name: "password", autocomplete: "current-password", required: "" });
-  const submit = h("button", { type: "submit", class: "primary" }, "Sign in to SafeTrail");
-  const form = h("form", {}, h("label", {}, "SafeTrail email", email), h("label", {}, "Password", password), submit);
+  const submit = h("button", { type: "submit", class: "primary" }, "Sign in to Escapture");
+  const form = h("form", {}, h("label", {}, "Escapture email", email), h("label", {}, "Password", password), submit);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     submit.disabled = true;

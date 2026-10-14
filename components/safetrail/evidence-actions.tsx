@@ -64,13 +64,13 @@ export const LOCKED_NOTE = "This evidence is part of an escalated case, so it ca
 export const evidenceEmailShare = (evidenceId: string) => ({
   endpoint: `/api/evidence/${evidenceId}/shares`,
   title: "Share this evidence",
-  risk: "You are choosing to share this evidence. The person you share it with will be able to see it, and anything shared can be passed on. Sharing can't be undone in this version of SafeTrail.",
+  risk: "You are choosing to share this evidence. The person you share it with will be able to see it, and anything shared can be passed on. Sharing can't be undone in this version of Escapture.",
   successText: "Evidence shared.",
 });
 export const evidenceLinkShare = (evidenceId: string) => ({
   endpoint: `/api/evidence/${evidenceId}/links`,
   title: "Create a password link",
-  risk: "Anyone who has this link, its password and a SafeTrail account will be able to see this evidence, and anything shared can be passed on.",
+  risk: "Anyone who has this link, its password and a Escapture account will be able to see this evidence, and anything shared can be passed on.",
 });
 
 export function RenameEvidenceDialog({

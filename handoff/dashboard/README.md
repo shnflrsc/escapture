@@ -1,6 +1,6 @@
-# Handoff: SafeTrail dashboard redesign
+# Handoff: Escapture dashboard redesign
 
-This folder is a handoff for Claude Code. It turns the "SafeTrail Dashboard" design canvas into an implementation plan for this repo.
+This folder is a handoff for Claude Code. It turns the "Escapture Dashboard" design canvas into an implementation plan for this repo.
 
 ## What's here
 
@@ -9,7 +9,7 @@ This folder is a handoff for Claude Code. It turns the "SafeTrail Dashboard" des
 | `plan.md` | The plan: decisions, the shell, each page, data each page needs, and what is new on the server. Read it first. |
 | `todo.md` | Tasks in order, each with acceptance criteria, verification and files likely touched. Same format as `tasks/todo.md`. |
 | `design-md-changes.md` | Exact edits to make in `DESIGN.md` so the guidelines match the new shell (header, notifications popover, reviewer dashboard). |
-| `reference/` | The design source: one `.dc.html` file per screen, the shared `app.css`, and the SafeTrail design-system bundle. Use them for layout, copy and tokens. See `reference/README.md`. |
+| `reference/` | The design source: one `.dc.html` file per screen, the shared `app.css`, and the Escapture design-system bundle. Use them for layout, copy and tokens. See `reference/README.md`. |
 
 ## How to start (paste this into Claude Code)
 

@@ -46,7 +46,7 @@ export function AuthShell({
             </Link>
             <span>
               <span className="@max-[560px]:hidden">
-                {register ? "Already have an account? " : "New to SafeTrail? "}
+                {register ? "Already have an account? " : "New to Escapture? "}
               </span>
               <Link href={register ? "/sign-in" : "/sign-up"} className={topLink}>
                 {register ? "Sign in" : "Create an account"}

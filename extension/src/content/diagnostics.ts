@@ -111,7 +111,7 @@ export async function saveDiagnostics(targets: Element[], kind: string, fetchTex
   const blob = new Blob([JSON.stringify(report)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `safetrail-diagnostics-${kind}-${Date.now()}.json`;
+  a.download = `escapture-diagnostics-${kind}-${Date.now()}.json`;
   a.click(); // not attached to the page, so the page is not changed
   setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
 }

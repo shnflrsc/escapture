@@ -15,7 +15,7 @@ async function Account() {
   const user = await getUser();
   return user ? (
     <Link href={homeFor(user.role)} className={ghost}>
-      Open SafeTrail
+      Open Escapture
     </Link>
   ) : (
     <SignIn />
@@ -112,7 +112,7 @@ export function SiteFooter() {
           ))}
         </div>
         <p className="mk-footer-note">
-          SafeTrail supplements Bulacan State University&apos;s existing process. It does not replace it.
+          Escapture supplements Bulacan State University&apos;s existing process. It does not replace it.
         </p>
       </div>
     </footer>

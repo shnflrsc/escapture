@@ -1,6 +1,6 @@
 # Handoff: Sign in and register redesign
 
-This folder is a handoff for Claude Code. It turns the "SafeTrail Sign in & Register" design canvas into an implementation plan for this repo.
+This folder is a handoff for Claude Code. It turns the "Escapture Sign in & Register" design canvas into an implementation plan for this repo.
 
 ## What's here
 

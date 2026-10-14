@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Terms of Service · SafeTrail" };
+export const metadata: Metadata = { title: "Terms of Service · Escapture" };
 
 // The team's own document, with two passages corrected to what the app does: removing people
 // after sharing, and how a change to the Terms is announced.
@@ -15,14 +15,14 @@ const list = "flex list-disc flex-col gap-2 pl-6";
 export default function TermsPage() {
   return (
     <article className="mk-wrap flex flex-col gap-4 py-16 [&>*]:max-w-[72ch]">
-      <h1>SafeTrail Terms of Service</h1>
+      <h1>Escapture Terms of Service</h1>
       <p className="text-muted">
         Last updated: <time dateTime="2026-10-14">14 October 2026</time>
       </p>
 
       <h2 className={h2}>In plain terms</h2>
       <p>
-        SafeTrail is a hackathon prototype that helps students keep evidence of cyberbullying and bring it to the
+        Escapture is a hackathon prototype that helps students keep evidence of cyberbullying and bring it to the
         university, and these Terms set the rules for using it.
       </p>
       <ul className={list}>
@@ -30,38 +30,38 @@ export default function TermsPage() {
         <li>Capture only content that concerns you and conversations you took part in.</li>
         <li>You control what you share and when you escalate. Escalation cannot be undone.</li>
         <li>
-          SafeTrail does not investigate, decide or judge reports. BulSU&apos;s own process does that.
+          Escapture does not investigate, decide or judge reports. BulSU&apos;s own process does that.
         </li>
         <li>
           The label Captured with tamper checks is not a guarantee that evidence is complete, genuine or accepted by
           BulSU or a court.
         </li>
-        <li>Team Echelon runs SafeTrail independently. BulSU does not.</li>
-        <li>Please do not upload real evidence or personal data while SafeTrail is a demonstration.</li>
+        <li>Team Echelon runs Escapture independently. BulSU does not.</li>
+        <li>Please do not upload real evidence or personal data while Escapture is a demonstration.</li>
       </ul>
 
       <h2 className={h2}>About these Terms</h2>
       <p>
-        By creating an account or using SafeTrail or the Escrow Capture extension, you agree to these Terms and to our{" "}
+        By creating an account or using Escapture or the Escrow Capture extension, you agree to these Terms and to our{" "}
         <Link href="/privacy" className="link">
           Privacy Policy
         </Link>
-        . If you do not agree, do not use SafeTrail.
+        . If you do not agree, do not use Escapture.
       </p>
       <p>
-        SafeTrail is built and operated by Team Echelon (SafeTrail hackathon project). Team Echelon takes part in the
+        Escapture is built and operated by Team Echelon (Escapture hackathon project). Team Echelon takes part in the
         hackathon on behalf of the BulSU College of Information and Communications Technology (CICT), which supports
-        the team. SafeTrail uses BulSU as an example institution for its workflow. Unless BulSU states otherwise in
-        writing, this support does not mean that BulSU operates, endorses or is responsible for SafeTrail.
+        the team. Escapture uses BulSU as an example institution for its workflow. Unless BulSU states otherwise in
+        writing, this support does not mean that BulSU operates, endorses or is responsible for Escapture.
       </p>
       <p>
-        In these Terms, we means Team Echelon, you means anyone using SafeTrail, and reviewers and administrators means
+        In these Terms, we means Team Echelon, you means anyone using Escapture, and reviewers and administrators means
         the staff accounts that an administrator creates.
       </p>
 
       <h2 className={h2}>Accounts and eligibility</h2>
       <p>
-        Student accounts require a BulSU email address ending in @ms.bulsu.edu.ph, and SafeTrail is not designed for
+        Student accounts require a BulSU email address ending in @ms.bulsu.edu.ph, and Escapture is not designed for
         children. Reviewer and administrator accounts are created by an administrator through a one-time setup link.
       </p>
       <ul className={list}>
@@ -79,14 +79,14 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2 className={h2}>What SafeTrail does and does not do</h2>
+      <h2 className={h2}>What Escapture does and does not do</h2>
       <p>
-        SafeTrail stores evidence, organizes cases and shares them with reviewers. It supplements BulSU&apos;s own
+        Escapture stores evidence, organizes cases and shares them with reviewers. It supplements BulSU&apos;s own
         process and does not replace it.
       </p>
       <ul className={list}>
         <li>
-          SafeTrail does not investigate reports, decide whether a report is true, or impose any outcome. Those
+          Escapture does not investigate reports, decide whether a report is true, or impose any outcome. Those
           decisions belong to BulSU&apos;s process.
         </li>
         <li>
@@ -100,15 +100,15 @@ export default function TermsPage() {
           captured.
         </li>
         <li>
-          SafeTrail is not legal advice, and we do not promise that BulSU or a court will accept any evidence.
+          Escapture is not legal advice, and we do not promise that BulSU or a court will accept any evidence.
         </li>
       </ul>
 
       <h2 className={h2}>Capturing evidence properly</h2>
       <p>
         You keep whatever rights you have in what you capture. You give us permission to store it, hash it and show it
-        to the people you choose and to reviewers after you escalate. That permission is limited to running SafeTrail
-        and lasts only while the evidence is in SafeTrail.
+        to the people you choose and to reviewers after you escalate. That permission is limited to running Escapture
+        and lasts only while the evidence is in Escapture.
       </p>
       <h3 className={h3}>What you may capture</h3>
       <p>
@@ -120,14 +120,14 @@ export default function TermsPage() {
       <ul className={list}>
         <li>Knowingly submit a false or fabricated report.</li>
         <li>Try to bypass, disable or interfere with the tamper checks or the capture process.</li>
-        <li>Use SafeTrail to harass, threaten, expose or target another person.</li>
+        <li>Use Escapture to harass, threaten, expose or target another person.</li>
         <li>
           Access another person&apos;s account, vault or case without permission, or attack, probe or overload the
           service.
         </li>
       </ul>
       <p>
-        SafeTrail does not check whether a report is true. The consequences of a false report are decided through
+        Escapture does not check whether a report is true. The consequences of a false report are decided through
         BulSU&apos;s process.
       </p>
 
@@ -148,7 +148,7 @@ export default function TermsPage() {
           only people you trust with that access.
         </li>
         <li>
-          Only the person who created a case can escalate it. SafeTrail shows a preview of what reviewers will see,
+          Only the person who created a case can escalate it. Escapture shows a preview of what reviewers will see,
           including every collaborator and every attached item, and asks for confirmation.
         </li>
         <li>
@@ -168,7 +168,7 @@ export default function TermsPage() {
         <li>
           Use case information only to handle that case under BulSU&apos;s process, and keep it confidential.
         </li>
-        <li>Do not copy, share or keep evidence outside SafeTrail except as BulSU&apos;s process requires.</li>
+        <li>Do not copy, share or keep evidence outside Escapture except as BulSU&apos;s process requires.</li>
         <li>
           Students can still submit false or fabricated reports. The label on a piece of evidence does not show that a
           report is true, so weigh evidence together with the rest of your process, including the accused&apos;s side.
@@ -187,41 +187,41 @@ export default function TermsPage() {
 
       <h2 className={h2}>Facebook and other third parties</h2>
       <p>
-        SafeTrail is not affiliated with, endorsed by or sponsored by Meta or Facebook. Facebook&apos;s own terms may
+        Escapture is not affiliated with, endorsed by or sponsored by Meta or Facebook. Facebook&apos;s own terms may
         restrict capturing its content, and you capture at your own responsibility. Changes on Facebook&apos;s side can
         stop capture from working, and we may not be able to fix that quickly.
       </p>
       <p>
-        SafeTrail relies on providers such as Vercel and Supabase. If they have an outage, SafeTrail may be unavailable.
+        Escapture relies on providers such as Vercel and Supabase. If they have an outage, Escapture may be unavailable.
       </p>
 
       <h2 className={h2}>Prototype status and disclaimers</h2>
       <p>
-        SafeTrail is a hackathon prototype provided as is and as available, without warranties of any kind. Please do
+        Escapture is a hackathon prototype provided as is and as available, without warranties of any kind. Please do
         not upload real evidence or personal data while it is in demonstration.
       </p>
       <ul className={list}>
         <li>
-          We may change, suspend or shut down SafeTrail at any time, and data may be lost. Keep your own copy of
+          We may change, suspend or shut down Escapture at any time, and data may be lost. Keep your own copy of
           anything you need.
         </li>
-        <li>We do not promise that SafeTrail will be available, accurate, error-free or secure at all times.</li>
+        <li>We do not promise that Escapture will be available, accurate, error-free or secure at all times.</li>
         <li>
           To the extent the law allows, Team Echelon and its members are not liable for indirect or consequential
           losses, for evidence that is rejected, lost or passed on by a recipient, or for decisions that BulSU or anyone
-          else makes using information from SafeTrail.
+          else makes using information from Escapture.
         </li>
         <li>Nothing in these Terms removes rights you have under the law that cannot be waived.</li>
       </ul>
 
       <h2 className={h2}>If you need help now</h2>
       <p>
-        SafeTrail is not an emergency or counselling service, and nobody watches reports in real time. If you are in
+        Escapture is not an emergency or counselling service, and nobody watches reports in real time. If you are in
         danger, call 911.
       </p>
       <p>
         For support, you can contact the BulSU Guidance and Counseling Services Center, Main Campus. Contacting the
-        center does not escalate a SafeTrail case.
+        center does not escalate a Escapture case.
       </p>
       <ul className={list}>
         <li>
@@ -250,8 +250,8 @@ export default function TermsPage() {
       <h2 className={h2}>Changes, governing law and contact</h2>
       <p>
         We may update these Terms. When we make a material change, we will update the date at the top of this page.
-        SafeTrail cannot yet send a notice to every account, so check this page from time to time. If you keep using
-        SafeTrail after a change takes effect, you accept it. These Terms take effect on October 14, 2026.
+        Escapture cannot yet send a notice to every account, so check this page from time to time. If you keep using
+        Escapture after a change takes effect, you accept it. These Terms take effect on October 14, 2026.
       </p>
       <p>
         Philippine law governs these Terms. If a dispute arises, please contact us first so that we can try to resolve
