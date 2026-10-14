@@ -536,6 +536,11 @@ export function buildSnapshot(targets: Element[]): Snapshot {
         }
       }
     }
+    // Invisible boxes that still take space stay invisible. Facebook draws the
+    // text of a coloured-background post twice: a hidden copy that sizes the box
+    // and a visible copy on top. If the rule hiding the first is lost, the two overlap.
+    if (cs.visibility === "hidden") extra.push("visibility:hidden");
+    if (cs.opacity === "0") extra.push("opacity:0");
     if (o === top && (cs.position === "fixed" || cs.position === "absolute" || cs.position === "sticky")) {
       // The selection sat on top of the page (a dialog); in the copy it is the page.
       extra.push("position:relative", "inset:auto", "margin:0", "transform:none");
